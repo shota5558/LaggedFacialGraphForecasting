@@ -10,6 +10,13 @@ from .contracts import (
     PredictionArtifact,
     SplitManifest,
 )
+from .core_contract_io import (
+    CoreContractIOError,
+    deserialize_core_contract,
+    dumps_core_contract,
+    loads_core_contract,
+    serialize_core_contract,
+)
 from .core_contracts import (
     CORE_CONTRACT_SCHEMA_VERSION,
     ExperimentArtifact,
@@ -59,6 +66,7 @@ __all__ = [
     "AlignedIndices",
     "CORE_CONTRACT_SCHEMA_VERSION",
     "ContractError",
+    "CoreContractIOError",
     "DesignMatrix",
     "ExperimentArtifact",
     "ExperimentConfig",
@@ -91,12 +99,16 @@ __all__ = [
     "build_split_manifest_payload",
     "build_subject_split_manifest",
     "build_v0_result_payload",
+    "deserialize_core_contract",
+    "dumps_core_contract",
     "fit_ridge_forecaster",
     "generate_synthetic_face_time_series",
     "load_scientific_config",
     "load_subject_metadata_csv",
+    "loads_core_contract",
     "predict_ridge_forecaster",
     "read_split_manifest_json",
+    "serialize_core_contract",
     "validate_subject_ids",
     "velocity_rmse",
     "write_split_manifest_json",
