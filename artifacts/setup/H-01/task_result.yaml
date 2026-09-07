@@ -1,0 +1,44 @@
+task_id: H-01
+task_name: Fold runner
+status: PASS
+
+implemented:
+  - reused the validated MinimalFoldRunner from the V0 backbone; no second orchestration path was added
+  - one SplitManifest remains the authoritative fold definition
+  - training consumes only manifest.train_subject_ids
+  - outer-test evaluation is structurally locked until explicit freeze and can occur only once
+  - prediction and metric artifacts retain outer_fold and held-out subject provenance
+
+files_changed:
+  - artifacts/setup/H-01/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/runner.py
+  - tests/test_minimal_fold_runner.py
+
+tests:
+  workflow: tests
+  run_id: 34150160759
+  job_id: 101830578037
+  head_sha: 932f04494107ce48f91527ecc73995e19f00f773
+  python: 3.11.16
+  result: 234 passed in 1.28s
+  cases:
+    - outer-test is rejected before freeze
+    - training subject provenance equals the SplitManifest outer-train set
+    - outer-test subjects are absent from the training matrix
+    - outer-test is evaluated only after freeze and only once
+    - missing manifest subjects are rejected
+
+scientific_checks:
+  - subject-level fold isolation is enforced by the shared SplitManifest
+  - outer-test remains final-evaluation-only in the runner state machine
+  - no preprocessing/discovery/tuning/null fitting is performed from outer-test
+  - no alternate estimator or Sensitivity path is introduced
+  - existing V0 runner is reused rather than duplicated
+
+artifacts:
+  - artifacts/setup/H-01/task_result.yaml
+
+remaining_issue: none
+next_task: H-02
