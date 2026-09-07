@@ -3,41 +3,46 @@ task_name: Feature provenance
 status: PASS
 
 implemented:
-  - reused existing DesignMatrix.feature_names and DesignMatrix.feature_lags without schema changes
-  - added dedicated provenance audit across Persistence, Self, Full, and PCMCI ParentSet matrices
-  - verified each design-matrix column retains source region, dimension, and target-relative lag
+  - reused the frozen DesignMatrix.feature_names and DesignMatrix.feature_lags schema
+  - audited provenance across Persistence, Self, Full, and PCMCI ParentSet matrices
+  - added reversible feature-name encoding/decoding so source region and dimension remain losslessly recoverable even when identifiers contain '.' or '\\'
+  - preserved the historical region.dimension representation for simple identifiers
+  - verified every design-matrix column retains exact source region, dimension, and target-relative lag
   - verified PCMCI provenance is inherited exactly from the frozen ParentSet without reselection
-  - removed a concurrently duplicated provenance test so only one canonical audit file remains
+  - kept one canonical provenance test file after removing a concurrent duplicate
 
 files_changed:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
   - tests/test_design_matrix_feature_provenance.py
   - artifacts/setup/C-07/task_result.yaml
 
 cleanup:
-  - redundant tests/test_feature_provenance.py was added and then removed after detecting the pre-existing concurrent C-07 audit
+  - redundant tests/test_feature_provenance.py was removed after detecting the concurrent C-07 audit
   - cleanup_commit: 2c6be8d028b2dd091d93f994485c80332208146f
-  - final source tree after cleanup is identical to the validated C-07 audit tree
 
 tests:
   workflow: tests
-  run_id: 34148448318
-  job_id: 101825412813
-  head_sha: bdde95722bf3e5dc35c347c4dbf7446ad80a8c53
+  run_id: 34148619208
+  job_id: 101825925196
+  head_sha: 953a54b7cd0fb84aee4e0cd991149089d8677d95
   python: 3.11.16
-  result: 183 passed in 1.63s
+  result: 185 passed in 1.56s
   cases:
-    - Persistence provenance identifies target region dimensions at lag 1
-    - Self provenance preserves target region, dimension, and each requested lag
+    - Persistence provenance identifies target-region dimensions at lag 1
+    - Self provenance preserves target region, dimension, and every requested lag
     - Full provenance preserves every region/dimension/lag column deterministically
     - PCMCI provenance matches ParentSet source-region/lag links without reselection
+    - reserved '.' and '\\' characters round-trip through feature-name encoding
+    - design-matrix feature names round-trip to the exact source region and dimension
 
 scientific_checks:
-  - feature provenance is explicit and lossless for downstream leakage and lag audits
+  - source region, target region, dimension, and lag are losslessly traceable for downstream leakage and lag audits
   - no outcome-dependent feature or lag selection is introduced
   - PCMCI condition inputs remain defined solely by the frozen ParentSet
   - target-relative lag semantics are preserved
   - Primary h=1 and Primary/Sensitivity separation remain unchanged
   - no outer-test information is consumed by provenance construction or validation
+  - frozen contract fields and schema_version are unchanged
 
 artifacts:
   - artifacts/setup/C-07/task_result.yaml
