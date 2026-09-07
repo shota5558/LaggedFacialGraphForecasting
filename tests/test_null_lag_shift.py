@@ -123,3 +123,31 @@ def test_lag_shift_rejects_source_parent_outside_frozen_primary_domain() -> None
             construction_subject_ids=("train_a", "train_b"),
             lag_delta=-1,
         )
+
+
+def test_lag_shift_is_injective_for_distinct_component_level_parent_links() -> None:
+    component_distinct = ParentSet(
+        outer_fold=1,
+        target_region="mouth",
+        parents=(
+            ParentLink("left_cheek", 2, "vx", "vy"),
+            ParentLink("left_cheek", 2, "vy", "vy"),
+            ParentLink("left_cheek", 3, "vx", "vy"),
+        ),
+        discovery_method="pcmci_plus",
+    )
+
+    mapping = construct_lag_shift_mapping(
+        _manifest(),
+        component_distinct,
+        construction_subject_ids=("train_a", "train_b"),
+        lag_delta=1,
+    )
+
+    assert len(mapping.mapped_parents) == len(component_distinct.parents)
+    assert len(set(mapping.mapped_parents)) == len(component_distinct.parents)
+    assert mapping.mapped_parents == (
+        ParentLink("left_cheek", 3, "vx", "vy"),
+        ParentLink("left_cheek", 3, "vy", "vy"),
+        ParentLink("left_cheek", 4, "vx", "vy"),
+    )
