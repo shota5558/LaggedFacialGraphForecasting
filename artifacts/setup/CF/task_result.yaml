@@ -4,68 +4,85 @@ status: PASS
 
 implemented:
   - retained the V0-proven FaceTimeSeries, SplitManifest, DesignMatrix, and PredictionArtifact implementations without duplication
-  - added canonical ParentSet with explicit source-region and positive-lag provenance
-  - added NullMapping with frozen source/mapped parents, deterministic seed, and optional validated row permutation
-  - added subject-region-condition MetricsResult for paired downstream statistics
-  - added content-addressed ExperimentArtifact registry entry contract
-  - added stable path-based ExperimentConfig envelope
-  - added machine-readable core contract schema registry at version 1
-  - added deterministic JSON serialization/deserialization for all nine canonical contracts
-  - added strict versioned wire envelope with exact payload-field validation
-  - added explicit backward/forward incompatibility rejection
-  - added migration policy requiring reason, impact scope, migration, and tests for future contract changes
+  - migrated the core contract wire/schema version from v1 to v2 after Scientific Freeze v2 changed PCMCI discovery node granularity to region_dimension
+  - extended canonical ParentLink with source_dimension and target_dimension so component-to-component PCMCI provenance is lossless
+  - kept ParentSet as the Tigramite-independent discovery/forecasting boundary while preserving target region, source region, source component, target component, and lag
+  - propagated component-aware ParentLink through NullMapping without changing Null algorithms
+  - added deterministic JSON serialization/deserialization for component-aware ParentSet and NullMapping
+  - added explicit v1-to-v2 migration helper that permits ParentSet/NullMapping migration only for certified D=1 artifacts with an explicit scalar dimension label
+  - fail closed for v1 multicomponent discovery artifacts because lost component identity cannot be reconstructed safely
+  - migrated the Primary run descriptor and runner-config fixtures to core contract schema v2
+  - retained schemas/core_contracts_v1.yaml as immutable history and added schemas/core_contracts_v2.yaml with reason, impact scope, migration, and test requirements
 
 files_changed:
   - src/lagged_facial_graph_forecasting/core_contracts.py
   - src/lagged_facial_graph_forecasting/core_contract_io.py
-  - schemas/core_contracts_v1.yaml
+  - schemas/core_contracts_v2.yaml
+  - configs/primary_run.yaml
   - tests/test_core_contract_freeze.py
   - tests/test_core_contract_io.py
-  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_runner_config.py
+  - artifacts/setup/CF/task_result.yaml
 
 tests:
   workflow: tests
-  run_id: 34147802837
-  job_id: 101823490247
-  head_sha: 13164ed711cf5e98170dc9def5ec3e4517dc9c61
+  run_id: 34157828356
+  job_id: 101853216574
+  head_sha: 4478d05f04b1169d2104642c1b02742af6a5245d
   python: 3.11.16
-  result: 167 passed in 1.52s
-  round_trip_coverage:
-    - FaceTimeSeries
-    - SplitManifest
-    - ParentSet
-    - DesignMatrix
-    - PredictionArtifact
-    - NullMapping
-    - MetricsResult
-    - ExperimentArtifact
-    - ExperimentConfig
-  incompatibility_cases:
-    - schema_version 0 rejected
-    - schema_version 2 rejected
-    - unknown contract type rejected
-    - additional payload field rejected
-    - missing payload field rejected
+  result: 406 passed, 1 warning in 3.63s
+  warning:
+    - Tigramite warns that analysis_mode multiple contains one dataset in one converter test; this is non-failing and unrelated to contract correctness
+  migration_coverage:
+    - component provenance round trip
+    - exact duplicate component-link rejection
+    - same region and lag with distinct components remains distinguishable
+    - missing component field rejected
+    - non-current schema versions rejected
+    - v1 ParentSet migration requires explicit certified scalar dimension
+    - v1 NullMapping migration preserves scalar mapping when explicitly certified
+    - v1 multicomponent provenance is never guessed
 
 scientific_checks:
-  - ParentSet is a Tigramite-independent discovery/forecasting boundary
-  - ParentSet preserves outer_fold, target_region, source_region, and lag provenance
-  - NullMapping records deterministic seed and mapping/permutation without consulting evaluation results
-  - MetricsResult is aligned at subject/region/condition level for paired outer-test analysis
-  - ExperimentArtifact requires a content hash and repository-relative path for immutable provenance
-  - ExperimentConfig references versioned scientific/run configs rather than embedding mutable ad-hoc settings
-  - serialized forms retain subject/fold/lag/time provenance defined by their canonical contracts
-  - Primary/Sensitivity definitions remain governed by the already frozen scientific config
-  - no PCMCI discovery, Null algorithm, real-data, Ridge tuning, or Sensitivity execution was introduced during contract freeze
+  - Scientific Freeze v2 requires discovery node_unit region_dimension and forecasting_feature_rule exact_selected_component
+  - canonical ParentLink now preserves source_dimension and target_dimension required by that freeze
+  - ParentSet remains independent of Tigramite implementation details
+  - no outer-test information is introduced by the contract migration
+  - no Primary or Sensitivity algorithm choice changed
+  - Primary remains PCMCI+ plus ParCorr plus Ridge with horizon 1
+  - NullMapping continues to record deterministic seed and frozen mappings without evaluation feedback
+  - contract change documents reason, impact scope, migration, and tests as required
+  - ambiguous v1 multicomponent ParentSet/NullMapping artifacts require re-discovery rather than unsafe automatic migration
+
+fail_history:
+  initial_status: FAIL
+  fail_types:
+    - contract mismatch
+    - scientific specification conflict
+  root_cause: >-
+    Core contract v1 stored only source_region and lag, while Scientific Freeze v2
+    defines scalar region_dimension PCMCI nodes and requires exact selected components
+    to be used by forecasting. The v1 contract therefore lost component provenance.
+  minimal_fix: >-
+    Version the core contracts to v2, extend ParentLink with source and target
+    dimensions, serialize them losslessly, and provide a fail-closed explicit v1
+    scalar migration path.
+  regression_fix: >-
+    Primary run descriptors and their test fixtures were migrated from schema v1
+    to schema v2 after CI exposed the remaining version assumptions.
 
 source_commits:
-  core_contract_serialization: d05a0a01d0dd39ccf97e4b283c109d493dd5d104
-  round_trip_tests: 3a24b91dd7e778422cd316cb6f66bd36707c6f8b
-  io_exports: 13164ed711cf5e98170dc9def5ec3e4517dc9c61
-  schema_wire_format: da9c419fa9adc1110e9b0d4554d03b7f99b8ac51
+  component_contract_v2: 2a28c732e0620acc3ba5fb9d317f5249e1d35b2b
+  component_serialization_v2: 0c9e07b7b9bd6b98e657b1515d6af50c7363296f
+  schema_registry_v2: c8691e827fe970f5c030ffc50663c2dfb4db39db
+  contract_tests_v2: b5c584b64a30f3f51895c936abbe70782783fab1
+  migration_tests: 9c82d774ed8a02c02cce9d4bc976735045887a99
+  primary_run_descriptor_v2: 19c0ee97d0dbdeb0205e691c791aa95781e67cdd
+  runner_config_tests_v2: 4478d05f04b1169d2104642c1b02742af6a5245d
 
 artifacts:
   - schemas/core_contracts_v1.yaml
+  - schemas/core_contracts_v2.yaml
   - artifacts/setup/CF/task_result.yaml
 
 remaining_issue: none
