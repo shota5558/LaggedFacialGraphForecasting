@@ -1,0 +1,40 @@
+task_id: H-02
+task_name: Artifact registry
+status: PASS
+
+implemented:
+  - added a content-addressed ArtifactRegistry using the frozen ExperimentArtifact contract
+  - registry accepts only existing files beneath the ExperimentConfig artifact_root
+  - SHA-256 is computed from file content at registration time
+  - experiment_id, artifact type, outer fold, condition, relative path, and content hash are preserved
+  - registry entries are returned in deterministic path order
+  - re-registering a path after content/provenance changes is rejected
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/artifact_registry.py
+  - tests/test_artifact_registry.py
+  - artifacts/setup/H-02/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34150353041
+  job_id: 101831152509
+  head_sha: 8d1234675fcca866d604977a45b70e7046b14987
+  result: success
+  cases:
+    - content hash and experiment/fold/condition provenance are recorded
+    - entries are deterministically ordered
+    - files outside Primary artifact_root are rejected
+    - changed content for an already-registered path is rejected
+
+scientific_checks:
+  - artifact registry cannot redirect Primary artifacts outside the configured Primary root
+  - content hashes make downstream manifests auditable against exact bytes
+  - artifact registration is downstream bookkeeping and does not modify prediction/discovery/tuning state
+  - no outer-test feedback or Sensitivity method is introduced
+
+artifacts:
+  - artifacts/setup/H-02/task_result.yaml
+
+remaining_issue: none
+next_task: H-03
