@@ -8,6 +8,7 @@ import numpy as np
 
 from .alignment import aligned_indices
 from .contracts import DesignMatrix, FaceTimeSeries
+from .core_contracts import ParentSet
 
 
 def _normalize_lags(lags: Iterable[int]) -> tuple[int, ...]:
@@ -170,6 +171,78 @@ def build_full_history_design_matrix(
         y=y,
         subject_id=(series.subject_id,) * row_count,
         region_id=(target_region,) * row_count,
+        forecast_origin=series.time_index[origin_indices],
+        target_time=series.time_index[target_indices],
+        feature_names=tuple(feature_names),
+        feature_lags=tuple(feature_lags),
+        valid_mask=valid_mask.astype(bool, copy=False),
+    )
+
+
+def build_pcmci_parent_design_matrix(
+    series: FaceTimeSeries,
+    *,
+    parent_set: ParentSet,
+    horizon: int = 1,
+) -> DesignMatrix:
+    """Build the PCMCI condition from the canonical discovery ``ParentSet``.
+
+    Forecasting code consumes only the frozen ``ParentSet`` boundary and therefore
+    has no dependency on Tigramite. Each region-level parent contributes every
+    dimension of that source region at the selected target-relative lag. Parent
+    order is preserved exactly as stored in ``ParentSet``; dimensions follow the
+    frozen ``FaceTimeSeries.dimension`` order.
+    """
+
+    if parent_set.target_region not in series.region_id:
+        raise ValueError(
+            f"unknown target_region from ParentSet: {parent_set.target_region!r}"
+        )
+    if not parent_set.parents:
+        raise ValueError("ParentSet must contain at least one parent")
+
+    for parent in parent_set.parents:
+        if parent.source_region not in series.region_id:
+            raise ValueError(
+                f"unknown source_region from ParentSet: {parent.source_region!r}"
+            )
+
+    max_lag = max(parent.lag for parent in parent_set.parents)
+    common = aligned_indices(len(series.time_index), lag=max_lag, horizon=horizon)
+    target_indices = common.target_index
+    origin_indices = common.forecast_origin
+    target_region_index = series.region_id.index(parent_set.target_region)
+
+    feature_columns: list[np.ndarray] = []
+    feature_valid_columns: list[np.ndarray] = []
+    feature_names: list[str] = []
+    feature_lags: list[int] = []
+
+    for parent in parent_set.parents:
+        source_indices = target_indices - parent.lag
+        source_region_index = series.region_id.index(parent.source_region)
+        for dimension_index, dimension_name in enumerate(series.dimension):
+            feature_columns.append(
+                series.X[source_indices, source_region_index, dimension_index]
+            )
+            feature_valid_columns.append(
+                series.valid_mask[source_indices, source_region_index, dimension_index]
+            )
+            feature_names.append(f"{parent.source_region}.{dimension_name}")
+            feature_lags.append(parent.lag)
+
+    X = np.column_stack(feature_columns)
+    feature_valid = np.column_stack(feature_valid_columns)
+    y = series.X[target_indices, target_region_index, :]
+    target_valid = series.valid_mask[target_indices, target_region_index, :]
+    valid_mask = np.all(feature_valid, axis=1) & np.all(target_valid, axis=1)
+
+    row_count = len(target_indices)
+    return DesignMatrix(
+        X=X,
+        y=y,
+        subject_id=(series.subject_id,) * row_count,
+        region_id=(parent_set.target_region,) * row_count,
         forecast_origin=series.time_index[origin_indices],
         target_time=series.time_index[target_indices],
         feature_names=tuple(feature_names),
