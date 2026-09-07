@@ -17,6 +17,7 @@ from .core_contracts import MetricsResult
 
 
 MetricFunction = Callable[[np.ndarray, np.ndarray], float]
+VELOCITY_RMSE_NAME = "velocity_rmse"
 
 
 def evaluate_metric_by_subject_region(
@@ -77,12 +78,36 @@ def evaluate_metric_by_subject_region(
     return tuple(results)
 
 
+def _root_mean_square_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    residual = np.asarray(y_pred) - np.asarray(y_true)
+    return float(np.sqrt(np.mean(np.square(residual))))
+
+
 def velocity_rmse(artifact: PredictionArtifact) -> float:
-    """Compute RMSE over all valid prediction rows and velocity dimensions."""
+    """Compute RMSE over all valid prediction rows and velocity dimensions.
+
+    This V0-compatible scalar helper is retained unchanged in semantics.  Primary
+    statistics should use :func:`velocity_rmse_by_subject_region` so subject-level
+    pairing provenance is not lost.
+    """
 
     valid_rows = np.asarray(artifact.valid_mask, dtype=bool)
     if not np.any(valid_rows):
         raise ValueError("Velocity RMSE requires at least one valid prediction row")
 
-    residual = artifact.y_pred[valid_rows] - artifact.y_true[valid_rows]
-    return float(np.sqrt(np.mean(np.square(residual))))
+    return _root_mean_square_error(
+        artifact.y_true[valid_rows],
+        artifact.y_pred[valid_rows],
+    )
+
+
+def velocity_rmse_by_subject_region(
+    artifact: PredictionArtifact,
+) -> tuple[MetricsResult, ...]:
+    """Return subject-region Velocity RMSE results with paired-test provenance."""
+
+    return evaluate_metric_by_subject_region(
+        artifact,
+        metric_name=VELOCITY_RMSE_NAME,
+        metric=_root_mean_square_error,
+    )
