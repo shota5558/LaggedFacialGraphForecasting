@@ -1,8 +1,9 @@
-"""Subject metadata loading for the split/leakage lane."""
+"""Subject metadata loading and validation for the split/leakage lane."""
 
 from __future__ import annotations
 
 import csv
+from collections.abc import Mapping
 from pathlib import Path
 
 
@@ -10,10 +11,14 @@ class SubjectMetadataLoadError(ValueError):
     """Raised when a subject metadata file cannot be parsed safely."""
 
 
+class SubjectMetadataValidationError(ValueError):
+    """Raised when loaded subject identifiers violate the metadata contract."""
+
+
 def load_subject_metadata_csv(path: str | Path) -> tuple[dict[str, str], ...]:
     """Load a UTF-8 CSV metadata table without performing subject-ID validation.
 
-    B-00 owns file parsing only.  B-01 separately validates subject identifiers,
+    B-00 owns file parsing only. B-01 separately validates subject identifiers,
     including blank and duplicate IDs, so this loader intentionally preserves row
     values as supplied by the metadata source.
     """
@@ -54,3 +59,42 @@ def load_subject_metadata_csv(path: str | Path) -> tuple[dict[str, str], ...]:
         raise SubjectMetadataLoadError(f"invalid subject metadata CSV: {exc}") from exc
 
     return tuple(rows)
+
+
+def validate_subject_ids(rows: tuple[Mapping[str, str], ...]) -> tuple[str, ...]:
+    """Validate subject identifiers without constructing or selecting a split."""
+
+    rows = tuple(rows)
+    if not rows:
+        raise SubjectMetadataValidationError("subject metadata must contain at least one row")
+
+    subject_ids: list[str] = []
+    seen: set[str] = set()
+    for row_index, row in enumerate(rows, start=1):
+        if not isinstance(row, Mapping):
+            raise SubjectMetadataValidationError(
+                f"subject metadata row {row_index} must be a mapping"
+            )
+        if "subject_id" not in row:
+            raise SubjectMetadataValidationError(
+                f"subject metadata row {row_index} is missing subject_id"
+            )
+        subject_id = row["subject_id"]
+        if not isinstance(subject_id, str):
+            raise SubjectMetadataValidationError(
+                f"subject_id at row {row_index} must be a string"
+            )
+        if not subject_id.strip():
+            raise SubjectMetadataValidationError(
+                f"subject_id at row {row_index} must be non-empty"
+            )
+        if subject_id != subject_id.strip():
+            raise SubjectMetadataValidationError(
+                f"subject_id at row {row_index} must not contain leading/trailing whitespace"
+            )
+        if subject_id in seen:
+            raise SubjectMetadataValidationError(f"duplicate subject_id is forbidden: {subject_id!r}")
+        seen.add(subject_id)
+        subject_ids.append(subject_id)
+
+    return tuple(subject_ids)
