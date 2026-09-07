@@ -88,3 +88,38 @@ def test_lag_shift_rejects_zero_delta_and_fold_mismatch() -> None:
             construction_subject_ids=("train_a", "train_b"),
             lag_delta=1,
         )
+
+
+def test_lag_shift_rejects_lower_and_upper_boundary_without_clipping_or_dropping() -> None:
+    with pytest.raises(LagShiftMappingError, match="clipping, wrapping, or dropping"):
+        construct_lag_shift_mapping(
+            _manifest(),
+            _parents(),
+            construction_subject_ids=("train_a", "train_b"),
+            lag_delta=-2,
+        )
+
+    with pytest.raises(LagShiftMappingError, match="clipping, wrapping, or dropping"):
+        construct_lag_shift_mapping(
+            _manifest(),
+            _parents(),
+            construction_subject_ids=("train_a", "train_b"),
+            lag_delta=7,
+        )
+
+
+def test_lag_shift_rejects_source_parent_outside_frozen_primary_domain() -> None:
+    invalid_source = ParentSet(
+        outer_fold=1,
+        target_region="mouth",
+        parents=(ParentLink("left_cheek", 11, "vx", "vy"),),
+        discovery_method="pcmci_plus",
+    )
+
+    with pytest.raises(LagShiftMappingError, match="source ParentSet lag"):
+        construct_lag_shift_mapping(
+            _manifest(),
+            invalid_source,
+            construction_subject_ids=("train_a", "train_b"),
+            lag_delta=-1,
+        )
