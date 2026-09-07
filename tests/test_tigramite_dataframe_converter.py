@@ -3,11 +3,31 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from lagged_facial_graph_forecasting.contracts import FaceTimeSeries
+from lagged_facial_graph_forecasting.contracts import (
+    FaceTimeSeries,
+    InnerFold,
+    SplitManifest,
+)
+from lagged_facial_graph_forecasting.leakage_guard import LeakageGuardError
 from lagged_facial_graph_forecasting.tigramite_adapter import (
     TigramiteAdapterError,
     face_time_series_to_tigramite_dataframe,
 )
+
+
+def _manifest() -> SplitManifest:
+    return SplitManifest(
+        outer_fold=0,
+        train_subject_ids=("s1", "s2", "s3"),
+        test_subject_ids=("outer_test",),
+        inner_folds=(
+            InnerFold(
+                inner_train_subject_ids=("s1", "s2"),
+                inner_val_subject_ids=("s3",),
+            ),
+        ),
+        seed=17,
+    )
 
 
 def _series(subject_id: str, *, length: int, sampling_rate: float = 25.0) -> FaceTimeSeries:
@@ -29,7 +49,8 @@ def _series(subject_id: str, *, length: int, sampling_rate: float = 25.0) -> Fac
 
 def test_converter_keeps_subjects_as_separate_tigramite_datasets() -> None:
     bundle = face_time_series_to_tigramite_dataframe(
-        (_series("s1", length=4), _series("s2", length=5))
+        _manifest(),
+        (_series("s1", length=4), _series("s2", length=5)),
     )
 
     frame = bundle.dataframe
@@ -54,7 +75,8 @@ def test_converter_keeps_subjects_as_separate_tigramite_datasets() -> None:
 
 def test_invalid_values_are_finite_placeholders_under_tigramite_mask() -> None:
     bundle = face_time_series_to_tigramite_dataframe(
-        (_series("s1", length=4), _series("s2", length=5))
+        _manifest(),
+        (_series("s1", length=4), _series("s2", length=5)),
     )
 
     frame = bundle.dataframe
@@ -65,14 +87,23 @@ def test_invalid_values_are_finite_placeholders_under_tigramite_mask() -> None:
     assert not frame.mask["s2"][0, 1]
 
 
+def test_converter_rejects_outer_test_before_dataframe_construction() -> None:
+    with pytest.raises(LeakageGuardError, match="outer-test subjects"):
+        face_time_series_to_tigramite_dataframe(
+            _manifest(),
+            (_series("outer_test", length=4),),
+        )
+
+
 def test_converter_rejects_subject_or_schema_mixing() -> None:
+    manifest = _manifest()
     s1 = _series("s1", length=4)
     with pytest.raises(TigramiteAdapterError, match="subject_id values must be unique"):
-        face_time_series_to_tigramite_dataframe((s1, s1))
+        face_time_series_to_tigramite_dataframe(manifest, (s1, s1))
 
     incompatible_rate = _series("s2", length=4, sampling_rate=30.0)
     with pytest.raises(TigramiteAdapterError, match="sampling_rate"):
-        face_time_series_to_tigramite_dataframe((s1, incompatible_rate))
+        face_time_series_to_tigramite_dataframe(manifest, (s1, incompatible_rate))
 
     incompatible_region = FaceTimeSeries(
         X=np.zeros((4, 2, 2)),
@@ -84,4 +115,4 @@ def test_converter_rejects_subject_or_schema_mixing() -> None:
         sampling_rate=25.0,
     )
     with pytest.raises(TigramiteAdapterError, match="region_id order"):
-        face_time_series_to_tigramite_dataframe((s1, incompatible_region))
+        face_time_series_to_tigramite_dataframe(manifest, (s1, incompatible_region))
