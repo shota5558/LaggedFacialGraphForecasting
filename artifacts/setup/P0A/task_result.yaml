@@ -4,25 +4,34 @@ status: PASS
 
 implemented:
   - machine-readable scientific freeze config
+  - JSON Schema for the frozen scientific specification
   - strict loader and exact-value validator
   - explicit Primary/Sensitivity separation
   - explicit outer-test usage restriction
   - explicit outer-train-only selection scopes
+  - mandatory Scientific Freeze validation at MinimalFoldRunner startup
+  - execution rejection when the Scientific Freeze is missing or altered
   - minimal pytest CI workflow
 
 files:
   - configs/scientific_freeze.yaml
+  - schemas/scientific_freeze.schema.json
   - pyproject.toml
   - src/lagged_facial_graph_forecasting/__init__.py
   - src/lagged_facial_graph_forecasting/scientific_config.py
+  - src/lagged_facial_graph_forecasting/runner.py
   - tests/test_scientific_config.py
+  - tests/test_minimal_fold_runner.py
   - .github/workflows/test.yml
 
 tests:
-  execution: isolated_exact_repository_mirror
-  python: 3.13.5
-  result: 6 passed
-  elapsed_seconds: 0.19
+  execution: github_actions
+  python: 3.11.16
+  result: 146 passed
+  elapsed_seconds: 1.12
+  github_actions_run_observed: true
+  github_actions_run_id: 34147213720
+  github_actions_head: 438a725bac0d48a4fbc7951f68d6e590d3c50bd9
   cases:
     - valid scientific freeze loads
     - Primary CI-test drift rejected
@@ -30,7 +39,8 @@ tests:
     - outer-test usage drift rejected
     - Sensitivity-before-freeze rejected
     - unreviewed scientific schema extension rejected
-  github_actions_run_observed: false
+    - runner startup rejects missing Scientific Freeze
+    - runner startup rejects altered Scientific Freeze
 
 scientific_checks:
   primary_discovery: pcmci_plus
@@ -47,6 +57,7 @@ scientific_checks:
   lag_selection: outer_train_only
   sensitivity_after_primary_freeze: true
   primary_sensitivity_artifact_roots_separate: true
+  runner_scientific_freeze_validation_required: true
 
 source_commits:
   scientific_config_initial: c6694ad96d7e4a43744414bb0be7e49b4ebb563f
@@ -55,7 +66,10 @@ source_commits:
   scientific_config_scope_update: 1a47620d9ceb19a270e94e0af9c89bf75275be29
   loader_validator: 6678c380c99ce1167d04baedf12cce3f4cf2c3c6
   tests: 2c1d47ac81fe518c55c8893a11225308b3a272bf
+  scientific_schema: af862774b3c8fca9cbc2563ad14b91bef6023025
   ci_workflow: 5e246e6d4b68798784d4aaa5a82f99f4d855bd3b
+  runner_execution_gate: 0f5d209ec91a0702dd7f453cbb2be5f960e800f2
+  runner_execution_gate_tests: 438a725bac0d48a4fbc7951f68d6e590d3c50bd9
 
 remaining_issue: none
 next_task: P0B-01
