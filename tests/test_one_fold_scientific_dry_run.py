@@ -162,6 +162,15 @@ def _baseline_matrix(series: FaceTimeSeries, condition: str):
     raise AssertionError(condition)
 
 
+def _time_shuffle_matrix(series: FaceTimeSeries, parent_set: ParentSet, mapping):
+    """Apply the frozen shuffle within one subject before any cross-subject concat."""
+
+    return apply_time_shuffle_to_design_matrix(
+        _pcmci_matrix(series, parent_set),
+        mapping,
+    )
+
+
 def _write(path: Path, text: str) -> bytes:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -261,8 +270,9 @@ def _run_one_fold(root: Path):
         train_matrices[condition] = _concatenate_design_matrices(
             _pcmci_matrix(series, mapped_parent_set) for series in train_series
         )
-    train_matrices["time-shuffle"] = apply_time_shuffle_to_design_matrix(
-        train_matrices["pcmci"], time_shuffle
+    train_matrices["time-shuffle"] = _concatenate_design_matrices(
+        _time_shuffle_matrix(series, parent_set, time_shuffle)
+        for series in train_series
     )
 
     selections = {}
@@ -305,8 +315,9 @@ def _run_one_fold(root: Path):
         test_matrices[condition] = _concatenate_design_matrices(
             _pcmci_matrix(series, mapped_parent_set) for series in test_series
         )
-    test_matrices["time-shuffle"] = apply_time_shuffle_to_design_matrix(
-        test_matrices["pcmci"], time_shuffle
+    test_matrices["time-shuffle"] = _concatenate_design_matrices(
+        _time_shuffle_matrix(series, parent_set, time_shuffle)
+        for series in test_series
     )
 
     predictions = {}
@@ -344,12 +355,6 @@ def _run_one_fold(root: Path):
         assert mapping is not None
         name = f"null_{condition.replace(':', '_')}.json"
         artifact_bytes[name] = _write(root / name, dumps_core_contract(mapping))
-    artifact_bytes["null_random-region.json"] = _write(
-        root / "null_random-region.json", dumps_core_contract(random_region)
-    )
-    artifact_bytes["null_matched-sparsity.json"] = _write(
-        root / "null_matched-sparsity.json", dumps_core_contract(matched)
-    )
     artifact_bytes["null_time-shuffle.json"] = _write(
         root / "null_time-shuffle.json", dumps_core_contract(time_shuffle)
     )
@@ -391,9 +396,7 @@ def _run_one_fold(root: Path):
         "seed": manifest.seed,
         "parent_set_sha256": hashlib.sha256(artifact_bytes["parent_set.json"]).hexdigest(),
         "ridge_conditions": sorted(selections),
-        "null_conditions": sorted(
-            [*structural_mappings, "random-region", "matched-sparsity", "time-shuffle"]
-        ),
+        "null_conditions": sorted(set([*structural_mappings, "time-shuffle"])),
         "outer_test_usage": "frozen_final_evaluation_only",
         "evaluated_once": True,
     }
