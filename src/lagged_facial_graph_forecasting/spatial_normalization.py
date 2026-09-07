@@ -99,3 +99,66 @@ def normalize_translation(
         offsets=offsets,
         reference_indices=references,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class ScaleNormalization:
+    """Immutable frame-wise scale-normalized coordinates and provenance."""
+
+    values: np.ndarray
+    scales: np.ndarray
+    reference_pair: tuple[int, int]
+    method: str = "frame_reference_pair_distance"
+
+    def __post_init__(self) -> None:
+        values = np.array(self.values, copy=True)
+        scales = np.array(self.scales, copy=True)
+        values.setflags(write=False)
+        scales.setflags(write=False)
+        object.__setattr__(self, "values", values)
+        object.__setattr__(self, "scales", scales)
+        object.__setattr__(self, "reference_pair", tuple(self.reference_pair))
+
+
+def normalize_scale(
+    values: np.ndarray,
+    *,
+    reference_pair: tuple[int, int],
+) -> ScaleNormalization:
+    """Remove frame-wise global scale using an explicitly frozen reference pair.
+
+    Scale is the Euclidean distance between the two declared reference points or
+    regions in each frame. The pair is mandatory so the anatomical/scientific
+    anchor cannot be hidden in an API default or selected from outer-test
+    performance. The operation is frame-local and contains no population-level fit.
+
+    Missing values in either reference deliberately propagate through the scale and
+    normalized frame; missingness repair remains an A-12/A-13 responsibility.
+    A finite zero reference distance is rejected because scale normalization would
+    otherwise be undefined.
+    """
+
+    array = _validate_coordinate_tensor(values)
+    references = _validate_reference_indices(
+        tuple(reference_pair),
+        item_count=int(array.shape[1]),
+    )
+    if len(references) != 2:
+        raise SpatialNormalizationError(
+            "reference_pair must contain exactly two distinct indices"
+        )
+
+    first, second = references
+    distances = np.linalg.norm(array[:, first, :] - array[:, second, :], axis=1)
+    if np.any(np.isfinite(distances) & (distances <= 0.0)):
+        raise SpatialNormalizationError(
+            "reference-pair distance must be positive in every finite frame"
+        )
+
+    scales = distances[:, np.newaxis, np.newaxis]
+    normalized = array / scales
+    return ScaleNormalization(
+        values=normalized,
+        scales=scales,
+        reference_pair=(first, second),
+    )
