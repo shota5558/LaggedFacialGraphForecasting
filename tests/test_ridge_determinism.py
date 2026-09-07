@@ -54,6 +54,7 @@ def _matrix() -> DesignMatrix:
         y=y,
         subject_id=subjects,
         region_id=("mouth",) * n_rows,
+        target_dimensions=("vx",),
         forecast_origin=np.arange(n_rows, dtype=float),
         target_time=np.arange(1, n_rows + 1, dtype=float),
         feature_names=("left_cheek.vx", "jaw.vx"),
@@ -99,6 +100,7 @@ def test_primary_ridge_path_is_deterministic_for_identical_inputs() -> None:
     assert first_selected == second_selected
     assert first_fit.alpha == second_fit.alpha
     assert first_fit.training_row_count == second_fit.training_row_count
+    assert first_fit.target_dimensions == second_fit.target_dimensions == ("vx",)
     assert np.array_equal(
         first_fit.pipeline.named_steps["scaler"].mean_,
         second_fit.pipeline.named_steps["scaler"].mean_,
