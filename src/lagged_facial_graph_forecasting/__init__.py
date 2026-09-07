@@ -9,6 +9,7 @@ from .contracts import (
     SplitManifest,
 )
 from .scientific_config import ScientificConfigError, load_scientific_config
+from .synthetic import generate_synthetic_face_time_series
 
 __all__ = [
     "ContractError",
@@ -18,5 +19,6 @@ __all__ = [
     "PredictionArtifact",
     "SplitManifest",
     "ScientificConfigError",
+    "generate_synthetic_face_time_series",
     "load_scientific_config",
 ]
