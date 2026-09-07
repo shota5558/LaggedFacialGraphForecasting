@@ -25,7 +25,7 @@ reused_tests:
   - tests/test_interpolation_policy.py
   - tests/test_subject_sequence_assembly.py
   - tests/test_core_contract_io.py
-  - tests/test_subject_sequence_serialization.py
+  - tests/test_face_time_series_serialization.py
 
 tests:
   workflow: tests
@@ -33,6 +33,7 @@ tests:
   job_id: 101841325896
   head_sha: 70c5e12634d7e4a022bbe2946db229a83f799338
   result: success
+  suite_result: 375 passed in 2.33s
 
 scientific_checks:
   - Lane A unit tests preserve subject identity and observed temporal provenance
