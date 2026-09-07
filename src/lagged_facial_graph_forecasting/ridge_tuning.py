@@ -38,6 +38,16 @@ class RidgeInnerFoldScore:
     n_val_valid: int
 
 
+@dataclass(frozen=True, slots=True)
+class RidgeAlphaScore:
+    """Deterministic inner-fold aggregate for one Ridge alpha candidate."""
+
+    alpha: float
+    mean_rmse: float
+    fold_count: int
+    total_val_valid: int
+
+
 def normalize_ridge_alpha_grid(
     values: Iterable[float] = DEFAULT_RIDGE_ALPHA_GRID,
 ) -> tuple[float, ...]:
@@ -162,3 +172,58 @@ def evaluate_ridge_inner_cv(
             )
 
     return tuple(scores)
+
+
+def aggregate_ridge_inner_cv_scores(
+    scores: Iterable[RidgeInnerFoldScore],
+) -> tuple[RidgeAlphaScore, ...]:
+    """Aggregate fold RMSE by alpha using an equal-weight mean across inner folds.
+
+    The aggregation is deliberately independent of outer-test data and does not
+    select an alpha.  Each inner fold contributes one RMSE regardless of its row
+    count; ``total_val_valid`` is retained as audit metadata rather than used as a
+    weight.  Every alpha must contain exactly the same unique inner-fold indices so
+    candidates are compared on an identical validation partition set.
+    """
+
+    score_rows = tuple(scores)
+    if not score_rows:
+        raise ValueError("Ridge inner-CV scores must not be empty")
+
+    by_alpha: dict[float, list[RidgeInnerFoldScore]] = {}
+    for score in score_rows:
+        alpha = float(score.alpha)
+        if not np.isfinite(alpha) or alpha <= 0:
+            raise ValueError("Ridge inner-CV score alpha must be finite and > 0")
+        if not isinstance(score.inner_fold, int) or isinstance(score.inner_fold, bool):
+            raise ValueError("inner_fold must be an integer")
+        if score.inner_fold < 0:
+            raise ValueError("inner_fold must be >= 0")
+        if not np.isfinite(score.rmse) or score.rmse < 0:
+            raise ValueError("inner-CV RMSE must be finite and >= 0")
+        if score.n_val_valid <= 0:
+            raise ValueError("n_val_valid must be > 0")
+        by_alpha.setdefault(alpha, []).append(score)
+
+    expected_folds: tuple[int, ...] | None = None
+    aggregates: list[RidgeAlphaScore] = []
+    for alpha in sorted(by_alpha):
+        rows = sorted(by_alpha[alpha], key=lambda row: row.inner_fold)
+        folds = tuple(row.inner_fold for row in rows)
+        if len(set(folds)) != len(folds):
+            raise ValueError(f"duplicate inner-fold score for alpha={alpha}")
+        if expected_folds is None:
+            expected_folds = folds
+        elif folds != expected_folds:
+            raise ValueError("all Ridge alpha candidates must cover identical inner folds")
+
+        aggregates.append(
+            RidgeAlphaScore(
+                alpha=alpha,
+                mean_rmse=float(np.mean([row.rmse for row in rows])),
+                fold_count=len(rows),
+                total_val_valid=int(sum(row.n_val_valid for row in rows)),
+            )
+        )
+
+    return tuple(aggregates)
