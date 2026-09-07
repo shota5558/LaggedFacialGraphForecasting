@@ -7,7 +7,8 @@ verified_components:
   - Persistence DesignMatrix
   - Self-history DesignMatrix
   - Full-history DesignMatrix
-  - PCMCI ParentSet DesignMatrix
+  - incremental PCMCI DesignMatrix = fixed Self + selected inter-regional ParentSet links
+  - deterministic empty-parent reduction PCMCI -> Self
   - reversible feature provenance
   - tau >= h availability guard
   - missing-value alignment
@@ -24,24 +25,27 @@ relevant_tests:
 
 full_suite:
   workflow: tests
-  run_id: 34148712365
-  job_id: 101826210417
-  head_sha: 78bade3f4274b732931323ca8221bf5282fc91af
+  run_id: 34149026741
+  job_id: 101827151606
+  head_sha: c436c5510015c4a6b902e09050ca1ae666db773b
   python: 3.11.16
-  result: 185 passed in 1.16s
+  result: 196 passed in 1.75s
 
 acceptance_checks:
   primary_horizon_h1: PASS
   future_parent_after_forecast_origin: REJECTED
+  fixed_self_subset_of_pcmci: PASS
+  pcmci_subset_of_full_for_common_lag_space: PASS
+  empty_interregional_parentset_reduces_to_self: PASS
   source_region_dimension_lag_provenance: PASS
   train_test_feature_order_contract: PASS
   missingness_alignment: PASS
   pcmci_parentset_boundary_no_tigramite_dependency: PASS
 
 scientific_checks:
-  - no outer-test-dependent fitting, discovery, feature selection, or lag selection introduced
-  - no h>1 Primary path introduced
-  - no Sensitivity implementation introduced
+  - Self and PCMCI share the identical Self-history block, making their error difference an incremental inter-regional comparison
+  - no outer-test-dependent fallback, fitting, discovery, feature selection, or lag selection is introduced
+  - no h>1 Primary path or Sensitivity implementation is introduced
   - target-relative lag semantics remain frozen
 
 remaining_issue: none
