@@ -1,8 +1,14 @@
 """Versioned core contracts frozen after the V0 vertical slice.
 
-The original V0 contracts remain in ``contracts.py``.  This module adds the
+The original V0 contracts remain in ``contracts.py``. This module adds the
 remaining cross-lane interfaces without coupling forecasting code to Tigramite,
 Null implementations, statistics code, or orchestration internals.
+
+Core-contract schema v2 is the reviewed migration required by Scientific Freeze
+v2. PCMCI+ + ParCorr discovery operates on scalar ``region × dimension`` nodes,
+so every retained parent must preserve both source- and target-component
+identity. Region-only projection is a reporting operation and must not destroy
+canonical discovery provenance.
 """
 
 from __future__ import annotations
@@ -15,7 +21,7 @@ import numpy as np
 
 from .contracts import ContractError
 
-CORE_CONTRACT_SCHEMA_VERSION = 1
+CORE_CONTRACT_SCHEMA_VERSION = 2
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -58,19 +64,39 @@ def _schema_version(value: int) -> int:
 
 @dataclass(frozen=True, slots=True, order=True)
 class ParentLink:
-    """One canonical lagged parent: source facial region at a positive lag."""
+    """One canonical scalar component-to-component lagged parent link.
+
+    ``source_dimension`` and ``target_dimension`` preserve the exact Tigramite
+    scalar-node provenance required by Scientific Freeze v2. Their ``"value"``
+    defaults keep legacy scalar (D=1) fixtures source-compatible; multicomponent
+    discovery must always populate the actual dimension labels explicitly.
+    """
 
     source_region: str
     lag: int
+    source_dimension: str = "value"
+    target_dimension: str = "value"
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "source_region", _non_empty_text(self.source_region, "source_region"))
+        object.__setattr__(
+            self, "source_region", _non_empty_text(self.source_region, "source_region")
+        )
         object.__setattr__(self, "lag", _positive_int(self.lag, "lag"))
+        object.__setattr__(
+            self,
+            "source_dimension",
+            _non_empty_text(self.source_dimension, "source_dimension"),
+        )
+        object.__setattr__(
+            self,
+            "target_dimension",
+            _non_empty_text(self.target_dimension, "target_dimension"),
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class ParentSet:
-    """Canonical boundary between discovery and forecasting."""
+    """Canonical Tigramite-independent boundary between discovery and forecasting."""
 
     outer_fold: int
     target_region: str
@@ -79,16 +105,29 @@ class ParentSet:
     schema_version: int = CORE_CONTRACT_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "outer_fold", _non_negative_int(self.outer_fold, "outer_fold"))
-        object.__setattr__(self, "target_region", _non_empty_text(self.target_region, "target_region"))
-        object.__setattr__(self, "discovery_method", _non_empty_text(self.discovery_method, "discovery_method"))
+        object.__setattr__(
+            self, "outer_fold", _non_negative_int(self.outer_fold, "outer_fold")
+        )
+        object.__setattr__(
+            self,
+            "target_region",
+            _non_empty_text(self.target_region, "target_region"),
+        )
+        object.__setattr__(
+            self,
+            "discovery_method",
+            _non_empty_text(self.discovery_method, "discovery_method"),
+        )
         object.__setattr__(self, "schema_version", _schema_version(self.schema_version))
 
         parents = tuple(self.parents)
         if any(not isinstance(parent, ParentLink) for parent in parents):
             raise ContractError("parents entries must be ParentLink instances")
         if len(set(parents)) != len(parents):
-            raise ContractError("parents must not contain duplicate (source_region, lag) links")
+            raise ContractError(
+                "parents must not contain duplicate "
+                "(source_region, lag, source_dimension, target_dimension) links"
+            )
         object.__setattr__(self, "parents", parents)
 
 
@@ -96,10 +135,10 @@ class ParentSet:
 class NullMapping:
     """Frozen falsification mapping constructed without outer-test information.
 
-    Region/lag based Nulls use equal-length ``source_parents`` and
-    ``mapped_parents``.  Temporal Nulls can additionally carry a deterministic row
-    permutation.  This keeps the mapping contract independent of the specific Null
-    algorithm while preserving all information needed for reproducibility.
+    Region/lag/component based Nulls use equal-length ``source_parents`` and
+    ``mapped_parents``. Temporal Nulls can additionally carry a deterministic row
+    permutation. Component identity is retained so Null generation cannot silently
+    change the scientific feature-selection rule.
     """
 
     outer_fold: int
@@ -112,15 +151,26 @@ class NullMapping:
     schema_version: int = CORE_CONTRACT_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "outer_fold", _non_negative_int(self.outer_fold, "outer_fold"))
-        object.__setattr__(self, "target_region", _non_empty_text(self.target_region, "target_region"))
-        object.__setattr__(self, "condition", _non_empty_text(self.condition, "condition"))
+        object.__setattr__(
+            self, "outer_fold", _non_negative_int(self.outer_fold, "outer_fold")
+        )
+        object.__setattr__(
+            self,
+            "target_region",
+            _non_empty_text(self.target_region, "target_region"),
+        )
+        object.__setattr__(
+            self, "condition", _non_empty_text(self.condition, "condition")
+        )
         object.__setattr__(self, "seed", _non_negative_int(self.seed, "seed"))
         object.__setattr__(self, "schema_version", _schema_version(self.schema_version))
 
         source_parents = tuple(self.source_parents)
         mapped_parents = tuple(self.mapped_parents)
-        if any(not isinstance(parent, ParentLink) for parent in source_parents + mapped_parents):
+        if any(
+            not isinstance(parent, ParentLink)
+            for parent in source_parents + mapped_parents
+        ):
             raise ContractError("NullMapping parents entries must be ParentLink instances")
         if len(source_parents) != len(mapped_parents):
             raise ContractError("source_parents and mapped_parents must have equal length")
@@ -160,9 +210,15 @@ class MetricsResult:
     schema_version: int = CORE_CONTRACT_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "outer_fold", _non_negative_int(self.outer_fold, "outer_fold"))
+        object.__setattr__(
+            self, "outer_fold", _non_negative_int(self.outer_fold, "outer_fold")
+        )
         for field_name in ("subject_id", "region_id", "condition", "metric_name"):
-            object.__setattr__(self, field_name, _non_empty_text(getattr(self, field_name), field_name))
+            object.__setattr__(
+                self,
+                field_name,
+                _non_empty_text(getattr(self, field_name), field_name),
+            )
         value = float(self.value)
         if not np.isfinite(value):
             raise ContractError("value must be finite")
@@ -184,17 +240,39 @@ class ExperimentArtifact:
     schema_version: int = CORE_CONTRACT_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "experiment_id", _non_empty_text(self.experiment_id, "experiment_id"))
-        object.__setattr__(self, "artifact_type", _non_empty_text(self.artifact_type, "artifact_type"))
-        object.__setattr__(self, "relative_path", _relative_posix_path(self.relative_path, "relative_path"))
+        object.__setattr__(
+            self,
+            "experiment_id",
+            _non_empty_text(self.experiment_id, "experiment_id"),
+        )
+        object.__setattr__(
+            self,
+            "artifact_type",
+            _non_empty_text(self.artifact_type, "artifact_type"),
+        )
+        object.__setattr__(
+            self,
+            "relative_path",
+            _relative_posix_path(self.relative_path, "relative_path"),
+        )
         sha256 = _non_empty_text(self.sha256, "sha256").lower()
         if not _SHA256_RE.fullmatch(sha256):
-            raise ContractError("sha256 must contain exactly 64 lowercase hexadecimal characters")
+            raise ContractError(
+                "sha256 must contain exactly 64 lowercase hexadecimal characters"
+            )
         object.__setattr__(self, "sha256", sha256)
         if self.outer_fold is not None:
-            object.__setattr__(self, "outer_fold", _non_negative_int(self.outer_fold, "outer_fold"))
+            object.__setattr__(
+                self,
+                "outer_fold",
+                _non_negative_int(self.outer_fold, "outer_fold"),
+            )
         if self.condition is not None:
-            object.__setattr__(self, "condition", _non_empty_text(self.condition, "condition"))
+            object.__setattr__(
+                self,
+                "condition",
+                _non_empty_text(self.condition, "condition"),
+            )
         object.__setattr__(self, "schema_version", _schema_version(self.schema_version))
 
 
@@ -210,13 +288,27 @@ class ExperimentConfig:
     schema_version: int = CORE_CONTRACT_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "experiment_id", _non_empty_text(self.experiment_id, "experiment_id"))
+        object.__setattr__(
+            self,
+            "experiment_id",
+            _non_empty_text(self.experiment_id, "experiment_id"),
+        )
         object.__setattr__(
             self,
             "scientific_config_path",
-            _relative_posix_path(self.scientific_config_path, "scientific_config_path"),
+            _relative_posix_path(
+                self.scientific_config_path, "scientific_config_path"
+            ),
         )
-        object.__setattr__(self, "run_config_path", _relative_posix_path(self.run_config_path, "run_config_path"))
-        object.__setattr__(self, "artifact_root", _relative_posix_path(self.artifact_root, "artifact_root"))
+        object.__setattr__(
+            self,
+            "run_config_path",
+            _relative_posix_path(self.run_config_path, "run_config_path"),
+        )
+        object.__setattr__(
+            self,
+            "artifact_root",
+            _relative_posix_path(self.artifact_root, "artifact_root"),
+        )
         object.__setattr__(self, "seed", _non_negative_int(self.seed, "seed"))
         object.__setattr__(self, "schema_version", _schema_version(self.schema_version))
