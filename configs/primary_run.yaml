@@ -1,0 +1,5 @@
+schema_version: 1
+experiment_id: primary
+scientific_config_path: configs/scientific_freeze.yaml
+artifact_root: artifacts/primary
+seed: 20260908
