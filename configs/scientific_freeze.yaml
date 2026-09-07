@@ -1,0 +1,26 @@
+schema_version: 1
+
+primary:
+  discovery: pcmci_plus
+  ci_test: parcorr
+  forecaster: ridge
+  horizon: 1
+
+evaluation:
+  split_unit: subject
+  outer_test_usage: frozen_final_evaluation_only
+
+selection_scope:
+  preprocessing_fit: outer_train_only
+  discovery: outer_train_only
+  ridge_tuning: outer_train_only
+  null_mapping: outer_train_only
+  feature_selection: outer_train_only
+  lag_selection: outer_train_only
+
+sensitivity:
+  execute_after_primary_freeze: true
+
+artifacts:
+  primary_root: artifacts/primary
+  sensitivity_root: artifacts/sensitivity
