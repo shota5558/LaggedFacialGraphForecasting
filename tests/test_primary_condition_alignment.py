@@ -28,33 +28,38 @@ def _series() -> FaceTimeSeries:
 def test_primary_conditions_can_share_exact_frozen_row_support() -> None:
     series = _series()
     alignment_lag = 3
+    target_dimension = "vx"
 
     persistence = build_persistence_design_matrix(
         series,
         target_region="mouth",
         alignment_lag=alignment_lag,
+        target_dimension=target_dimension,
     )
     self_history = build_self_history_design_matrix(
         series,
         target_region="mouth",
         lags=(1, 2),
         alignment_lag=alignment_lag,
+        target_dimension=target_dimension,
     )
     full_history = build_full_history_design_matrix(
         series,
         target_region="mouth",
         lags=(1, 2, 3),
         alignment_lag=alignment_lag,
+        target_dimension=target_dimension,
     )
     pcmci = build_pcmci_parent_design_matrix(
         series,
         parent_set=ParentSet(
             outer_fold=0,
             target_region="mouth",
-            parents=(ParentLink(source_region="jaw", lag=3),),
+            parents=(ParentLink("jaw", 3, "vx", "vx"),),
         ),
         self_lags=(1, 2),
         alignment_lag=alignment_lag,
+        target_dimension=target_dimension,
     )
 
     matrices = (persistence, self_history, full_history, pcmci)
@@ -65,6 +70,7 @@ def test_primary_conditions_can_share_exact_frozen_row_support() -> None:
         assert matrix.subject_id == persistence.subject_id
         assert matrix.region_id == persistence.region_id
 
+    assert persistence.y.ndim == 1
     assert np.array_equal(persistence.target_time, np.arange(3, 8, dtype=float))
     assert persistence.feature_lags == (1, 1)
     assert self_history.feature_lags == (1, 1, 2, 2)
@@ -98,10 +104,11 @@ def test_alignment_lag_does_not_add_a_predictor() -> None:
             parent_set=ParentSet(
                 outer_fold=0,
                 target_region="mouth",
-                parents=(ParentLink(source_region="jaw", lag=3),),
+                parents=(ParentLink("jaw", 3, "vx", "vx"),),
             ),
             self_lags=(1,),
             alignment_lag=2,
+            target_dimension="vx",
         ),
     ],
 )
