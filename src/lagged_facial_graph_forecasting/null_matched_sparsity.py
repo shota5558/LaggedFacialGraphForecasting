@@ -101,6 +101,12 @@ def build_matched_sparsity_candidate_space(
             for lag in range(PRIMARY_LAG_MIN, PRIMARY_TAU_MAX + 1)
         )
     )
+    missing_selected = tuple(sorted(set(parent_set.parents) - set(candidates)))
+    if missing_selected:
+        raise MatchedSparsityMappingError(
+            "candidate universe must contain every selected ParentLink; "
+            "check frozen region_ids, dimension_ids, cross-region semantics, and Primary lag domain"
+        )
     return candidates
 
 
