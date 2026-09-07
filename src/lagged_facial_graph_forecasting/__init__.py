@@ -30,7 +30,9 @@ from .runner import FoldRunResult, MinimalFoldRunner, OuterTestLockedError
 from .scientific_config import ScientificConfigError, load_scientific_config
 from .split_manifest_io import (
     SPLIT_MANIFEST_SCHEMA_VERSION,
+    SplitManifestReadError,
     build_split_manifest_payload,
+    read_split_manifest_json,
     write_split_manifest_json,
 )
 from .splits import (
@@ -66,6 +68,7 @@ __all__ = [
     "PredictionArtifact",
     "SPLIT_MANIFEST_SCHEMA_VERSION",
     "SplitManifest",
+    "SplitManifestReadError",
     "ScientificConfigError",
     "SubjectMetadataLoadError",
     "SubjectMetadataValidationError",
@@ -81,6 +84,7 @@ __all__ = [
     "load_scientific_config",
     "load_subject_metadata_csv",
     "predict_ridge_forecaster",
+    "read_split_manifest_json",
     "validate_subject_ids",
     "velocity_rmse",
     "write_split_manifest_json",
