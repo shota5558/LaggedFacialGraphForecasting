@@ -67,26 +67,31 @@ def test_full_feature_provenance_tracks_region_dimension_and_lag() -> None:
     assert set(matrix.region_id) == {"mouth"}
 
 
-def test_pcmci_feature_provenance_is_fixed_self_plus_selected_interregional() -> None:
+def test_pcmci_feature_provenance_is_fixed_self_plus_exact_selected_component() -> None:
     parent_set = ParentSet(
         outer_fold=2,
         target_region="mouth",
         parents=(
-            ParentLink(source_region="jaw", lag=3),
-            ParentLink(source_region="mouth", lag=1),
+            ParentLink("jaw", 3, "vx", "vx"),
+            ParentLink("jaw", 2, "vy", "vy"),
+            ParentLink("mouth", 1, "vy", "vx"),
         ),
     )
 
     matrix = build_pcmci_parent_design_matrix(
-        _series(), parent_set=parent_set, self_lags=(1,)
+        _series(),
+        parent_set=parent_set,
+        self_lags=(1,),
+        target_dimension="vx",
     )
 
     assert _provenance(matrix) == (
         ("mouth.vx", 1),
         ("mouth.vy", 1),
         ("jaw.vx", 3),
-        ("jaw.vy", 3),
     )
+    assert "jaw.vy" not in matrix.feature_names
+    assert matrix.y.ndim == 1
     assert set(matrix.region_id) == {parent_set.target_region}
 
 
