@@ -5,7 +5,9 @@ import pytest
 
 from lagged_facial_graph_forecasting import FaceTimeSeries, ParentLink, ParentSet
 from lagged_facial_graph_forecasting.design_matrix import (
+    build_full_history_design_matrix,
     build_pcmci_parent_design_matrix,
+    build_self_history_design_matrix,
 )
 
 
@@ -34,39 +36,108 @@ def _parent_set() -> ParentSet:
         target_region="mouth",
         parents=(
             ParentLink(source_region="jaw", lag=2),
+            # A discovered self link must not replace or duplicate the fixed Self block.
             ParentLink(source_region="mouth", lag=1),
         ),
     )
 
 
-def test_pcmci_parent_matrix_uses_only_parent_set_links_in_parent_order() -> None:
+def _feature_keys(matrix) -> tuple[tuple[str, int], ...]:
+    return tuple(zip(matrix.feature_names, matrix.feature_lags, strict=True))
+
+
+def test_pcmci_matrix_is_fixed_self_plus_interregional_parent_links() -> None:
     matrix = build_pcmci_parent_design_matrix(
-        _series(), parent_set=_parent_set(), horizon=1
+        _series(), parent_set=_parent_set(), self_lags=(1,), horizon=1
     )
 
     assert np.array_equal(
         matrix.X,
         np.array(
             [
-                [100, 200, 11, 21],
-                [101, 201, 12, 22],
-                [102, 202, 13, 23],
-                [103, 203, 14, 24],
+                [11, 21, 100, 200],
+                [12, 22, 101, 201],
+                [13, 23, 102, 202],
+                [14, 24, 103, 203],
             ],
             dtype=float,
         ),
     )
     assert np.array_equal(
         matrix.y,
-        np.array(
-            [[12, 22], [13, 23], [14, 24], [15, 25]], dtype=float
-        ),
+        np.array([[12, 22], [13, 23], [14, 24], [15, 25]], dtype=float),
     )
-    assert matrix.feature_names == ("jaw.vx", "jaw.vy", "mouth.vx", "mouth.vy")
-    assert matrix.feature_lags == (2, 2, 1, 1)
+    assert matrix.feature_names == ("mouth.vx", "mouth.vy", "jaw.vx", "jaw.vy")
+    assert matrix.feature_lags == (1, 1, 2, 2)
     assert np.array_equal(matrix.forecast_origin, np.array([1, 2, 3, 4], dtype=float))
     assert np.array_equal(matrix.target_time, np.array([2, 3, 4, 5], dtype=float))
     assert matrix.region_id == ("mouth",) * 4
+
+
+def test_self_is_subset_of_pcmci_and_pcmci_is_subset_of_full() -> None:
+    series = _series()
+    self_matrix = build_self_history_design_matrix(
+        series, target_region="mouth", lags=(1, 2)
+    )
+    pcmci_matrix = build_pcmci_parent_design_matrix(
+        series,
+        parent_set=ParentSet(
+            outer_fold=0,
+            target_region="mouth",
+            parents=(ParentLink(source_region="jaw", lag=2),),
+        ),
+        self_lags=(1, 2),
+    )
+    full_matrix = build_full_history_design_matrix(
+        series, target_region="mouth", lags=(1, 2)
+    )
+
+    self_keys = set(_feature_keys(self_matrix))
+    pcmci_keys = set(_feature_keys(pcmci_matrix))
+    full_keys = set(_feature_keys(full_matrix))
+    assert self_keys < pcmci_keys
+    assert pcmci_keys <= full_keys
+
+
+def test_pcmci_uses_exact_same_self_feature_block_as_self_condition() -> None:
+    series = _series()
+    self_matrix = build_self_history_design_matrix(
+        series, target_region="mouth", lags=(1, 2)
+    )
+    pcmci_matrix = build_pcmci_parent_design_matrix(
+        series,
+        parent_set=ParentSet(
+            outer_fold=0,
+            target_region="mouth",
+            parents=(ParentLink(source_region="eye", lag=2),),
+        ),
+        self_lags=(1, 2),
+    )
+
+    n_self_features = self_matrix.X.shape[1]
+    assert pcmci_matrix.feature_names[:n_self_features] == self_matrix.feature_names
+    assert pcmci_matrix.feature_lags[:n_self_features] == self_matrix.feature_lags
+    assert np.array_equal(pcmci_matrix.X[:, :n_self_features], self_matrix.X)
+    assert np.array_equal(pcmci_matrix.y, self_matrix.y)
+    assert np.array_equal(pcmci_matrix.forecast_origin, self_matrix.forecast_origin)
+    assert np.array_equal(pcmci_matrix.target_time, self_matrix.target_time)
+
+
+def test_empty_parent_set_deterministically_reduces_pcmci_to_self() -> None:
+    series = _series()
+    parent_set = ParentSet(outer_fold=0, target_region="mouth", parents=())
+    self_matrix = build_self_history_design_matrix(
+        series, target_region="mouth", lags=(1, 2)
+    )
+    pcmci_matrix = build_pcmci_parent_design_matrix(
+        series, parent_set=parent_set, self_lags=(1, 2)
+    )
+
+    assert np.array_equal(pcmci_matrix.X, self_matrix.X)
+    assert np.array_equal(pcmci_matrix.y, self_matrix.y)
+    assert pcmci_matrix.feature_names == self_matrix.feature_names
+    assert pcmci_matrix.feature_lags == self_matrix.feature_lags
+    assert np.array_equal(pcmci_matrix.valid_mask, self_matrix.valid_mask)
 
 
 def test_pcmci_parent_matrix_propagates_parent_and_target_missingness() -> None:
@@ -97,13 +168,6 @@ def test_pcmci_parent_matrix_rejects_unknown_source_region() -> None:
     )
 
     with pytest.raises(ValueError, match="unknown source_region"):
-        build_pcmci_parent_design_matrix(_series(), parent_set=parent_set)
-
-
-def test_pcmci_parent_matrix_rejects_empty_parent_set() -> None:
-    parent_set = ParentSet(outer_fold=0, target_region="mouth", parents=())
-
-    with pytest.raises(ValueError, match="at least one parent"):
         build_pcmci_parent_design_matrix(_series(), parent_set=parent_set)
 
 
