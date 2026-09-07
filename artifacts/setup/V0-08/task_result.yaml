@@ -1,0 +1,37 @@
+task_id: V0-08
+task_name: Result serialization
+status: PASS
+
+implemented:
+  - existing deterministic V0 JSON serialization reused without duplication
+  - schema_version, outer_fold, condition, feature provenance, model provenance, metric, and row provenance serialized
+  - invalid numeric values serialized as JSON null with allow_nan disabled
+  - valid_mask booleans preserved as JSON booleans
+  - byte-deterministic output enforced through sorted keys and stable formatting
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/artifacts.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_v0_result_serialization.py
+
+tests:
+  workflow: tests
+  run_id: 34145470019
+  job_id: 101816452809
+  head_sha: 5831b1f3891af795ee2b57308a7599e3ad401b3e
+  python: 3.11.16
+  result: 100 passed in 1.20s
+
+scientific_checks:
+  - serialized result preserves subject, region, forecast_origin, target_time, feature names, and feature lags
+  - fitted model feature provenance must match the DesignMatrix before serialization
+  - serialization performs no fitting, tuning, discovery, Null construction, or evaluation-dependent configuration change
+  - invalid rows remain explicit through valid_mask and null-valued predictions/targets
+  - deterministic serialization supports reproducible artifact comparison
+  - no Sensitivity path or real-data path was introduced
+
+artifacts:
+  - artifacts/setup/V0-08/task_result.yaml
+
+remaining_issue: none
+next_task: V0-09
