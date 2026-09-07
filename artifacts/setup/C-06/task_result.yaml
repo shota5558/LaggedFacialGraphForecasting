@@ -1,0 +1,48 @@
+task_id: C-06
+task_name: PCMCI ParentSet matrix
+status: PASS
+
+implemented:
+  - added build_pcmci_parent_design_matrix consuming only the canonical ParentSet contract
+  - forecasting-side matrix construction has no Tigramite dependency
+  - each selected region-level ParentLink contributes every FaceTimeSeries dimension at its selected target-relative lag
+  - ParentSet parent order is preserved and dimensions follow FaceTimeSeries.dimension order
+  - common target/forecast-origin alignment is determined by the maximum selected parent lag
+  - target/source region and lag provenance are preserved in DesignMatrix metadata
+  - parent-feature and target missingness propagate into row-level validity
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_pcmci_parent_design_matrix.py
+  - artifacts/setup/C-06/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34148333928
+  head_sha: 49e2a92ed7e68c2bee7c0f0b42400a8373e45638
+  result: success
+  workflow_scope: full pytest suite
+  cases:
+    - only ParentSet links are used and parent order is preserved
+    - target values and forecast-origin/target-time alignment are correct
+    - source region and lag provenance are preserved
+    - parent and target missingness propagate to row validity
+    - unknown source region is rejected
+    - empty ParentSet is rejected
+    - non-Primary h > 1 is rejected
+
+scientific_checks:
+  - ParentSet remains the canonical PCMCI+/forecasting interface
+  - Ridge/design-matrix code does not import or inspect Tigramite APIs
+  - only frozen ParentSet region-lag links define PCMCI condition inputs
+  - target-relative lag semantics remain source = target - tau
+  - Primary h=1 remains enforced by the shared alignment contract
+  - no outer-test-dependent discovery, feature selection, lag selection, fitting, or Null construction is introduced
+  - no Sensitivity method is introduced
+
+artifacts:
+  - artifacts/setup/C-06/task_result.yaml
+
+remaining_issue: none
+next_task: C-07
