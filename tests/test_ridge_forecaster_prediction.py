@@ -14,6 +14,7 @@ def _matrix(
     *,
     feature_names: tuple[str, ...] = ("mouth.vx", "mouth.vy"),
     feature_lags: tuple[int, ...] = (1, 1),
+    target_dimensions: tuple[str, ...] = ("vx",),
     valid_mask: np.ndarray | None = None,
 ) -> DesignMatrix:
     if valid_mask is None:
@@ -26,6 +27,7 @@ def _matrix(
         y=np.array([[0.0], [1.0], [1000.0], [3.0]], dtype=float),
         subject_id=("s01", "s01", "s01", "s01"),
         region_id=("mouth", "mouth", "mouth", "mouth"),
+        target_dimensions=target_dimensions,
         forecast_origin=np.array([1.0, 2.0, 3.0, 4.0]),
         target_time=np.array([2.0, 3.0, 4.0, 5.0]),
         feature_names=feature_names,
@@ -34,7 +36,7 @@ def _matrix(
     )
 
 
-def test_prediction_preserves_row_provenance_and_masks_invalid_rows() -> None:
+def test_prediction_preserves_row_and_target_provenance_and_masks_invalid_rows() -> None:
     train = _matrix(valid_mask=np.array([True, True, False, True], dtype=bool))
     fitted = fit_ridge_forecaster(train, alpha=1.0)
 
@@ -49,6 +51,7 @@ def test_prediction_preserves_row_provenance_and_masks_invalid_rows() -> None:
     assert artifact.condition == "self"
     assert artifact.subject_id == ("s01",) * 4
     assert artifact.region_id == ("mouth",) * 4
+    assert artifact.target_dimensions == ("vx",)
     assert np.array_equal(artifact.forecast_origin, np.array([1.0, 2.0, 3.0, 4.0]))
     assert np.array_equal(artifact.target_time, np.array([2.0, 3.0, 4.0, 5.0]))
     assert np.array_equal(artifact.valid_mask, np.array([True, False, True, True]))
@@ -70,6 +73,14 @@ def test_prediction_rejects_feature_lag_drift() -> None:
     changed = _matrix(feature_lags=(1, 2))
 
     with pytest.raises(ValueError, match="feature_lags"):
+        predict_ridge_forecaster(fitted, changed, outer_fold=0, condition="self")
+
+
+def test_prediction_rejects_target_dimension_drift() -> None:
+    fitted = fit_ridge_forecaster(_matrix(), alpha=1.0)
+    changed = _matrix(target_dimensions=("vy",))
+
+    with pytest.raises(ValueError, match="target_dimensions"):
         predict_ridge_forecaster(fitted, changed, outer_fold=0, condition="self")
 
 
