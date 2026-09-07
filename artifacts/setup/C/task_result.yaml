@@ -1,0 +1,58 @@
+task_id: C
+task_name: Design Matrix
+status: PASS
+
+completed_tasks:
+  - C-00 lag indexing utility
+  - C-01 target alignment
+  - C-02 horizon alignment
+  - C-03 Persistence matrix
+  - C-04 Self-history matrix
+  - C-05 Full-history matrix
+  - C-06 PCMCI ParentSet matrix
+  - C-07 feature provenance
+  - C-08 tau >= h availability guard
+  - C-09 missing-value alignment
+  - C-10 train/test feature consistency
+  - C-11 unit tests
+
+canonical_implementation:
+  alignment: src/lagged_facial_graph_forecasting/alignment.py
+  builders: src/lagged_facial_graph_forecasting/design_matrix.py
+  prediction_feature_contract: src/lagged_facial_graph_forecasting/forecaster.py
+
+scientific_contract:
+  primary_horizon: 1
+  target_relative_lags: true
+  future_parent_after_forecast_origin: rejected
+  source_region_dimension_lag_provenance: lossless
+  pcmci_inputs_from_frozen_parentset_only: true
+  train_test_feature_identity: enforced
+  missingness_alignment: enforced
+  outer_test_dependent_selection: false
+  sensitivity_methods_introduced: false
+
+validation:
+  workflow: tests
+  run_id: 34148712365
+  job_id: 101826210417
+  validated_head_sha: 78bade3f4274b732931323ca8221bf5282fc91af
+  python: 3.11.16
+  result: 185 passed in 1.16s
+
+evidence:
+  - artifacts/setup/C-00/task_result.yaml
+  - artifacts/setup/C-01/task_result.yaml
+  - artifacts/setup/C-02/task_result.yaml
+  - artifacts/setup/C-03/task_result.yaml
+  - artifacts/setup/C-04/task_result.yaml
+  - artifacts/setup/C-05/task_result.yaml
+  - artifacts/setup/C-06/task_result.yaml
+  - artifacts/setup/C-07/task_result.yaml
+  - artifacts/setup/C-08/task_result.yaml
+  - artifacts/setup/C-09/task_result.yaml
+  - artifacts/setup/C-10/task_result.yaml
+  - artifacts/setup/C-11/task_result.yaml
+
+remaining_issue: none
+next_task: E-00
