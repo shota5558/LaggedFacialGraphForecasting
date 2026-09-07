@@ -5,6 +5,7 @@ import pytest
 
 from lagged_facial_graph_forecasting.interpolation_policy import (
     InterpolationPolicy,
+    InterpolationResult,
     apply_interpolation_policy,
 )
 from lagged_facial_graph_forecasting.missingness import handle_missing_frames
@@ -68,6 +69,25 @@ def test_invalid_observation_remains_in_place_under_mask() -> None:
     assert np.isnan(series.X[1, 0, 1])
     assert not series.valid_mask[1, 0, 1]
     assert series.X.shape[0] == 3
+
+
+def test_nonfinite_observation_cannot_be_marked_valid_at_assembly_boundary() -> None:
+    processed = InterpolationResult(
+        values=np.array([[[1.0, np.nan]], [[2.0, 3.0]]], dtype=np.float64),
+        valid_mask=np.ones((2, 1, 2), dtype=np.bool_),
+        interpolated_mask=np.zeros((2, 1, 2), dtype=np.bool_),
+        policy=InterpolationPolicy(method="none"),
+    )
+
+    with pytest.raises(SequenceAssemblyError, match="non-finite values cannot be marked valid"):
+        assemble_subject_sequence(
+            processed,
+            subject_id="subject-invalid-evidence",
+            time_index=np.array([0.0, 1.0]),
+            region_id=("mouth",),
+            dimension=("vx", "vy"),
+            sampling_rate=1.0,
+        )
 
 
 def test_time_region_dimension_and_subject_contracts_are_enforced() -> None:
