@@ -164,8 +164,6 @@ def _resolve_pcmci_target_dimension(
     if requested is not None:
         if requested not in series.dimension:
             raise ValueError(f"unknown target_dimension: {requested!r}")
-        # Validate every stored target label even though links for other target
-        # components are filtered below. This prevents lossy/ambiguous v2 artifacts.
         for parent in parent_set.parents:
             _resolve_link_dimension(
                 series, parent.target_dimension, field_name="target_dimension"
@@ -190,6 +188,12 @@ def _resolve_pcmci_target_dimension(
             "target_dimension is required when ParentSet contains multiple target components"
         )
     return next(iter(target_dimensions))
+
+
+def _output_dimensions(
+    series: FaceTimeSeries, target_dimension: str | None
+) -> tuple[str, ...]:
+    return series.dimension if target_dimension is None else (target_dimension,)
 
 
 def build_self_history_design_matrix(
@@ -249,6 +253,7 @@ def build_self_history_design_matrix(
         y=y,
         subject_id=(series.subject_id,) * row_count,
         region_id=(target_region,) * row_count,
+        target_dimensions=_output_dimensions(series, target_dimension),
         forecast_origin=series.time_index[origin_indices],
         target_time=series.time_index[target_indices],
         feature_names=tuple(feature_names),
@@ -332,6 +337,7 @@ def build_full_history_design_matrix(
         y=y,
         subject_id=(series.subject_id,) * row_count,
         region_id=(target_region,) * row_count,
+        target_dimensions=_output_dimensions(series, target_dimension),
         forecast_origin=series.time_index[origin_indices],
         target_time=series.time_index[target_indices],
         feature_names=tuple(feature_names),
@@ -450,6 +456,7 @@ def build_pcmci_parent_design_matrix(
         y=y,
         subject_id=(series.subject_id,) * row_count,
         region_id=(target_region,) * row_count,
+        target_dimensions=(resolved_target_dimension,),
         forecast_origin=series.time_index[origin_indices],
         target_time=series.time_index[target_indices],
         feature_names=tuple(feature_names),
