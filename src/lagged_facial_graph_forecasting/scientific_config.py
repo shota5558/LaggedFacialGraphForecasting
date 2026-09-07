@@ -18,7 +18,7 @@ class ScientificConfigError(ValueError):
 
 
 _EXPECTED: dict[str, Any] = {
-    "schema_version": 5,
+    "schema_version": 6,
     "primary": {
         "discovery": "pcmci_plus",
         "ci_test": "parcorr",
@@ -55,6 +55,21 @@ _EXPECTED: dict[str, Any] = {
                 "support": "complete_grid_target_folds_only",
                 "same_units_across_all_deltas": True,
                 "report_unevaluable_counts": True,
+            },
+        },
+        "matched_sparsity": {
+            "repeat_count": 100,
+            "seed_source": "split_manifest_seed",
+            "repeat_aggregation": "median_error_across_repeats_per_subject_region",
+        },
+        "statistics": {
+            "paired_unit": "subject",
+            "point_aggregation": "median",
+            "bootstrap": {
+                "confidence_level": 0.95,
+                "n_resamples": 10000,
+                "method": "percentile",
+                "seed_source": "experiment_seed",
             },
         },
     },

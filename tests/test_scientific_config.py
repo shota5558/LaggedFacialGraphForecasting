@@ -27,7 +27,7 @@ def _write_config(tmp_path: Path, config: dict) -> Path:
 def test_scientific_freeze_loads() -> None:
     config = load_scientific_config(CONFIG_PATH)
 
-    assert config["schema_version"] == 5
+    assert config["schema_version"] == 6
     assert config["primary"]["discovery"] == "pcmci_plus"
     assert config["primary"]["ci_test"] == "parcorr"
     assert config["primary"]["forecaster"] == "ridge"
@@ -55,6 +55,21 @@ def test_scientific_freeze_loads() -> None:
             "report_unevaluable_counts": True,
         },
     }
+    assert config["primary"]["matched_sparsity"] == {
+        "repeat_count": 100,
+        "seed_source": "split_manifest_seed",
+        "repeat_aggregation": "median_error_across_repeats_per_subject_region",
+    }
+    assert config["primary"]["statistics"] == {
+        "paired_unit": "subject",
+        "point_aggregation": "median",
+        "bootstrap": {
+            "confidence_level": 0.95,
+            "n_resamples": 10000,
+            "method": "percentile",
+            "seed_source": "experiment_seed",
+        },
+    }
     assert config["discovery_representation"]["node_unit"] == "region_dimension"
     assert config["discovery_representation"]["component_mapping"] == "identity"
     assert (
@@ -67,11 +82,12 @@ def test_scientific_freeze_loads() -> None:
     assert config["sensitivity"]["execute_after_primary_freeze"] is True
 
 
-def test_json_schema_freezes_lag_response_contract() -> None:
+def test_json_schema_freezes_primary_execution_contract() -> None:
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
 
-    assert schema["properties"]["schema_version"]["const"] == 5
-    lag_response = schema["properties"]["primary"]["properties"]["lag_response"]["properties"]
+    assert schema["properties"]["schema_version"]["const"] == 6
+    primary = schema["properties"]["primary"]["properties"]
+    lag_response = primary["lag_response"]["properties"]
     assert lag_response["delta_frames"]["const"] == [-2, -1, 0, 1, 2]
     assert lag_response["reference_delta"]["const"] == 0
     assert lag_response["shift_mode"]["const"] == "common_shift_all_selected_parents"
@@ -87,6 +103,21 @@ def test_json_schema_freezes_lag_response_contract() -> None:
         lag_response["aggregation"]["properties"]["support"]["const"]
         == "complete_grid_target_folds_only"
     )
+    matched_sparsity = primary["matched_sparsity"]["properties"]
+    assert matched_sparsity["repeat_count"]["const"] == 100
+    assert matched_sparsity["seed_source"]["const"] == "split_manifest_seed"
+    assert (
+        matched_sparsity["repeat_aggregation"]["const"]
+        == "median_error_across_repeats_per_subject_region"
+    )
+    statistics = primary["statistics"]["properties"]
+    assert statistics["paired_unit"]["const"] == "subject"
+    assert statistics["point_aggregation"]["const"] == "median"
+    bootstrap = statistics["bootstrap"]["properties"]
+    assert bootstrap["confidence_level"]["const"] == 0.95
+    assert bootstrap["n_resamples"]["const"] == 10000
+    assert bootstrap["method"]["const"] == "percentile"
+    assert bootstrap["seed_source"]["const"] == "experiment_seed"
 
 
 def test_rejects_primary_drift(tmp_path: Path) -> None:
@@ -152,6 +183,52 @@ def test_rejects_lag_response_aggregation_support_drift(tmp_path: Path) -> None:
     with pytest.raises(
         ScientificConfigError,
         match="primary.lag_response.aggregation.support",
+    ):
+        load_scientific_config(_write_config(tmp_path, config))
+
+
+def test_rejects_matched_sparsity_repeat_count_drift(tmp_path: Path) -> None:
+    config = deepcopy(_load_raw())
+    config["primary"]["matched_sparsity"]["repeat_count"] = 1
+
+    with pytest.raises(ScientificConfigError, match="primary.matched_sparsity.repeat_count"):
+        load_scientific_config(_write_config(tmp_path, config))
+
+
+def test_rejects_matched_sparsity_seed_source_drift(tmp_path: Path) -> None:
+    config = deepcopy(_load_raw())
+    config["primary"]["matched_sparsity"]["seed_source"] = "runtime_random"
+
+    with pytest.raises(ScientificConfigError, match="primary.matched_sparsity.seed_source"):
+        load_scientific_config(_write_config(tmp_path, config))
+
+
+def test_rejects_bootstrap_resample_count_drift(tmp_path: Path) -> None:
+    config = deepcopy(_load_raw())
+    config["primary"]["statistics"]["bootstrap"]["n_resamples"] = 1000
+
+    with pytest.raises(
+        ScientificConfigError,
+        match="primary.statistics.bootstrap.n_resamples",
+    ):
+        load_scientific_config(_write_config(tmp_path, config))
+
+
+def test_rejects_bootstrap_method_drift(tmp_path: Path) -> None:
+    config = deepcopy(_load_raw())
+    config["primary"]["statistics"]["bootstrap"]["method"] = "BCa"
+
+    with pytest.raises(ScientificConfigError, match="primary.statistics.bootstrap.method"):
+        load_scientific_config(_write_config(tmp_path, config))
+
+
+def test_rejects_bootstrap_seed_source_drift(tmp_path: Path) -> None:
+    config = deepcopy(_load_raw())
+    config["primary"]["statistics"]["bootstrap"]["seed_source"] = "runtime_random"
+
+    with pytest.raises(
+        ScientificConfigError,
+        match="primary.statistics.bootstrap.seed_source",
     ):
         load_scientific_config(_write_config(tmp_path, config))
 
