@@ -1,14 +1,16 @@
 task_id: P0A
 task_name: Scientific Freeze
 status: PASS
-audit_type: existing_implementation_revalidation
-scientific_freeze_schema_version: 2
+audit_type: scientific_specification_update_and_revalidation
+scientific_freeze_schema_version: 3
 
 implemented:
   - machine-readable scientific freeze config
   - JSON Schema for the frozen scientific specification
   - strict loader and exact-value validator
   - Primary fixed to PCMCI+ + ParCorr + Ridge with h=1
+  - Primary PCMCI+ maximum lag fixed to tau_max=10 frames for every outer fold
+  - tau_max=10 is immutable with respect to outer-test, Sensitivity, and observed experimental outcomes
   - subject-level outer split and frozen-final-evaluation-only outer-test usage
   - preprocessing, discovery, Ridge tuning, and Null construction restricted to outer-train
   - Primary/Sensitivity separation with Sensitivity gated after PRIMARY FREEZE
@@ -24,31 +26,25 @@ files:
   - artifacts/setup/P0A/task_result.yaml
 
 tests:
-  validation_scope: latest scientific-freeze schema-v2 change and full regression suite
+  validation_scope: scientific-freeze schema-v3 tau_max=10 migration and full regression suite
   execution: github_actions
   python: 3.11.16
-  github_actions_run_id: 34157209975
-  github_actions_head: dc78cbd2e4bcb3a607b689311efdf35c0273113e
-  result: 392 passed, 1 warning
+  github_actions_run_id: 34160325231
+  github_actions_job_id: 101860583426
+  github_actions_head: 51ec0130f50855662430a73f68fe8e47773f1f6b
+  result: 433 passed, 1 warning in 2.28s
   conclusion: success
-  unchanged_since_validation:
-    - configs/scientific_freeze.yaml
-    - schemas/scientific_freeze.schema.json
-    - src/lagged_facial_graph_forecasting/scientific_config.py
-    - tests/test_scientific_config.py
-  current_dev_suite_note:
-    run_id: 34158439387
-    head: 1d9017c70eac414c514bfb39e2cb69be0acca3ef
-    conclusion: failure
-    classification: downstream Core Contract regression, outside P0A
-    failure: tests/test_core_contract_io.py fixture omits required DesignMatrix.target_dimensions
-    p0a_implication: none
+  warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; unrelated to Scientific Freeze correctness
 
 scientific_checks:
   primary_discovery: pcmci_plus
   primary_ci_test: parcorr
   primary_forecaster: ridge
   primary_horizon: 1
+  primary_tau_max_frames: 10
+  primary_tau_max_status: frozen_final
+  tau_max_outer_test_driven_change: forbidden
+  tau_max_sensitivity_driven_change: forbidden
   discovery_node_unit: region_dimension
   discovery_cross_region_only: true
   discovery_target_policy: per_dimension
@@ -61,13 +57,29 @@ scientific_checks:
   null_mapping: outer_train_only
   sensitivity_after_primary_freeze: true
 
+migration:
+  from_schema_version: 2
+  to_schema_version: 3
+  reason: >-
+    The study-specific Primary PCMCI+ maximum lag has now been explicitly decided
+    as tau_max=10 frames. Because this is a scientific parameter, the machine-readable
+    Scientific Freeze is versioned and exact-value validation rejects any drift.
+  impact_scope:
+    - configs/scientific_freeze.yaml
+    - schemas/scientific_freeze.schema.json
+    - scientific_config loader
+    - D-04 tau_max contract
+    - downstream D-06 run_pcmciplus configuration
+  migration_rule: >-
+    Primary runs created under Scientific Freeze v2 are not considered fully frozen
+    for discovery execution until migrated to v3 with tau_max=10.
+
 source_commits:
-  scientific_config_initial: c6694ad96d7e4a43744414bb0be7e49b4ebb563f
-  scientific_config_scope_update: 1a47620d9ceb19a270e94e0af9c89bf75275be29
-  loader_validator: 6678c380c99ce1167d04baedf12cce3f4cf2c3c6
-  tests_initial: 2c1d47ac81fe518c55c8893a11225308b3a272bf
-  discovery_component_tests: 010abd78c993f13efba14b72248821d17bf66ba6
-  schema_v2_freeze: dc78cbd2e4bcb3a607b689311efdf35c0273113e
+  schema_v2_component_freeze: dc78cbd2e4bcb3a607b689311efdf35c0273113e
+  schema_v3_tau_max_config: 893de3d4feb736234146e1e4cb62e083dca66e66
+  schema_v3_json_schema: eef2507ae85eff9234893e2ef6f49b1e2d3fc8d8
+  schema_v3_loader: 174c364ea964cfb14d609a93473ab9155e01b1e2
+  schema_v3_tests: 4ab74aa6f841671f50112ee01d79b325ebf3533b
 
 artifacts:
   - artifacts/setup/P0A/task_result.yaml
