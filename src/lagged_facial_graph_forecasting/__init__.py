@@ -10,6 +10,15 @@ from .contracts import (
     PredictionArtifact,
     SplitManifest,
 )
+from .core_contracts import (
+    CORE_CONTRACT_SCHEMA_VERSION,
+    ExperimentArtifact,
+    ExperimentConfig,
+    MetricsResult,
+    NullMapping,
+    ParentLink,
+    ParentSet,
+)
 from .design_matrix import build_self_history_design_matrix
 from .forecaster import (
     FittedRidgeForecaster,
@@ -24,14 +33,21 @@ from .synthetic import generate_synthetic_face_time_series
 
 __all__ = [
     "AlignedIndices",
+    "CORE_CONTRACT_SCHEMA_VERSION",
     "ContractError",
     "DesignMatrix",
+    "ExperimentArtifact",
+    "ExperimentConfig",
     "FaceTimeSeries",
     "FittedRidgeForecaster",
     "FoldRunResult",
     "InnerFold",
+    "MetricsResult",
     "MinimalFoldRunner",
+    "NullMapping",
     "OuterTestLockedError",
+    "ParentLink",
+    "ParentSet",
     "PredictionArtifact",
     "SplitManifest",
     "ScientificConfigError",
