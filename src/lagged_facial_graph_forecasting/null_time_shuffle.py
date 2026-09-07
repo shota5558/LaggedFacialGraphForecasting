@@ -1,18 +1,22 @@
-"""Primary coarse time-shuffle Null utilities (F-40/F-41).
+"""Primary coarse time-shuffle Null utilities (F-40/F-41/F-42).
 
-F-40 freezes only the scientific mapping rule: keep the exact PCMCI-selected
-cross-region ParentLinks and later destroy their temporal row correspondence. It does
-not inspect outer-test row counts or values and does not realize a permutation yet.
-F-41 generates a deterministic non-identity row permutation from only the frozen seed
-and an explicit row count. F-42 owns deterministic application.
+F-40 freezes the scientific rule: keep the exact PCMCI-selected cross-region
+ParentLinks and later destroy their temporal row correspondence. F-41 generates a
+deterministic non-identity row permutation from only the frozen seed and an explicit
+row count. F-42 applies that permutation only to the additional PCMCI cross-region
+feature block on the valid evaluation support, leaving Self-history, targets, row
+provenance, and missingness support unchanged.
 """
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import numpy as np
 
-from .contracts import SplitManifest
+from .contracts import DesignMatrix, SplitManifest
 from .core_contracts import NullMapping, ParentSet
+from .design_matrix import decode_feature_name, encode_feature_name
 from .leakage_guard import assert_null_construction_scope
 
 
@@ -32,9 +36,9 @@ def construct_time_shuffle_mapping(
     cross-region block*. Therefore region/lag/component identities are unchanged here;
     only row correspondence will be permuted downstream. The concrete permutation is
     intentionally empty at this construction boundary because its length depends on
-    the evaluation DesignMatrix row support, which is unavailable until evaluation.
-    The frozen SplitManifest seed records the stochastic provenance required by the
-    later generator.
+    the evaluation DesignMatrix valid-row support, which is unavailable until
+    evaluation. The frozen SplitManifest seed records the stochastic provenance
+    required by the later generator.
     """
 
     assert_null_construction_scope(manifest, construction_subject_ids)
@@ -56,6 +60,53 @@ def construct_time_shuffle_mapping(
     )
 
 
+def _validate_unrealized_time_shuffle_mapping(mapping: NullMapping) -> None:
+    if not isinstance(mapping, NullMapping):
+        raise TypeError("mapping must be a NullMapping")
+    if mapping.condition != "time-shuffle":
+        raise TimeShuffleMappingError(
+            "time-shuffle operation requires condition='time-shuffle'"
+        )
+    if mapping.source_parents != mapping.mapped_parents:
+        raise TimeShuffleMappingError(
+            "time-shuffle must preserve ParentLink identity before row permutation"
+        )
+    if mapping.permutation:
+        raise TimeShuffleMappingError(
+            "time-shuffle operation expects the frozen unrealized mapping rule"
+        )
+
+
+def _normalize_permutation(
+    permutation: Sequence[int], *, expected_length: int
+) -> tuple[int, ...]:
+    normalized = tuple(permutation)
+    if expected_length < 2:
+        raise TimeShuffleMappingError(
+            "time-shuffle requires at least two valid evaluation rows"
+        )
+    if len(normalized) != expected_length:
+        raise TimeShuffleMappingError(
+            "permutation length must equal the number of valid evaluation rows"
+        )
+    if any(
+        not isinstance(index, (int, np.integer))
+        or isinstance(index, (bool, np.bool_))
+        for index in normalized
+    ):
+        raise TimeShuffleMappingError("permutation entries must be integers")
+    normalized = tuple(int(index) for index in normalized)
+    if set(normalized) != set(range(expected_length)):
+        raise TimeShuffleMappingError(
+            "permutation must contain every valid-row index exactly once"
+        )
+    if normalized == tuple(range(expected_length)):
+        raise TimeShuffleMappingError(
+            "identity permutation does not implement the time-shuffle falsification"
+        )
+    return normalized
+
+
 def generate_time_shuffle_permutation(
     mapping: NullMapping,
     *,
@@ -71,20 +122,7 @@ def generate_time_shuffle_permutation(
     mapping an identity draw to a special fixed permutation.
     """
 
-    if not isinstance(mapping, NullMapping):
-        raise TypeError("mapping must be a NullMapping")
-    if mapping.condition != "time-shuffle":
-        raise TimeShuffleMappingError(
-            "permutation generation requires condition='time-shuffle'"
-        )
-    if mapping.source_parents != mapping.mapped_parents:
-        raise TimeShuffleMappingError(
-            "time-shuffle must preserve ParentLink identity before row permutation"
-        )
-    if mapping.permutation:
-        raise TimeShuffleMappingError(
-            "F-41 expects an unrealized time-shuffle mapping with empty permutation"
-        )
+    _validate_unrealized_time_shuffle_mapping(mapping)
     if (
         not isinstance(row_count, (int, np.integer))
         or isinstance(row_count, (bool, np.bool_))
@@ -99,3 +137,101 @@ def generate_time_shuffle_permutation(
         permutation = rng.permutation(row_count)
         if not np.array_equal(permutation, identity):
             return tuple(int(index) for index in permutation)
+
+
+def apply_time_shuffle_to_design_matrix(
+    matrix: DesignMatrix,
+    mapping: NullMapping,
+    *,
+    permutation: Sequence[int],
+) -> DesignMatrix:
+    """Permute only PCMCI-added cross-region features on valid rows.
+
+    The same row permutation is applied jointly to every selected cross-region column.
+    This preserves the selected feature vector's internal configuration while breaking
+    its temporal correspondence with the target and fixed Self-history block. Invalid
+    rows are not used as permutation donors or recipients, so missingness support and
+    the compared sample set remain identical across Self/PCMCI/time-shuffle conditions.
+
+    This function is intentionally single-subject and scalar-target. Canonical PCMCI
+    design matrices are built that way, and permitting cross-subject shuffling would
+    violate subject independence rather than merely falsify temporal alignment.
+    """
+
+    if not isinstance(matrix, DesignMatrix):
+        raise TypeError("matrix must be a DesignMatrix")
+    _validate_unrealized_time_shuffle_mapping(mapping)
+
+    subjects = set(matrix.subject_id)
+    if len(subjects) != 1:
+        raise TimeShuffleMappingError(
+            "time-shuffle must be applied within one subject at a time"
+        )
+    regions = set(matrix.region_id)
+    if regions != {mapping.target_region}:
+        raise TimeShuffleMappingError(
+            "DesignMatrix region_id must match the time-shuffle target_region"
+        )
+    if len(matrix.target_dimensions) != 1:
+        raise TimeShuffleMappingError(
+            "time-shuffle expects a scalar target-component PCMCI DesignMatrix"
+        )
+
+    valid_rows = np.flatnonzero(matrix.valid_mask)
+    normalized_permutation = _normalize_permutation(
+        permutation, expected_length=len(valid_rows)
+    )
+
+    target_dimension = matrix.target_dimensions[0]
+    expected_cross_keys = {
+        (
+            encode_feature_name(parent.source_region, parent.source_dimension),
+            parent.lag,
+        )
+        for parent in mapping.mapped_parents
+        if parent.source_region != mapping.target_region
+        and parent.target_dimension == target_dimension
+    }
+
+    cross_columns: list[int] = []
+    actual_cross_keys: set[tuple[str, int]] = set()
+    for column, (feature_name, lag) in enumerate(
+        zip(matrix.feature_names, matrix.feature_lags, strict=True)
+    ):
+        source_region, _ = decode_feature_name(feature_name)
+        if source_region == mapping.target_region:
+            continue
+        cross_columns.append(column)
+        actual_cross_keys.add((feature_name, lag))
+
+    if actual_cross_keys != expected_cross_keys:
+        missing = sorted(expected_cross_keys - actual_cross_keys)
+        unexpected = sorted(actual_cross_keys - expected_cross_keys)
+        raise TimeShuffleMappingError(
+            "DesignMatrix cross-region provenance must exactly match the mapped "
+            f"ParentLinks for target_dimension={target_dimension!r}; "
+            f"missing={missing}, unexpected={unexpected}"
+        )
+
+    shuffled_X = np.array(matrix.X, copy=True)
+    if cross_columns:
+        valid_cross_block = np.array(
+            shuffled_X[np.ix_(valid_rows, np.asarray(cross_columns, dtype=int))],
+            copy=True,
+        )
+        shuffled_X[np.ix_(valid_rows, np.asarray(cross_columns, dtype=int))] = (
+            valid_cross_block[np.asarray(normalized_permutation, dtype=int), :]
+        )
+
+    return DesignMatrix(
+        X=shuffled_X,
+        y=np.array(matrix.y, copy=True),
+        subject_id=matrix.subject_id,
+        region_id=matrix.region_id,
+        target_dimensions=matrix.target_dimensions,
+        forecast_origin=np.array(matrix.forecast_origin, copy=True),
+        target_time=np.array(matrix.target_time, copy=True),
+        feature_names=matrix.feature_names,
+        feature_lags=matrix.feature_lags,
+        valid_mask=np.array(matrix.valid_mask, copy=True),
+    )
