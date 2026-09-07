@@ -1,0 +1,64 @@
+task_id: D-04
+task_name: PCMCI+ tau_max freeze
+status: FAIL
+
+implemented:
+  - no scientific parameter value was invented or inferred
+  - audited the existing Primary PCMCI+ configuration, Primary run descriptor, research plan, and Issue #11 for an explicit tau_max freeze
+
+files_changed:
+  - artifacts/setup/D-04/task_result.yaml
+
+tests:
+  existing_full_regression:
+    workflow: tests
+    run_id: 34159376469
+    job_id: 101857791324
+    head_sha: b5eb683d478d44e733d65e008f38fb3c6926ca0a
+    result: 415 passed, 1 warning in 2.85s
+  targeted_test: not_applicable_until_scientific_value_is_frozen
+  note: >-
+    Current regression is green, but it cannot establish a tau_max value that is
+    absent from the frozen scientific specification.
+
+scientific_checks:
+  - Primary remains PCMCI+ plus ParCorr plus Ridge with horizon 1
+  - D=2 region_dimension discovery semantics remain unchanged
+  - outer-test is not consulted to choose tau_max
+  - no data-dependent lag selection is introduced
+  - no Sensitivity result is used to define Primary tau_max
+  - tau_max is not guessed from prior pilots, current data, Tigramite defaults, or implementation convenience
+
+fail_type: scientific specification conflict
+root_cause: >-
+  The systematic research plan requires maximum lag to be frozen before the
+  Primary experiment, but does not specify its numeric value. The repository's
+  PrimaryPCMCIPlusConfig intentionally excludes tau_max for D-04, and
+  configs/primary_run.yaml also contains no tau_max. Issue #11 names D-04 but
+  provides no numeric freeze or selection rule. Selecting a value here would
+  change the scientific specification rather than implement it.
+
+minimal_fix_required: >-
+  Add an explicit Primary tau_max value, or a fully pre-specified train-only rule
+  that deterministically yields it without consulting outer-test or Sensitivity,
+  to the Scientific Freeze / Primary run configuration. Then implement strict
+  validation and pass that frozen value unchanged to Tigramite run_pcmciplus.
+
+artifacts:
+  - artifacts/setup/D-04/task_result.yaml
+
+remaining_issue:
+  - Primary tau_max is scientifically undefined
+
+blocked_tasks:
+  - D-05
+  - D-06
+  - D-07
+  - D-08
+  - D-09
+  - D-10
+  - D-11
+  - D-14
+  - I2
+
+next_task: none_until_D-04_PASS
