@@ -29,6 +29,7 @@ class ArtifactRegistry:
     config: ExperimentConfig
     repository_root: Path | str = Path(".")
     _entries: dict[str, ExperimentArtifact] = field(init=False, default_factory=dict)
+    _artifact_root: Path = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         self.repository_root = Path(self.repository_root).resolve()
