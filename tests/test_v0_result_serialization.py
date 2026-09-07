@@ -19,6 +19,7 @@ def _matrix() -> DesignMatrix:
         y=np.array([[1.0, 2.0], [2.0, 3.0], [np.nan, np.nan], [4.0, 5.0]]),
         subject_id=("s01", "s01", "s01", "s01"),
         region_id=("mouth", "mouth", "mouth", "mouth"),
+        target_dimensions=("vx", "vy"),
         forecast_origin=np.array([0.0, 1.0, 2.0, 3.0]),
         target_time=np.array([1.0, 2.0, 3.0, 4.0]),
         feature_names=("mouth.vx", "mouth.vy"),
