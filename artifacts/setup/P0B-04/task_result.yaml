@@ -1,0 +1,41 @@
+task_id: P0B-04
+task_name: PredictionArtifact
+status: PASS
+
+implemented:
+  - existing PredictionArtifact contract reused without duplication
+  - outer_fold provenance
+  - row-level subject_id and region_id provenance
+  - condition identifier
+  - forecast_origin and target_time alignment metadata
+  - y_true and y_pred shape/type consistency
+  - row-level boolean valid_mask
+  - finite-value enforcement for valid prediction rows
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/contracts.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_prediction_artifact.py
+
+tests:
+  workflow: tests
+  run_id: 34144504958
+  job_id: 101813471075
+  head_sha: 68beae5786a3cf5e99fa4c639991e97d0d63d01d
+  python: 3.11.16
+  result: 47 passed in 0.20s
+
+scientific_checks:
+  - prediction rows retain subject and target-region provenance
+  - outer_fold is explicit and validated
+  - forecast origin and target time are retained and ordered
+  - y_true and y_pred are row-aligned with identical shape
+  - missing prediction rows cannot silently enter evaluation through valid_mask
+  - condition is recorded without introducing Sensitivity execution logic
+  - no split, discovery, tuning, Null, or outer-test selection path was added
+
+artifacts:
+  - artifacts/setup/P0B-04/task_result.yaml
+
+remaining_issue: none
+next_task: P0B phase gate
