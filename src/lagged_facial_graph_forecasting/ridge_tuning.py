@@ -227,3 +227,35 @@ def aggregate_ridge_inner_cv_scores(
         )
 
     return tuple(aggregates)
+
+
+def select_ridge_alpha(
+    aggregates: Iterable[RidgeAlphaScore],
+) -> RidgeAlphaScore:
+    """Select the minimum mean-RMSE Ridge alpha with a frozen deterministic tie rule.
+
+    Selection uses only the E-04 inner-CV aggregate.  Exact ties in ``mean_rmse``
+    are resolved by choosing the numerically smallest alpha.  This is an explicit
+    deterministic rule rather than a result-dependent secondary criterion.
+    """
+
+    candidates = tuple(aggregates)
+    if not candidates:
+        raise ValueError("Ridge alpha aggregates must not be empty")
+
+    seen_alpha: set[float] = set()
+    validated: list[RidgeAlphaScore] = []
+    for candidate in candidates:
+        alpha = float(candidate.alpha)
+        if not np.isfinite(alpha) or alpha <= 0:
+            raise ValueError("Ridge aggregate alpha must be finite and > 0")
+        if alpha in seen_alpha:
+            raise ValueError(f"duplicate Ridge aggregate alpha={alpha}")
+        seen_alpha.add(alpha)
+        if not np.isfinite(candidate.mean_rmse) or candidate.mean_rmse < 0:
+            raise ValueError("Ridge aggregate mean_rmse must be finite and >= 0")
+        if candidate.fold_count <= 0 or candidate.total_val_valid <= 0:
+            raise ValueError("Ridge aggregate counts must be > 0")
+        validated.append(candidate)
+
+    return min(validated, key=lambda candidate: (candidate.mean_rmse, candidate.alpha))
