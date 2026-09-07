@@ -8,7 +8,8 @@ from typing import Sequence
 import numpy as np
 from tigramite import data_processing as pp
 
-from .contracts import FaceTimeSeries
+from .contracts import FaceTimeSeries, SplitManifest
+from .leakage_guard import assert_discovery_fit_scope
 
 
 class TigramiteAdapterError(ValueError):
@@ -36,17 +37,24 @@ def _component_metadata(series: FaceTimeSeries) -> tuple[tuple[str, ...], tuple[
 
 
 def face_time_series_to_tigramite_dataframe(
+    manifest: SplitManifest,
     series_by_subject: Sequence[FaceTimeSeries],
 ) -> TigramiteDataFrameBundle:
-    """Convert independent subject sequences without concatenating subject boundaries.
+    """Convert outer-train subject sequences without concatenating boundaries.
 
-    Each subject is supplied to Tigramite as a separate dataset in ``analysis_mode='multiple'``.
-    The canonical ``(T, K, D)`` tensor is flattened only across the region/dimension axes,
-    yielding ``(T, K*D)`` continuous variables. Elementwise invalid observations are replaced
-    by a constant finite placeholder *only* because Tigramite rejects NaN in ``data``; the
-    same positions are marked ``True`` in Tigramite's mask and therefore excluded from CI
-    samples. No temporal interpolation, resampling, fitting, feature selection, or subject
-    concatenation occurs here.
+    The converter is a discovery-facing API and therefore requires the canonical
+    ``SplitManifest``.  Every supplied subject is checked with the existing discovery
+    leakage guard before any Tigramite object is constructed; outer-test or otherwise
+    out-of-scope subjects fail closed.
+
+    Each allowed subject is supplied to Tigramite as a separate dataset in
+    ``analysis_mode='multiple'``.  The canonical ``(T, K, D)`` tensor is flattened only
+    across the region/dimension axes, yielding ``(T, K*D)`` continuous variables.
+    Elementwise invalid observations are replaced by a constant finite placeholder only
+    because Tigramite rejects NaN in ``data``; the same positions are marked ``True`` in
+    Tigramite's mask for exclusion by the CI-test masking policy.  No temporal
+    interpolation, resampling, fitting, feature selection, or subject concatenation
+    occurs here.
     """
 
     sequences = tuple(series_by_subject)
@@ -58,6 +66,9 @@ def face_time_series_to_tigramite_dataframe(
     subject_ids = tuple(series.subject_id for series in sequences)
     if len(set(subject_ids)) != len(subject_ids):
         raise TigramiteAdapterError("subject_id values must be unique")
+
+    # Reuse the canonical Lane-B guard so discovery input can never contain outer-test.
+    assert_discovery_fit_scope(manifest, subject_ids)
 
     reference = sequences[0]
     variable_names, variable_components = _component_metadata(reference)
@@ -80,8 +91,9 @@ def face_time_series_to_tigramite_dataframe(
         if np.any(flat_valid & ~np.isfinite(flat_values)):
             raise TigramiteAdapterError("non-finite observations cannot be marked valid")
 
-        # Tigramite DataFrame rejects NaN in data before applying its mask. A fixed zero
-        # placeholder is scientifically inert because the exact same entries are masked.
+        # Tigramite DataFrame rejects NaN in data before applying its mask.  A fixed
+        # placeholder is safe only together with the corresponding True mask entries;
+        # D-02 freezes the ParCorr mask_type used by discovery.
         safe_values = np.array(flat_values, copy=True)
         safe_values[~flat_valid] = 0.0
         data[series.subject_id] = safe_values
