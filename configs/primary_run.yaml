@@ -1,4 +1,4 @@
-schema_version: 2
+schema_version: 3
 experiment_id: primary
 scientific_config_path: configs/scientific_freeze.yaml
 run_config_path: configs/primary_run.yaml
