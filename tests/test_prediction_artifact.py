@@ -11,6 +11,7 @@ def _valid_kwargs() -> dict:
         "outer_fold": 0,
         "subject_id": ("s01", "s01", "s02", "s02"),
         "region_id": ("mouth", "mouth", "jaw", "jaw"),
+        "target_dimensions": ("vx", "vy"),
         "condition": "self",
         "forecast_origin": np.array([10.0, 11.0, 10.0, 11.0]),
         "target_time": np.array([11.0, 12.0, 11.0, 12.0]),
@@ -32,6 +33,7 @@ def test_prediction_artifact_accepts_canonical_provenance() -> None:
     assert artifact.y_true.shape == artifact.y_pred.shape == (4, 2)
     assert len(artifact.subject_id) == 4
     assert len(artifact.region_id) == 4
+    assert artifact.target_dimensions == ("vx", "vy")
     assert artifact.valid_mask.dtype == np.bool_
 
 
@@ -40,6 +42,14 @@ def test_rejects_prediction_shape_mismatch() -> None:
     kwargs["y_pred"] = np.zeros((4,), dtype=float)
 
     with pytest.raises(ContractError, match="y_pred must match y_true.shape"):
+        PredictionArtifact(**kwargs)
+
+
+def test_rejects_target_dimension_count_mismatch() -> None:
+    kwargs = _valid_kwargs()
+    kwargs["target_dimensions"] = ("vx",)
+
+    with pytest.raises(ContractError, match="target_dimensions must contain 2 entries"):
         PredictionArtifact(**kwargs)
 
 
