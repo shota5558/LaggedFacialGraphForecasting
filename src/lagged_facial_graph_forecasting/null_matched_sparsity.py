@@ -127,8 +127,25 @@ def _sample_equal_size_by_target_dimension(
     if len(set(normalized_candidates)) != len(normalized_candidates):
         raise MatchedSparsityMappingError("candidates must not contain duplicates")
 
+    # F-32/F-33 accept a plain Sequence rather than an opaque F-31 object, so they
+    # must fail closed if callers bypass F-31 with Self-history or unavailable lags.
+    for candidate in normalized_candidates:
+        if candidate.source_region == parent_set.target_region:
+            raise MatchedSparsityMappingError(
+                "candidates must exclude target-region Self-history features"
+            )
+        if not PRIMARY_LAG_MIN <= candidate.lag <= PRIMARY_TAU_MAX:
+            raise MatchedSparsityMappingError(
+                "candidate lag must satisfy the frozen Primary domain "
+                f"{PRIMARY_LAG_MIN}..{PRIMARY_TAU_MAX}: {candidate.lag}"
+            )
+
     required_counts = Counter(parent.target_dimension for parent in parent_set.parents)
     if not required_counts:
+        if normalized_candidates:
+            raise MatchedSparsityMappingError(
+                "empty ParentSet must use the empty F-31 candidate space"
+            )
         return ()
 
     unexpected_targets = {

@@ -116,6 +116,36 @@ def test_equal_size_sampling_rejects_candidate_target_component_not_in_pcmci_par
         )
 
 
+def test_equal_size_sampling_rejects_f31_bypass_with_target_self_feature() -> None:
+    candidates = (
+        ParentLink("mouth", 1, "vx", "vx"),
+        ParentLink("eye", 2, "vx", "vx"),
+        ParentLink("jaw", 3, "vy", "vy"),
+    )
+    with pytest.raises(MatchedSparsityMappingError, match="Self-history"):
+        sample_matched_sparsity_parents(
+            _manifest(),
+            _parent_set(),
+            construction_subject_ids=("train_a", "train_b"),
+            candidates=candidates,
+        )
+
+
+def test_equal_size_sampling_rejects_f31_bypass_with_out_of_domain_lag() -> None:
+    candidates = (
+        ParentLink("eye", 0, "vx", "vx"),
+        ParentLink("jaw", 2, "vx", "vx"),
+        ParentLink("eye", 3, "vy", "vy"),
+    )
+    with pytest.raises(MatchedSparsityMappingError, match="Primary domain"):
+        sample_matched_sparsity_parents(
+            _manifest(),
+            _parent_set(),
+            construction_subject_ids=("train_a", "train_b"),
+            candidates=candidates,
+        )
+
+
 def test_mapping_rejects_equal_total_count_with_wrong_per_target_component_capacity() -> None:
     wrong_component_balance = (
         ParentLink("jaw", 1, "vx", "vx"),
@@ -154,4 +184,20 @@ def test_equal_size_sampling_rejects_fold_mismatch() -> None:
             wrong_fold,
             construction_subject_ids=("train_a", "train_b"),
             candidates=_candidates(),
+        )
+
+
+def test_empty_parent_set_rejects_nonempty_bypassed_candidate_space() -> None:
+    empty = ParentSet(
+        outer_fold=4,
+        target_region="mouth",
+        parents=(),
+        discovery_method="pcmci_plus",
+    )
+    with pytest.raises(MatchedSparsityMappingError, match="empty F-31 candidate space"):
+        sample_matched_sparsity_parents(
+            _manifest(),
+            empty,
+            construction_subject_ids=("train_a", "train_b"),
+            candidates=(ParentLink("eye", 1, "vx", "vx"),),
         )
