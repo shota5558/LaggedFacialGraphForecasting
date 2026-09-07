@@ -29,6 +29,7 @@ from .leakage_guard import (
     LeakageGuardError,
     assert_discovery_fit_scope,
     assert_preprocessing_fit_scope,
+    assert_ridge_tuning_scope,
 )
 from .metrics import velocity_rmse
 from .runner import FoldRunResult, MinimalFoldRunner, OuterTestLockedError
@@ -81,6 +82,7 @@ __all__ = [
     "aligned_indices",
     "assert_discovery_fit_scope",
     "assert_preprocessing_fit_scope",
+    "assert_ridge_tuning_scope",
     "build_grouped_kfold_split_manifests",
     "build_loso_split_manifests",
     "build_self_history_design_matrix",
