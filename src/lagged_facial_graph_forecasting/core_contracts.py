@@ -4,11 +4,13 @@ The original V0 contracts remain in ``contracts.py``. This module adds the
 remaining cross-lane interfaces without coupling forecasting code to Tigramite,
 Null implementations, statistics code, or orchestration internals.
 
-Core-contract schema v2 is the reviewed migration required by Scientific Freeze
-v2. PCMCI+ + ParCorr discovery operates on scalar ``region × dimension`` nodes,
-so every retained parent must preserve both source- and target-component
-identity. Region-only projection is a reporting operation and must not destroy
-canonical discovery provenance.
+Core-contract schema v3 completes the component-aware migration required by
+Scientific Freeze v2. PCMCI+ + ParCorr discovery operates on scalar
+``region × dimension`` nodes, so retained ParentLinks preserve source- and
+target-component identity and downstream DesignMatrix / PredictionArtifact
+contracts preserve the target output dimension labels as well. Region-only
+projection remains a reporting operation and must not destroy canonical
+component provenance.
 """
 
 from __future__ import annotations
@@ -21,7 +23,7 @@ import numpy as np
 
 from .contracts import ContractError
 
-CORE_CONTRACT_SCHEMA_VERSION = 2
+CORE_CONTRACT_SCHEMA_VERSION = 3
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
