@@ -1,10 +1,11 @@
-"""Primary matched-sparsity Null utilities (F-30/F-31/F-32).
+"""Primary matched-sparsity Null utilities (F-30 through F-33).
 
 F-30 freezes already-selected equal-cardinality ParentLinks into the canonical
 ``NullMapping`` boundary. F-31 defines the feasible cross-region candidate universe.
 F-32 draws one deterministic, without-replacement random sparse subset with the same
-feature count per target component as the PCMCI ParentSet. Repeated samples remain
-reserved for F-33.
+feature count per target component as the PCMCI ParentSet. F-33 extends that sampling
+law to an explicit caller-specified number of repeated controls without inventing a
+Primary repeat count that is not yet scientifically frozen.
 """
 
 from __future__ import annotations
@@ -163,6 +164,14 @@ def _sample_equal_size_by_target_dimension(
     return tuple(sorted(sampled))
 
 
+def _rng_for_repeat(root_seed: int, repeat_index: int) -> np.random.Generator:
+    """Return a deterministic RNG while preserving the F-32 sample at index zero."""
+
+    if repeat_index == 0:
+        return np.random.default_rng(root_seed)
+    return np.random.default_rng(np.random.SeedSequence([root_seed, repeat_index]))
+
+
 def sample_matched_sparsity_parents(
     manifest: SplitManifest,
     parent_set: ParentSet,
@@ -174,8 +183,8 @@ def sample_matched_sparsity_parents(
 
     Sampling uses only the frozen ``SplitManifest.seed`` and a canonicalized candidate
     ordering. Equal size is enforced separately for each target component because the
-    D=2 Primary forecasts scalar target components independently. F-33 is responsible
-    for generating multiple distinct repeated samples; this function returns one.
+    D=2 Primary forecasts scalar target components independently. This remains exactly
+    repeat index zero of the F-33 repeated-sampling contract.
     """
 
     assert_null_construction_scope(manifest, construction_subject_ids)
@@ -189,7 +198,49 @@ def sample_matched_sparsity_parents(
     return _sample_equal_size_by_target_dimension(
         parent_set,
         candidates,
-        rng=np.random.default_rng(manifest.seed),
+        rng=_rng_for_repeat(manifest.seed, 0),
+    )
+
+
+def sample_matched_sparsity_repeats(
+    manifest: SplitManifest,
+    parent_set: ParentSet,
+    *,
+    construction_subject_ids: tuple[str, ...],
+    candidates: Sequence[ParentLink],
+    repeat_count: int,
+) -> tuple[tuple[ParentLink, ...], ...]:
+    """Draw a caller-specified number of deterministic matched-sparsity controls.
+
+    ``repeat_count`` has deliberately no default because the Primary scientific config
+    does not yet freeze a matched-sparsity repeat count. Each repeat is an independent
+    without-replacement draw *within that repeat* and preserves PCMCI feature count per
+    target component. Different repeats may overlap or even coincide by chance; forcing
+    global uniqueness would condition the null distribution and bias small candidate
+    spaces. Repeat ordering is deterministic and prefix-stable for a fixed root seed.
+    """
+
+    assert_null_construction_scope(manifest, construction_subject_ids)
+    if not isinstance(parent_set, ParentSet):
+        raise TypeError("parent_set must be a ParentSet")
+    if parent_set.outer_fold != manifest.outer_fold:
+        raise MatchedSparsityMappingError(
+            "ParentSet outer_fold must match SplitManifest"
+        )
+    if (
+        not isinstance(repeat_count, int)
+        or isinstance(repeat_count, bool)
+        or repeat_count < 1
+    ):
+        raise MatchedSparsityMappingError("repeat_count must be a positive integer")
+
+    return tuple(
+        _sample_equal_size_by_target_dimension(
+            parent_set,
+            candidates,
+            rng=_rng_for_repeat(manifest.seed, repeat_index),
+        )
+        for repeat_index in range(repeat_count)
     )
 
 
