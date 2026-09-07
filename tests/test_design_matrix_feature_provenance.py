@@ -8,6 +8,8 @@ from lagged_facial_graph_forecasting.design_matrix import (
     build_pcmci_parent_design_matrix,
     build_persistence_design_matrix,
     build_self_history_design_matrix,
+    decode_feature_name,
+    encode_feature_name,
 )
 
 
@@ -87,3 +89,45 @@ def test_pcmci_feature_provenance_matches_parent_set_without_reselection() -> No
     assert tuple(dict.fromkeys(matrix.feature_lags)) == tuple(
         parent.lag for parent in parent_set.parents
     )
+
+
+def test_feature_name_codec_is_lossless_for_reserved_characters() -> None:
+    provenance = (
+        ("mouth.part", "v.x"),
+        ("jaw\\side", "v\\y"),
+        ("eye.part\\inner", "velocity.x\\raw"),
+    )
+
+    encoded = tuple(encode_feature_name(region, dimension) for region, dimension in provenance)
+
+    assert len(set(encoded)) == len(encoded)
+    assert tuple(decode_feature_name(name) for name in encoded) == provenance
+    assert encode_feature_name("mouth", "vx") == "mouth.vx"
+    assert decode_feature_name("mouth.vx") == ("mouth", "vx")
+
+
+def test_matrix_feature_names_round_trip_to_exact_source_region_and_dimension() -> None:
+    X = np.arange(5 * 2 * 2, dtype=float).reshape(5, 2, 2)
+    series = FaceTimeSeries(
+        X=X,
+        subject_id="s-special",
+        time_index=np.arange(5, dtype=float),
+        region_id=("mouth.part", "jaw\\side"),
+        dimension=("v.x", "v\\y"),
+        valid_mask=np.ones_like(X, dtype=bool),
+        sampling_rate=30.0,
+    )
+
+    matrix = build_full_history_design_matrix(
+        series, target_region="mouth.part", lags=(1,)
+    )
+
+    decoded = tuple(decode_feature_name(name) for name in matrix.feature_names)
+    assert decoded == (
+        ("mouth.part", "v.x"),
+        ("mouth.part", "v\\y"),
+        ("jaw\\side", "v.x"),
+        ("jaw\\side", "v\\y"),
+    )
+    assert matrix.feature_lags == (1, 1, 1, 1)
+    assert set(matrix.region_id) == {"mouth.part"}
