@@ -18,12 +18,13 @@ class TigramiteAdapterError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class TigramiteDataFrameBundle:
-    """Tigramite DataFrame plus the canonical component-column provenance."""
+    """Tigramite DataFrame plus canonical variable and sampling provenance."""
 
     dataframe: pp.DataFrame
     subject_ids: tuple[str, ...]
     variable_names: tuple[str, ...]
     variable_components: tuple[tuple[str, str], ...]
+    sampling_rate: float
 
 
 def _component_metadata(series: FaceTimeSeries) -> tuple[tuple[str, ...], tuple[tuple[str, str], ...]]:
@@ -43,18 +44,21 @@ def face_time_series_to_tigramite_dataframe(
     """Convert outer-train subject sequences without concatenating boundaries.
 
     The converter is a discovery-facing API and therefore requires the canonical
-    ``SplitManifest``.  Every supplied subject is checked with the existing discovery
+    ``SplitManifest``. Every supplied subject is checked with the existing discovery
     leakage guard before any Tigramite object is constructed; outer-test or otherwise
     out-of-scope subjects fail closed.
 
     Each allowed subject is supplied to Tigramite as a separate dataset in
-    ``analysis_mode='multiple'``.  The canonical ``(T, K, D)`` tensor is flattened only
+    ``analysis_mode='multiple'``. The canonical ``(T, K, D)`` tensor is flattened only
     across the region/dimension axes, yielding ``(T, K*D)`` continuous variables.
     Elementwise invalid observations are replaced by a constant finite placeholder only
     because Tigramite rejects NaN in ``data``; the same positions are marked ``True`` in
-    Tigramite's mask for exclusion by the CI-test masking policy.  No temporal
-    interpolation, resampling, fitting, feature selection, or subject concatenation
-    occurs here.
+    Tigramite's mask for exclusion by the CI-test masking policy. Original ``time_index``
+    arrays are retained as Tigramite ``datatime`` labels and the common sampling rate is
+    carried explicitly for later frame-to-time lag provenance.
+
+    No temporal interpolation, resampling, fitting, feature selection, or subject
+    concatenation occurs here.
     """
 
     sequences = tuple(series_by_subject)
@@ -75,6 +79,7 @@ def face_time_series_to_tigramite_dataframe(
 
     data: dict[str, np.ndarray] = {}
     mask: dict[str, np.ndarray] = {}
+    datatime: dict[str, np.ndarray] = {}
     for series in sequences:
         if series.region_id != reference.region_id:
             raise TigramiteAdapterError("all subjects must have identical region_id order")
@@ -91,18 +96,20 @@ def face_time_series_to_tigramite_dataframe(
         if np.any(flat_valid & ~np.isfinite(flat_values)):
             raise TigramiteAdapterError("non-finite observations cannot be marked valid")
 
-        # Tigramite DataFrame rejects NaN in data before applying its mask.  A fixed
+        # Tigramite DataFrame rejects NaN in data before applying its mask. A fixed
         # placeholder is safe only together with the corresponding True mask entries;
         # D-02 freezes the ParCorr mask_type used by discovery.
         safe_values = np.array(flat_values, copy=True)
         safe_values[~flat_valid] = 0.0
         data[series.subject_id] = safe_values
         mask[series.subject_id] = ~flat_valid
+        datatime[series.subject_id] = np.array(series.time_index, copy=True)
 
     dataframe = pp.DataFrame(
         data=data,
         mask=mask,
         var_names=list(variable_names),
+        datatime=datatime,
         analysis_mode="multiple",
     )
     return TigramiteDataFrameBundle(
@@ -110,4 +117,5 @@ def face_time_series_to_tigramite_dataframe(
         subject_ids=subject_ids,
         variable_names=variable_names,
         variable_components=variable_components,
+        sampling_rate=float(reference.sampling_rate),
     )
