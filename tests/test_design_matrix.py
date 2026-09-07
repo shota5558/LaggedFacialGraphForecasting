@@ -22,6 +22,7 @@ def _valid_kwargs() -> dict:
         ),
         "subject_id": ("s01", "s01", "s02", "s02"),
         "region_id": ("mouth", "mouth", "jaw", "jaw"),
+        "target_dimensions": ("vx", "vy"),
         "forecast_origin": np.array([10.0, 11.0, 10.0, 11.0]),
         "target_time": np.array([11.0, 12.0, 11.0, 12.0]),
         "feature_names": ("mouth.vx", "mouth.vx", "jaw.vy"),
@@ -30,13 +31,14 @@ def _valid_kwargs() -> dict:
     }
 
 
-def test_design_matrix_accepts_row_and_feature_provenance() -> None:
+def test_design_matrix_accepts_row_feature_and_target_provenance() -> None:
     matrix = DesignMatrix(**_valid_kwargs())
 
     assert matrix.X.shape == (4, 3)
     assert matrix.y.shape == (4, 2)
     assert len(matrix.subject_id) == 4
     assert len(matrix.region_id) == 4
+    assert matrix.target_dimensions == ("vx", "vy")
     assert matrix.feature_names == ("mouth.vx", "mouth.vx", "jaw.vy")
     assert matrix.feature_lags == (1, 2, 1)
     assert matrix.valid_mask.dtype == np.bool_
@@ -55,6 +57,14 @@ def test_rejects_y_row_mismatch() -> None:
     kwargs["y"] = np.zeros((3, 2), dtype=float)
 
     with pytest.raises(ContractError, match="y must have shape"):
+        DesignMatrix(**kwargs)
+
+
+def test_rejects_target_dimension_count_mismatch() -> None:
+    kwargs = _valid_kwargs()
+    kwargs["target_dimensions"] = ("vx",)
+
+    with pytest.raises(ContractError, match="target_dimensions must contain 2 entries"):
         DesignMatrix(**kwargs)
 
 
