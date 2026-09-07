@@ -1,0 +1,61 @@
+task_id: P0A
+task_name: Scientific Freeze
+status: PASS
+
+implemented:
+  - machine-readable scientific freeze config
+  - strict loader and exact-value validator
+  - explicit Primary/Sensitivity separation
+  - explicit outer-test usage restriction
+  - explicit outer-train-only selection scopes
+  - minimal pytest CI workflow
+
+files:
+  - configs/scientific_freeze.yaml
+  - pyproject.toml
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - src/lagged_facial_graph_forecasting/scientific_config.py
+  - tests/test_scientific_config.py
+  - .github/workflows/test.yml
+
+tests:
+  execution: isolated_exact_repository_mirror
+  python: 3.13.5
+  result: 6 passed
+  elapsed_seconds: 0.19
+  cases:
+    - valid scientific freeze loads
+    - Primary CI-test drift rejected
+    - discovery outer-test leakage scope rejected
+    - outer-test usage drift rejected
+    - Sensitivity-before-freeze rejected
+    - unreviewed scientific schema extension rejected
+  github_actions_run_observed: false
+
+scientific_checks:
+  primary_discovery: pcmci_plus
+  primary_ci_test: parcorr
+  primary_forecaster: ridge
+  primary_horizon: 1
+  split_unit: subject
+  outer_test_usage: frozen_final_evaluation_only
+  preprocessing_fit: outer_train_only
+  discovery: outer_train_only
+  ridge_tuning: outer_train_only
+  null_mapping: outer_train_only
+  feature_selection: outer_train_only
+  lag_selection: outer_train_only
+  sensitivity_after_primary_freeze: true
+  primary_sensitivity_artifact_roots_separate: true
+
+source_commits:
+  scientific_config_initial: c6694ad96d7e4a43744414bb0be7e49b4ebb563f
+  dependencies: 1ba0970448abbaa6b3063ee38cfd0309ff673071
+  package_init: 39e006f7c7268af06249667c19fdedd0b19b50ba
+  scientific_config_scope_update: 1a47620d9ceb19a270e94e0af9c89bf75275be29
+  loader_validator: 6678c380c99ce1167d04baedf12cce3f4cf2c3c6
+  tests: 2c1d47ac81fe518c55c8893a11225308b3a272bf
+  ci_workflow: 5e246e6d4b68798784d4aaa5a82f99f4d855bd3b
+
+remaining_issue: none
+next_task: P0B-01
