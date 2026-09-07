@@ -1,0 +1,36 @@
+task_id: P0B
+task_name: Minimal Contracts Gate
+status: PASS
+
+contracts:
+  P0B-01: FaceTimeSeries
+  P0B-02: SplitManifest
+  P0B-03: DesignMatrix
+  P0B-04: PredictionArtifact
+
+contract_artifacts:
+  - artifacts/setup/P0B-01/task_result.yaml
+  - artifacts/setup/P0B-02/task_result.yaml
+  - artifacts/setup/P0B-03/task_result.yaml
+  - artifacts/setup/P0B-04/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34144591208
+  job_id: 101813742370
+  head_sha: 08360cdb2598ae7ba262371d02f9845aa73f118a
+  python: 3.11.16
+  result: 59 passed in 0.27s
+
+scientific_checks:
+  - subject identity is explicit from raw time series through design/prediction artifacts
+  - outer train/test separation is structurally represented by SplitManifest
+  - inner folds cannot contain outer-test subjects
+  - feature identity and lag provenance are explicit
+  - forecast origin and target time are explicit and ordered
+  - missingness is represented by validated masks
+  - no PCMCI+, Ridge tuning, Null construction, or Sensitivity execution was introduced by the contracts
+  - Primary scientific freeze remains unchanged
+
+remaining_issue: none
+next_task: V0-01
