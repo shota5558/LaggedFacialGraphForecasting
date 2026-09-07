@@ -67,7 +67,7 @@ def test_full_feature_provenance_tracks_region_dimension_and_lag() -> None:
     assert set(matrix.region_id) == {"mouth"}
 
 
-def test_pcmci_feature_provenance_matches_parent_set_without_reselection() -> None:
+def test_pcmci_feature_provenance_is_fixed_self_plus_selected_interregional() -> None:
     parent_set = ParentSet(
         outer_fold=2,
         target_region="mouth",
@@ -77,18 +77,17 @@ def test_pcmci_feature_provenance_matches_parent_set_without_reselection() -> No
         ),
     )
 
-    matrix = build_pcmci_parent_design_matrix(_series(), parent_set=parent_set)
+    matrix = build_pcmci_parent_design_matrix(
+        _series(), parent_set=parent_set, self_lags=(1,)
+    )
 
     assert _provenance(matrix) == (
-        ("jaw.vx", 3),
-        ("jaw.vy", 3),
         ("mouth.vx", 1),
         ("mouth.vy", 1),
+        ("jaw.vx", 3),
+        ("jaw.vy", 3),
     )
     assert set(matrix.region_id) == {parent_set.target_region}
-    assert tuple(dict.fromkeys(matrix.feature_lags)) == tuple(
-        parent.lag for parent in parent_set.parents
-    )
 
 
 def test_feature_name_codec_is_lossless_for_reserved_characters() -> None:
