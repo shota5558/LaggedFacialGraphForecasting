@@ -18,13 +18,14 @@ class ScientificConfigError(ValueError):
 
 
 _EXPECTED: dict[str, Any] = {
-    "schema_version": 3,
+    "schema_version": 4,
     "primary": {
         "discovery": "pcmci_plus",
         "ci_test": "parcorr",
         "forecaster": "ridge",
         "horizon": 1,
         "tau_max": 10,
+        "pc_alpha": 0.01,
         "conditions": [
             "persistence",
             "self",

@@ -25,12 +25,13 @@ def _write_config(tmp_path: Path, config: dict) -> Path:
 def test_scientific_freeze_loads() -> None:
     config = load_scientific_config(CONFIG_PATH)
 
-    assert config["schema_version"] == 3
+    assert config["schema_version"] == 4
     assert config["primary"]["discovery"] == "pcmci_plus"
     assert config["primary"]["ci_test"] == "parcorr"
     assert config["primary"]["forecaster"] == "ridge"
     assert config["primary"]["horizon"] == 1
     assert config["primary"]["tau_max"] == 10
+    assert config["primary"]["pc_alpha"] == 0.01
     assert config["discovery_representation"]["node_unit"] == "region_dimension"
     assert config["discovery_representation"]["component_mapping"] == "identity"
     assert (
@@ -56,6 +57,22 @@ def test_rejects_tau_max_drift(tmp_path: Path) -> None:
     config["primary"]["tau_max"] = 9
 
     with pytest.raises(ScientificConfigError, match="primary.tau_max"):
+        load_scientific_config(_write_config(tmp_path, config))
+
+
+def test_rejects_pc_alpha_drift(tmp_path: Path) -> None:
+    config = deepcopy(_load_raw())
+    config["primary"]["pc_alpha"] = 0.05
+
+    with pytest.raises(ScientificConfigError, match="primary.pc_alpha"):
+        load_scientific_config(_write_config(tmp_path, config))
+
+
+def test_rejects_pc_alpha_selection_mode(tmp_path: Path) -> None:
+    config = deepcopy(_load_raw())
+    config["primary"]["pc_alpha"] = None
+
+    with pytest.raises(ScientificConfigError, match="primary.pc_alpha"):
         load_scientific_config(_write_config(tmp_path, config))
 
 

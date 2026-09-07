@@ -14,17 +14,18 @@
     "artifacts"
   ],
   "properties": {
-    "schema_version": {"const": 3},
+    "schema_version": {"const": 4},
     "primary": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["discovery", "ci_test", "forecaster", "horizon", "tau_max", "conditions"],
+      "required": ["discovery", "ci_test", "forecaster", "horizon", "tau_max", "pc_alpha", "conditions"],
       "properties": {
         "discovery": {"const": "pcmci_plus"},
         "ci_test": {"const": "parcorr"},
         "forecaster": {"const": "ridge"},
         "horizon": {"const": 1},
         "tau_max": {"const": 10},
+        "pc_alpha": {"const": 0.01},
         "conditions": {
           "type": "array",
           "uniqueItems": true,

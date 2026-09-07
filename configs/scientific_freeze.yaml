@@ -1,4 +1,4 @@
-schema_version: 3
+schema_version: 4
 
 primary:
   discovery: pcmci_plus
@@ -6,6 +6,7 @@ primary:
   forecaster: ridge
   horizon: 1
   tau_max: 10
+  pc_alpha: 0.01
   conditions:
     - persistence
     - self
