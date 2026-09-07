@@ -24,6 +24,7 @@ from lagged_facial_graph_forecasting.core_contract_io import (
     dumps_core_contract,
     loads_core_contract,
     migrate_core_contract_v1_to_v2,
+    migrate_core_contract_v2_to_v3,
     serialize_core_contract,
 )
 
@@ -61,6 +62,7 @@ def _samples():
         y=np.array([[0.1, 0.2], [0.3, 0.4]], dtype=np.float64),
         subject_id=("s01", "s01"),
         region_id=("mouth", "mouth"),
+        target_dimensions=("vx", "vy"),
         forecast_origin=np.array([5, 6], dtype=np.int64),
         target_time=np.array([6, 7], dtype=np.int64),
         feature_names=("left_eye.vx", "right_eye.vy"),
@@ -71,6 +73,7 @@ def _samples():
         outer_fold=2,
         subject_id=("s04", "s04"),
         region_id=("mouth", "mouth"),
+        target_dimensions=("vx", "vy"),
         condition="pcmci",
         forecast_origin=np.array([5, 6], dtype=np.int64),
         target_time=np.array([6, 7], dtype=np.int64),
@@ -144,7 +147,7 @@ def test_parent_component_provenance_round_trips_losslessly() -> None:
     sample = _samples()[2]
     envelope = serialize_core_contract(sample)
 
-    assert envelope["schema_version"] == 2
+    assert envelope["schema_version"] == 3
     assert envelope["payload"]["parents"] == [
         {
             "source_region": "left_eye",
@@ -162,7 +165,20 @@ def test_parent_component_provenance_round_trips_losslessly() -> None:
     assert deserialize_core_contract(envelope) == sample
 
 
-@pytest.mark.parametrize("version", [0, 1, 3])
+def test_target_output_provenance_round_trips_losslessly() -> None:
+    design = _samples()[3]
+    prediction = _samples()[4]
+
+    design_envelope = serialize_core_contract(design)
+    prediction_envelope = serialize_core_contract(prediction)
+
+    assert design_envelope["payload"]["target_dimensions"] == ["vx", "vy"]
+    assert prediction_envelope["payload"]["target_dimensions"] == ["vx", "vy"]
+    assert deserialize_core_contract(design_envelope).target_dimensions == ("vx", "vy")
+    assert deserialize_core_contract(prediction_envelope).target_dimensions == ("vx", "vy")
+
+
+@pytest.mark.parametrize("version", [0, 1, 2, 4])
 def test_rejects_noncurrent_schema_versions(version: int) -> None:
     envelope = serialize_core_contract(_samples()[2])
     envelope["schema_version"] = version
@@ -189,18 +205,19 @@ def test_v1_parentset_migration_requires_certified_scalar_dimension() -> None:
     with pytest.raises(CoreContractIOError, match="certified_scalar_dimension"):
         migrate_core_contract_v1_to_v2(v1)
 
-    migrated = migrate_core_contract_v1_to_v2(
+    v2 = migrate_core_contract_v1_to_v2(
         v1,
         certified_scalar_dimension="vx",
     )
-    assert migrated["schema_version"] == 2
-    assert migrated["payload"]["parents"][0] == {
+    assert v2["schema_version"] == 2
+    assert v2["payload"]["parents"][0] == {
         "source_region": "left_eye",
         "lag": 1,
         "source_dimension": "vx",
         "target_dimension": "vx",
     }
-    restored = deserialize_core_contract(migrated)
+    v3 = migrate_core_contract_v2_to_v3(v2)
+    restored = deserialize_core_contract(v3)
     assert restored.parents[0] == ParentLink("left_eye", 1, "vx", "vx")
 
 
@@ -219,26 +236,60 @@ def test_v1_null_mapping_migration_preserves_mapping_with_certified_scalar_dimen
         },
     }
 
-    migrated = migrate_core_contract_v1_to_v2(
+    v2 = migrate_core_contract_v1_to_v2(
         v1,
         certified_scalar_dimension="value",
     )
-    restored = deserialize_core_contract(migrated)
+    v3 = migrate_core_contract_v2_to_v3(v2)
+    restored = deserialize_core_contract(v3)
 
     assert restored.source_parents == (ParentLink("left_eye", 1),)
     assert restored.mapped_parents == (ParentLink("left_cheek", 1),)
 
 
-def test_v1_non_parent_contract_migrates_without_payload_change() -> None:
+def test_v1_non_parent_contract_migrates_via_v2_without_payload_change() -> None:
     current = serialize_core_contract(_samples()[6])
     v1 = deepcopy(current)
     v1["schema_version"] = 1
 
-    migrated = migrate_core_contract_v1_to_v2(v1)
+    v2 = migrate_core_contract_v1_to_v2(v1)
+    assert v2["schema_version"] == 2
+    assert v2["payload"] == current["payload"]
 
-    assert migrated["schema_version"] == 2
-    assert migrated["payload"] == current["payload"]
-    assert deserialize_core_contract(migrated) == _samples()[6]
+    v3 = migrate_core_contract_v2_to_v3(v2)
+    assert v3["schema_version"] == 3
+    assert v3["payload"] == current["payload"]
+    assert deserialize_core_contract(v3) == _samples()[6]
+
+
+def test_v2_design_matrix_migration_requires_certified_target_dimensions() -> None:
+    current = serialize_core_contract(_samples()[3])
+    v2 = deepcopy(current)
+    v2["schema_version"] = 2
+    del v2["payload"]["target_dimensions"]
+
+    with pytest.raises(CoreContractIOError, match="certified_target_dimensions"):
+        migrate_core_contract_v2_to_v3(v2)
+
+    migrated = migrate_core_contract_v2_to_v3(
+        v2,
+        certified_target_dimensions=("vx", "vy"),
+    )
+    restored = deserialize_core_contract(migrated)
+    assert restored.target_dimensions == ("vx", "vy")
+
+
+def test_v2_prediction_migration_rejects_wrong_target_dimension_count() -> None:
+    current = serialize_core_contract(_samples()[4])
+    v2 = deepcopy(current)
+    v2["schema_version"] = 2
+    del v2["payload"]["target_dimensions"]
+
+    with pytest.raises(CoreContractIOError, match="must contain 2 entries"):
+        migrate_core_contract_v2_to_v3(
+            v2,
+            certified_target_dimensions=("vx",),
+        )
 
 
 def test_rejects_unknown_contract_type() -> None:
