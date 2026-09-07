@@ -2,31 +2,34 @@ task_id: C-07
 task_name: Feature provenance
 status: PASS
 
+fail_history:
+  initial_status: FAIL
+  fail_type: contract mismatch
+  root_cause: feature names used an unescaped region.dimension delimiter even though valid FaceTimeSeries region/dimension identifiers may themselves contain '.' or '\\', so source region and dimension were not losslessly recoverable for all valid identifiers
+  resolution: added a reversible escaped feature-name codec while preserving the historical region.dimension form for simple identifiers
+
 implemented:
-  - reused the frozen DesignMatrix.feature_names and DesignMatrix.feature_lags schema
-  - audited provenance across Persistence, Self, Full, and PCMCI ParentSet matrices
-  - added reversible feature-name encoding/decoding so source region and dimension remain losslessly recoverable even when identifiers contain '.' or '\\'
-  - preserved the historical region.dimension representation for simple identifiers
+  - reused the frozen DesignMatrix.feature_names and DesignMatrix.feature_lags schema without a schema migration
+  - added encode_feature_name / decode_feature_name with escaping for '.' and '\\'
+  - updated Self, Full, and PCMCI ParentSet builders to use the reversible codec; Persistence inherits the same path through Self
+  - preserved existing simple names such as mouth.vx exactly
   - verified every design-matrix column retains exact source region, dimension, and target-relative lag
   - verified PCMCI provenance is inherited exactly from the frozen ParentSet without reselection
-  - kept one canonical provenance test file after removing a concurrent duplicate
+  - exported the provenance codec through the package public API
 
 files_changed:
   - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/__init__.py
   - tests/test_design_matrix_feature_provenance.py
   - artifacts/setup/C-07/task_result.yaml
 
-cleanup:
-  - redundant tests/test_feature_provenance.py was removed after detecting the concurrent C-07 audit
-  - cleanup_commit: 2c6be8d028b2dd091d93f994485c80332208146f
-
 tests:
   workflow: tests
-  run_id: 34148619208
-  job_id: 101825925196
-  head_sha: 953a54b7cd0fb84aee4e0cd991149089d8677d95
+  final_run_id: 34148646645
+  final_job_id: 101826011530
+  final_head_sha: d251113262c9c936633d6ae55f357b2b6ae53ac9
   python: 3.11.16
-  result: 185 passed in 1.56s
+  final_result: 185 passed in 2.25s
   cases:
     - Persistence provenance identifies target-region dimensions at lag 1
     - Self provenance preserves target region, dimension, and every requested lag
@@ -34,15 +37,16 @@ tests:
     - PCMCI provenance matches ParentSet source-region/lag links without reselection
     - reserved '.' and '\\' characters round-trip through feature-name encoding
     - design-matrix feature names round-trip to the exact source region and dimension
+    - public API export does not regress the full suite
 
 scientific_checks:
-  - source region, target region, dimension, and lag are losslessly traceable for downstream leakage and lag audits
+  - source region, target region, dimension, and lag are losslessly traceable for every valid identifier accepted by FaceTimeSeries
   - no outcome-dependent feature or lag selection is introduced
   - PCMCI condition inputs remain defined solely by the frozen ParentSet
   - target-relative lag semantics are preserved
   - Primary h=1 and Primary/Sensitivity separation remain unchanged
   - no outer-test information is consumed by provenance construction or validation
-  - frozen contract fields and schema_version are unchanged
+  - frozen DesignMatrix fields and core schema_version are unchanged
 
 artifacts:
   - artifacts/setup/C-07/task_result.yaml
