@@ -1,0 +1,46 @@
+task_id: A-04
+task_name: Region aggregation
+status: PASS
+
+implemented:
+  - added deterministic raw-landmark to region-level aggregation using the frozen ordered RegionDefinition
+  - freezes simple arithmetic-mean aggregation (region centroid) as the A-04 method
+  - produces an immutable region-level tensor with shape (T, K, C), region IDs, and aggregation-method provenance
+  - validates raw landmark shape and region-index bounds before aggregation
+  - ordinary mean intentionally propagates NaN instead of silently ignoring missing values
+  - rejects non-frozen aggregation methods rather than changing preprocessing semantics at runtime
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/region_aggregation.py
+  - tests/test_region_aggregation.py
+  - artifacts/setup/A-04/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34151780393
+  job_id: 101835393294
+  head_sha: c5efd450664f04dbbe961ec43552c24193deb466
+  python: 3.11.16
+  result: success
+  suite_result: 305 passed in 2.06s
+  cases:
+    - arithmetic mean and region order are correct
+    - coordinate dimensionality is preserved
+    - single-landmark region is identity for that point
+    - NaN is propagated for later missingness policy
+    - out-of-bounds region indices are rejected
+    - non-frozen aggregation methods are rejected
+    - raw input landmarks are not modified
+
+scientific_checks:
+  - aggregation uses only the predeclared RegionDefinition and never outer-test outcomes
+  - no data-dependent weighting or region selection is performed
+  - missing values are not repaired or ignored before A-12/A-13
+  - translation, scale, and rotation normalization are not introduced before A-05/A-06/A-07
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-04/task_result.yaml
+
+remaining_issue: none
+next_task: A-05
