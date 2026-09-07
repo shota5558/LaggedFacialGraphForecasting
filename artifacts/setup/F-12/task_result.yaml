@@ -1,0 +1,46 @@
+task_id: F-12
+task_name: Lag-shift duplicate handling
+status: PASS
+
+implemented:
+  - reused ParentSet uniqueness and NullMapping duplicate rejection rather than adding a second deduplication mechanism
+  - verified uniform lag translation is injective for distinct component-aware ParentLinks
+  - verified mapped feature count remains identical to the source ParentSet
+  - verified NullMapping fails closed if duplicate mapped parents are ever presented
+  - no silent deduplication, dropping, or replacement is permitted
+
+files_changed:
+  - tests/test_null_lag_shift.py
+  - tests/test_null_lag_shift_duplicates.py
+  - artifacts/setup/F-12/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/null_lag_shift.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+
+tests:
+  workflow: tests
+  run_id: 34162885602
+  job_id: 101868140877
+  head_sha: 09697a42ffc0af2a39b6282687e3707cd5613033
+  conclusion: success
+  targeted_checks:
+    - component-aware distinct ParentLinks remain unique after a common lag shift
+    - mapped feature count equals source feature count
+    - duplicate mapped parents fail closed at the frozen NullMapping contract
+    - F-10/F-11 leakage and lag-boundary tests remain passing
+
+scientific_checks:
+  - duplicate handling cannot alter sparsity or feature count
+  - region/component/lag provenance is not silently collapsed
+  - invalid mappings fail rather than being adapted from outer-test outcomes
+  - Null construction remains outer-train only
+  - no Sensitivity path is introduced
+
+artifacts:
+  - artifacts/setup/F-12/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-13
