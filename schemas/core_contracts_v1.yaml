@@ -1,5 +1,19 @@
 schema_version: 1
 status: frozen_after_v0
+serialization:
+  format: json
+  envelope:
+    required_fields:
+      - schema_version
+      - contract_type
+      - payload
+    additional_fields: forbidden
+  implementation: lagged_facial_graph_forecasting.core_contract_io
+  compatibility_policy:
+    unknown_schema_version: reject
+    unknown_contract_type: reject
+    missing_payload_field: reject
+    additional_payload_field: reject
 contracts:
   FaceTimeSeries:
     implementation: lagged_facial_graph_forecasting.contracts.FaceTimeSeries
