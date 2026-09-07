@@ -69,7 +69,7 @@ def predict_ridge_forecaster(
     outer_fold: int,
     condition: str,
 ) -> PredictionArtifact:
-    """Predict valid rows and preserve all row provenance in an artifact."""
+    """Predict valid rows and preserve all row/output provenance in an artifact."""
 
     if matrix.feature_names != fitted.feature_names:
         raise ValueError("prediction feature_names do not match fitted model provenance")
@@ -103,6 +103,7 @@ def predict_ridge_forecaster(
         outer_fold=outer_fold,
         subject_id=matrix.subject_id,
         region_id=matrix.region_id,
+        target_dimensions=matrix.target_dimensions,
         condition=condition,
         forecast_origin=matrix.forecast_origin,
         target_time=matrix.target_time,
