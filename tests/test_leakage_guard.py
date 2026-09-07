@@ -5,6 +5,7 @@ import pytest
 from lagged_facial_graph_forecasting.contracts import InnerFold, SplitManifest
 from lagged_facial_graph_forecasting.leakage_guard import (
     LeakageGuardError,
+    assert_discovery_fit_scope,
     assert_preprocessing_fit_scope,
 )
 
@@ -54,3 +55,17 @@ def test_preprocessing_scope_rejects_duplicate_subject_provenance() -> None:
 def test_preprocessing_scope_rejects_empty_subject_scope() -> None:
     with pytest.raises(LeakageGuardError, match="at least one subject"):
         assert_preprocessing_fit_scope(_manifest(), ())
+
+
+def test_discovery_scope_accepts_outer_train_subjects_only() -> None:
+    assert assert_discovery_fit_scope(
+        _manifest(), ("s02", "s04")
+    ) == ("s02", "s04")
+
+
+def test_discovery_scope_rejects_outer_test_subject_before_discovery() -> None:
+    with pytest.raises(
+        LeakageGuardError,
+        match="discovery fit cannot access outer-test subjects",
+    ):
+        assert_discovery_fit_scope(_manifest(), ("s02", "s06"))
