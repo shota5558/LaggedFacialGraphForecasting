@@ -4,8 +4,8 @@ status: PASS
 
 implemented:
   - canonicalized frame-wise translation normalization in src/lagged_facial_graph_forecasting/spatial_normalization.py
-  - removes a common per-frame offset using the arithmetic centroid of an explicitly resolved reference index set
-  - expands the default reference set to all points/regions and records the actual indices in the result provenance
+  - removes a common per-frame offset using the arithmetic centroid of an explicitly declared reference index set
+  - requires reference_indices explicitly so the scientific anchor choice cannot be hidden in an API default
   - stores immutable normalized coordinates, offsets, reference indices, and method provenance
   - intentionally propagates NaN rather than imputing missing values before A-12/A-13
   - removed the duplicate translation_normalization.py implementation before finalizing the task
@@ -19,15 +19,17 @@ tests:
   workflow: tests
   implementation_test_run_id: 34151952823
   implementation_test_job_id: 101835892455
-  head_sha: f67df9b3418af1d54143648fe4949e395f1f7d51
-  python: 3.11.16
-  result: success
-  suite_result: 312 passed in 2.08s
+  implementation_test_result: success
+  implementation_suite_result: 312 passed in 2.08s
   cleanup_commit: 996e5447bd513de5eb5fab88dd714591ef3dac6e
   cleanup_ci_run_id: 34151978487
   cleanup_ci_result: success
+  explicit_reference_commit: 158c42ead4f274fb65f68f8a056eb86945d3a271
+  explicit_reference_ci_run_id: 34152081456
+  explicit_reference_ci_result: success
   cases:
     - frame centroid translation is removed
+    - reference_indices are mandatory to avoid a hidden scientific default
     - global translation leaves normalized coordinates invariant
     - explicit reference centroid is zero after normalization
     - NaN in a reference propagates rather than being imputed
@@ -37,7 +39,7 @@ tests:
 
 scientific_checks:
   - no population-level preprocessing parameter is fit; the transform is deterministic within each frame
-  - reference indices are explicit provenance and are not selected from outer-test predictive outcomes
+  - reference indices are mandatory explicit provenance and are not selected from outer-test predictive outcomes
   - no scale or rotation normalization is introduced before A-06/A-07
   - missing values are not repaired before A-12/A-13
   - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
