@@ -10,7 +10,10 @@ implemented:
   - leaves invalid rows untouched as neither donors nor recipients
   - validates cross-region DesignMatrix provenance against mapped ParentLinks for the scalar target component
   - rejects cross-subject application and requires one scalar target-component matrix
-  - rejects identity, malformed, or valid-support-length-mismatched permutations
+  - derives the canonical application permutation from the frozen NullMapping.seed through the F-41 generator
+  - optional explicit replay permutation must exactly equal the F-41 frozen-seed permutation
+  - rejects arbitrary non-identity permutations that bypass the frozen stochastic rule
+  - rejects no-op time-shuffle evaluation when the scalar target component has no cross-region ParentLinks
 
 files_changed:
   - src/lagged_facial_graph_forecasting/null_time_shuffle.py
@@ -22,26 +25,38 @@ implementation_commits:
     message: F-42: apply time shuffle to PCMCI added features
   - sha: b1d3fcbc4c3e5a985d3dba1fc9d42971960e7475
     message: F-42: test deterministic time-shuffle application
+  - sha: 28e469317427c31c9130b7f259b509b100ec9aed
+    message: F-42: bind application to frozen-seed permutation
+  - sha: 332f56c16d696fd1fb7dff28f3dd6293a5ee2823
+    message: F-42: test frozen-seed application guard
 
 tests:
-  workflow: tests
-  run_id: 34165293128
-  job_id: 101875028087
-  head_sha: b1d3fcbc4c3e5a985d3dba1fc9d42971960e7475
-  result: 619 passed, 1 warning in 5.72s
+  original_workflow: tests
+  original_run_id: 34165293128
+  original_job_id: 101875028087
+  original_head_sha: b1d3fcbc4c3e5a985d3dba1fc9d42971960e7475
+  original_result: 619 passed, 1 warning in 5.72s
+  reaudit_workflow: tests
+  reaudit_run_id: 34165433823
+  reaudit_job_id: 101875421034
+  reaudit_head_sha: 332f56c16d696fd1fb7dff28f3dd6293a5ee2823
+  reaudit_result: success
   warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-42
   targeted_checks:
     - only cross-region PCMCI-added columns are permuted
     - Self-history columns remain exactly unchanged
     - y and all row provenance remain exactly unchanged
     - invalid rows remain untouched and valid_mask is invariant
-    - deterministic same-input/same-permutation application
+    - deterministic application directly from frozen seed
+    - explicit replay equals automatic F-41-derived application
+    - arbitrary valid non-identity permutation bypass fails closed
     - ParentSet/DesignMatrix provenance mismatch fails closed
     - cross-subject permutation fails closed
     - target-region mismatch fails closed
     - invalid permutation length/content/identity fails closed
     - fewer than two valid rows fails closed
     - multioutput target matrix fails closed
+    - no cross-region parent for target component is unevaluable rather than a silent no-op
 
 scientific_checks:
   self_baseline_block_preserved: PASS
@@ -49,8 +64,18 @@ scientific_checks:
   valid_sample_support_preserved: PASS
   within_subject_only: PASS
   pcmci_region_lag_component_provenance_preserved: PASS
+  frozen_seed_is_single_stochastic_source: PASS
+  arbitrary_permutation_bypass_guard: PASS
+  empty_or_no_applicable_parent_noop_forbidden: PASS
   temporal_alignment_destroyed_only_for_added_cross_region_information: PASS
   sensitivity_surrogate_contamination: PASS
+
+reaudit:
+  status: PASS
+  fail_type_found: contract mismatch
+  root_cause: the first F-42 API accepted any caller-supplied non-identity permutation, so callers could bypass the F-41 permutation derived from the frozen SplitManifest seed; it also allowed an empty applicable cross-region block to return an unchanged matrix
+  minimal_fix: make the F-41 seed-derived permutation canonical inside F-42, allow explicit permutations only as exact replay assertions, and fail closed when no cross-region ParentLinks apply to the scalar target component
+  regression_scope: successful full-suite run includes the already-added F-50 deterministic-seed contract tests
 
 artifacts:
   - artifacts/setup/F-42/task_result.yaml
