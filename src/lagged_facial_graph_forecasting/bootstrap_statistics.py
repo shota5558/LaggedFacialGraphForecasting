@@ -93,6 +93,10 @@ def bootstrap_median_paired_difference_ci(
     ``n_resamples`` and ``method`` are intentionally required because the current
     Scientific Freeze specifies a 95% bootstrap CI but does not yet select those
     two implementation-sensitive analysis settings.
+
+    ``random_state`` is used rather than SciPy's newer ``rng`` keyword because the
+    project declares SciPy >=1.10; ``random_state`` accepts a NumPy Generator in
+    that supported range while ``rng`` was introduced only in SciPy 1.15.
     """
 
     if not isinstance(n_resamples, int) or isinstance(n_resamples, bool) or n_resamples < 1:
@@ -139,7 +143,7 @@ def bootstrap_median_paired_difference_ci(
             n_resamples=n_resamples,
             method=method,
             vectorized=False,
-            rng=rng,
+            random_state=rng,
         )
         low = float(bootstrap_result.confidence_interval.low)
         high = float(bootstrap_result.confidence_interval.high)
