@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .preprocessing import PreprocessingValidationError, validate_timestamps
+
 
 class MotionFeatureError(ValueError):
     """Raised when a motion-feature input violates the explicit contract."""
@@ -51,6 +53,31 @@ class DisplacementSeries:
         object.__setattr__(self, "target_frame_indices", target)
 
 
+@dataclass(frozen=True, slots=True)
+class VelocitySeries:
+    """Immutable displacement-per-observed-time with temporal provenance."""
+
+    values: np.ndarray
+    time_intervals: np.ndarray
+    source_frame_indices: np.ndarray
+    target_frame_indices: np.ndarray
+    method: str = "displacement_over_observed_time_interval"
+
+    def __post_init__(self) -> None:
+        values = np.array(self.values, copy=True)
+        intervals = np.array(self.time_intervals, copy=True)
+        source = np.array(self.source_frame_indices, copy=True)
+        target = np.array(self.target_frame_indices, copy=True)
+        values.setflags(write=False)
+        intervals.setflags(write=False)
+        source.setflags(write=False)
+        target.setflags(write=False)
+        object.__setattr__(self, "values", values)
+        object.__setattr__(self, "time_intervals", intervals)
+        object.__setattr__(self, "source_frame_indices", source)
+        object.__setattr__(self, "target_frame_indices", target)
+
+
 def compute_displacement(values: np.ndarray) -> DisplacementSeries:
     """Compute observed consecutive-frame displacement without temporal repair.
 
@@ -70,6 +97,70 @@ def compute_displacement(values: np.ndarray) -> DisplacementSeries:
     target = source + 1
     return DisplacementSeries(
         values=displacement,
+        source_frame_indices=source,
+        target_frame_indices=target,
+    )
+
+
+def compute_velocity(
+    displacement: DisplacementSeries,
+    *,
+    timestamps: np.ndarray,
+) -> VelocitySeries:
+    """Convert canonical displacement to velocity using observed time intervals.
+
+    A-01 explicitly permits irregular positive frame intervals, so velocity uses
+    the validated timestamp difference for each displacement endpoint rather than
+    assuming a fixed frame rate. The numeric unit is therefore coordinate units per
+    timestamp unit; no unstated seconds/frame conversion is introduced here.
+
+    The canonical A-08 provenance must describe consecutive frame pairs. No
+    resampling, interpolation, smoothing, imputation, or population-level fitting is
+    performed. NaN in displacement values remains NaN in velocity values.
+    """
+
+    values = np.asarray(displacement.values)
+    source = np.asarray(displacement.source_frame_indices)
+    target = np.asarray(displacement.target_frame_indices)
+
+    if values.ndim != 3 or values.shape[0] < 1:
+        raise MotionFeatureError(
+            "displacement values must have shape (transitions, points_or_regions, coordinates)"
+        )
+    if source.ndim != 1 or target.ndim != 1:
+        raise MotionFeatureError("displacement frame provenance must be one-dimensional")
+    if source.shape != target.shape or source.size != values.shape[0]:
+        raise MotionFeatureError(
+            "displacement frame provenance must align with displacement rows"
+        )
+    if not np.issubdtype(source.dtype, np.integer) or not np.issubdtype(
+        target.dtype, np.integer
+    ):
+        raise MotionFeatureError("displacement frame provenance must be integer indices")
+    if np.any(source < 0) or np.any(target != source + 1):
+        raise MotionFeatureError(
+            "velocity requires canonical consecutive source->target frame provenance"
+        )
+
+    try:
+        validated_timestamps = validate_timestamps(timestamps)
+    except PreprocessingValidationError as exc:
+        raise MotionFeatureError(str(exc)) from exc
+
+    if target.size == 0 or int(target[-1]) >= validated_timestamps.size:
+        raise MotionFeatureError(
+            "timestamps do not cover all displacement source/target frames"
+        )
+    if validated_timestamps.size != values.shape[0] + 1:
+        raise MotionFeatureError(
+            "canonical displacement requires exactly one more timestamp than displacement rows"
+        )
+
+    intervals = validated_timestamps[target] - validated_timestamps[source]
+    velocity = values / intervals[:, np.newaxis, np.newaxis]
+    return VelocitySeries(
+        values=velocity,
+        time_intervals=intervals,
         source_frame_indices=source,
         target_frame_indices=target,
     )
