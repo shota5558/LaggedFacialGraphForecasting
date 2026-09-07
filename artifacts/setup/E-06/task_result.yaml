@@ -2,12 +2,26 @@ task_id: E-06
 task_name: Frozen refit
 status: PASS
 
+fail_history:
+  fail_type: implementation bug / minimal-duplication violation
+  symptoms:
+    - duplicate frozen-refit logic existed in ridge_tuning.py and ridge_refit.py
+    - duplicate cleanup temporarily left ridge_refit.py importing a removed refit_selected_ridge symbol, causing pytest collection failure
+  failed_run_id: 34149580337
+  failed_job_id: 101828813799
+  resolution:
+    - made src/lagged_facial_graph_forecasting/ridge_refit.py the single canonical E-06 refit implementation
+    - kept ridge_tuning.py limited to alpha grid, inner-CV, aggregation, and E-05 selection
+    - pointed E-06 tests at the canonical refit module
+    - validate frozen RidgeAlphaScore metadata via select_ridge_alpha on a singleton before consuming alpha; this validates but cannot reselect
+
 implemented:
-  - added refit_frozen_ridge as the post-selection outer-train refit entry point
-  - selected E-05 alpha is used verbatim with no further tuning
+  - refit_frozen_ridge is the post-selection outer-train refit entry point
+  - selected E-05 alpha is preserved with no new candidate comparison or tuning
   - StandardScaler and scikit-learn Ridge are refit together on the complete outer-train DesignMatrix
   - outer-test subjects and subjects outside the SplitManifest outer-train set are rejected before fitting
   - incomplete outer-train subject coverage is rejected
+  - malformed/non-finite frozen selection metadata is rejected
 
 files_changed:
   - src/lagged_facial_graph_forecasting/ridge_refit.py
@@ -16,18 +30,21 @@ files_changed:
 
 tests:
   workflow: tests
-  run_id: 34149502412
-  job_id: 101828580759
-  head_sha: 63aba5d772b2c104972af37b65252d05247c5329
-  result: success
+  run_id: 34149684238
+  job_id: 101829137806
+  head_sha: f69a416c4c34fdd45fe06680fbbf41c057c932a5
+  python: 3.11.16
+  result: 224 passed in 1.50s
   direct_cases:
     - selected alpha is preserved in the refitted Ridge estimator
-    - scaler statistics use the complete outer-train rows after selection
+    - scaler statistics use complete outer-train rows after selection
     - outer-test subject contamination is rejected
     - incomplete outer-train subject coverage is rejected
+    - invalid frozen selection metadata is rejected
 
 scientific_checks:
   - refit occurs only after lambda selection
+  - scaler and Ridge are fitted only on complete outer-train after selection
   - no outer-test data enters scaler or Ridge fitting
   - no lambda reselection occurs during refit
   - estimator family remains scikit-learn Ridge
