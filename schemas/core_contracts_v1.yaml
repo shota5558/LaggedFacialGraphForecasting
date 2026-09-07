@@ -1,0 +1,36 @@
+schema_version: 1
+status: frozen_after_v0
+contracts:
+  FaceTimeSeries:
+    implementation: lagged_facial_graph_forecasting.contracts.FaceTimeSeries
+    schema_version: 1
+  SplitManifest:
+    implementation: lagged_facial_graph_forecasting.contracts.SplitManifest
+    schema_version: 1
+  ParentSet:
+    implementation: lagged_facial_graph_forecasting.core_contracts.ParentSet
+    schema_version: 1
+  DesignMatrix:
+    implementation: lagged_facial_graph_forecasting.contracts.DesignMatrix
+    schema_version: 1
+  PredictionArtifact:
+    implementation: lagged_facial_graph_forecasting.contracts.PredictionArtifact
+    schema_version: 1
+  NullMapping:
+    implementation: lagged_facial_graph_forecasting.core_contracts.NullMapping
+    schema_version: 1
+  MetricsResult:
+    implementation: lagged_facial_graph_forecasting.core_contracts.MetricsResult
+    schema_version: 1
+  ExperimentArtifact:
+    implementation: lagged_facial_graph_forecasting.core_contracts.ExperimentArtifact
+    schema_version: 1
+  ExperimentConfig:
+    implementation: lagged_facial_graph_forecasting.core_contracts.ExperimentConfig
+    schema_version: 1
+migration_policy:
+  required_on_change:
+    - reason
+    - impact_scope
+    - migration
+    - tests
