@@ -32,7 +32,7 @@ def _write_fixture(
     )
 
     run_config = {
-        "schema_version": 1,
+        "schema_version": 2,
         "experiment_id": "primary-test",
         "scientific_config_path": "configs/scientific_freeze.yaml",
         "run_config_path": run_config_path,
@@ -54,6 +54,7 @@ def test_repository_primary_run_descriptor_is_loadable() -> None:
     assert loaded.run_config_path == "configs/primary_run.yaml"
     assert loaded.artifact_root == "artifacts/primary"
     assert loaded.seed == 20260908
+    assert loaded.schema_version == 2
 
 
 def test_load_primary_experiment_config_reuses_frozen_scientific_config(tmp_path: Path) -> None:
@@ -68,7 +69,7 @@ def test_load_primary_experiment_config_reuses_frozen_scientific_config(tmp_path
     assert loaded.run_config_path == "configs/primary_run.yaml"
     assert loaded.artifact_root == "artifacts/primary"
     assert loaded.seed == 20260908
-    assert loaded.schema_version == 1
+    assert loaded.schema_version == 2
 
 
 def test_primary_loader_rejects_sensitivity_artifact_root(tmp_path: Path) -> None:
