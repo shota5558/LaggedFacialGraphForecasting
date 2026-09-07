@@ -78,6 +78,31 @@ class VelocitySeries:
         object.__setattr__(self, "target_frame_indices", target)
 
 
+@dataclass(frozen=True, slots=True)
+class AccelerationSeries:
+    """Immutable consecutive velocity change per observed target-time interval."""
+
+    values: np.ndarray
+    time_intervals: np.ndarray
+    source_frame_indices: np.ndarray
+    target_frame_indices: np.ndarray
+    method: str = "consecutive_velocity_difference_over_target_time_interval"
+
+    def __post_init__(self) -> None:
+        values = np.array(self.values, copy=True)
+        intervals = np.array(self.time_intervals, copy=True)
+        source = np.array(self.source_frame_indices, copy=True)
+        target = np.array(self.target_frame_indices, copy=True)
+        values.setflags(write=False)
+        intervals.setflags(write=False)
+        source.setflags(write=False)
+        target.setflags(write=False)
+        object.__setattr__(self, "values", values)
+        object.__setattr__(self, "time_intervals", intervals)
+        object.__setattr__(self, "source_frame_indices", source)
+        object.__setattr__(self, "target_frame_indices", target)
+
+
 def compute_displacement(values: np.ndarray) -> DisplacementSeries:
     """Compute observed consecutive-frame displacement without temporal repair.
 
@@ -163,4 +188,73 @@ def compute_velocity(
         time_intervals=intervals,
         source_frame_indices=source,
         target_frame_indices=target,
+    )
+
+
+def compute_acceleration(
+    velocity: VelocitySeries,
+    *,
+    timestamps: np.ndarray,
+) -> AccelerationSeries:
+    """Compute optional forward finite-difference acceleration from A-09 velocity.
+
+    Each velocity row is associated with its target frame. Consecutive velocity
+    rows are differenced and divided by the observed elapsed time between those
+    target frames. This makes the convention explicit for irregular timestamps and
+    avoids an unstated central-difference or fixed-FPS assumption.
+
+    Acceleration is optional for Primary preprocessing. This helper performs no
+    smoothing, interpolation, imputation, or population-level fitting and preserves
+    missingness by ordinary NumPy propagation.
+    """
+
+    values = np.asarray(velocity.values)
+    source = np.asarray(velocity.source_frame_indices)
+    target = np.asarray(velocity.target_frame_indices)
+    if values.ndim != 3 or values.shape[0] < 2:
+        raise MotionFeatureError(
+            "at least two velocity rows are required to compute acceleration"
+        )
+    if source.ndim != 1 or target.ndim != 1:
+        raise MotionFeatureError("velocity frame provenance must be one-dimensional")
+    if source.shape != target.shape or source.size != values.shape[0]:
+        raise MotionFeatureError(
+            "velocity frame provenance must align with velocity rows"
+        )
+    if not np.issubdtype(source.dtype, np.integer) or not np.issubdtype(
+        target.dtype, np.integer
+    ):
+        raise MotionFeatureError("velocity frame provenance must be integer indices")
+    if np.any(source < 0) or np.any(target != source + 1):
+        raise MotionFeatureError(
+            "acceleration requires canonical consecutive velocity provenance"
+        )
+    if np.any(source[1:] != source[:-1] + 1):
+        raise MotionFeatureError(
+            "acceleration requires consecutive velocity rows without temporal gaps"
+        )
+
+    try:
+        validated_timestamps = validate_timestamps(timestamps)
+    except PreprocessingValidationError as exc:
+        raise MotionFeatureError(str(exc)) from exc
+    if int(target[-1]) >= validated_timestamps.size:
+        raise MotionFeatureError("timestamps do not cover all velocity target frames")
+    if validated_timestamps.size != values.shape[0] + 1:
+        raise MotionFeatureError(
+            "canonical velocity requires exactly one more timestamp than velocity rows"
+        )
+
+    acceleration_source = target[:-1]
+    acceleration_target = target[1:]
+    intervals = (
+        validated_timestamps[acceleration_target]
+        - validated_timestamps[acceleration_source]
+    )
+    acceleration = (values[1:] - values[:-1]) / intervals[:, np.newaxis, np.newaxis]
+    return AccelerationSeries(
+        values=acceleration,
+        time_intervals=intervals,
+        source_frame_indices=acceleration_source,
+        target_frame_indices=acceleration_target,
     )
