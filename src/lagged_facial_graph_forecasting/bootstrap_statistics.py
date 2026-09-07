@@ -1,8 +1,10 @@
 """Bootstrap inference for Primary subject-level paired statistics.
 
-Generic resampling is delegated to ``scipy.stats.bootstrap``.  The scientific
-choices that are not yet frozen (resample count and interval method) are mandatory
-arguments rather than hidden software defaults.
+Generic resampling is delegated to ``scipy.stats.bootstrap``.  The Primary
+Scientific Freeze v6 fixes a 95% percentile interval with 10,000 resamples and an
+experiment-seed source.  ``n_resamples``, ``method``, and ``seed`` remain mandatory
+function arguments so callers cannot silently fall back to software defaults; the
+Primary orchestration layer supplies the frozen values explicitly.
 """
 
 from __future__ import annotations
@@ -90,13 +92,13 @@ def bootstrap_median_paired_difference_ci(
 ) -> tuple[BootstrapMedianCI, ...]:
     """Compute reproducible 95% CIs for subject-level median differences.
 
-    ``n_resamples`` and ``method`` are intentionally required because the current
-    Scientific Freeze specifies a 95% bootstrap CI but does not yet select those
-    two implementation-sensitive analysis settings.
+    The Primary Scientific Freeze v6 currently specifies ``n_resamples=10000`` and
+    ``method='percentile'`` with the experiment seed.  These parameters are still
+    required explicitly at this low-level API boundary to prevent hidden defaults
+    and to keep non-Primary tests/sensitivity calls auditable.
 
     ``random_state`` is used rather than SciPy's newer ``rng`` keyword because the
-    project declares SciPy >=1.10; ``random_state`` accepts a NumPy Generator in
-    that supported range while ``rng`` was introduced only in SciPy 1.15.
+    project supports SciPy versions where ``random_state`` is the compatible API.
     """
 
     if not isinstance(n_resamples, int) or isinstance(n_resamples, bool) or n_resamples < 1:
