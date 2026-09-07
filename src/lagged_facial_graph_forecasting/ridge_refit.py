@@ -1,10 +1,10 @@
-"""Frozen outer-train Ridge refit after inner-CV lambda selection."""
+"""Compatibility entry point for the canonical frozen outer-train Ridge refit."""
 
 from __future__ import annotations
 
 from .contracts import DesignMatrix, SplitManifest
-from .forecaster import FittedRidgeForecaster, fit_ridge_forecaster
-from .ridge_tuning import RidgeAlphaScore
+from .forecaster import FittedRidgeForecaster
+from .ridge_tuning import RidgeAlphaScore, refit_selected_ridge
 
 
 def refit_frozen_ridge(
@@ -13,33 +13,15 @@ def refit_frozen_ridge(
     split_manifest: SplitManifest,
     selected: RidgeAlphaScore,
 ) -> FittedRidgeForecaster:
-    """Refit scaler + Ridge on the complete outer-train matrix using frozen alpha.
+    """Delegate E-06 refit to the single canonical implementation.
 
-    This function is valid only after E-05 selection.  It accepts no outer-test rows
-    and performs no tuning or selection; ``selected.alpha`` is used verbatim.
+    ``ridge_tuning.refit_selected_ridge`` owns all scope checks and the final
+    StandardScaler + Ridge fit.  This wrapper exists only for the task-oriented
+    import path and intentionally contains no duplicate fitting or leakage logic.
     """
 
-    matrix_subjects = set(matrix.subject_id)
-    outer_train_subjects = set(split_manifest.train_subject_ids)
-    outer_test_subjects = set(split_manifest.test_subject_ids)
-
-    leaked = matrix_subjects & outer_test_subjects
-    if leaked:
-        raise ValueError(
-            "frozen Ridge refit matrix contains outer-test subjects: "
-            f"{sorted(leaked)}"
-        )
-    unexpected = matrix_subjects - outer_train_subjects
-    if unexpected:
-        raise ValueError(
-            "frozen Ridge refit matrix contains subjects outside outer-train: "
-            f"{sorted(unexpected)}"
-        )
-    missing = outer_train_subjects - matrix_subjects
-    if missing:
-        raise ValueError(
-            "frozen Ridge refit matrix is missing outer-train subjects: "
-            f"{sorted(missing)}"
-        )
-
-    return fit_ridge_forecaster(matrix, alpha=float(selected.alpha))
+    return refit_selected_ridge(
+        matrix,
+        split_manifest=split_manifest,
+        selection=selected,
+    )
