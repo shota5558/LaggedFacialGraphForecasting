@@ -1,85 +1,57 @@
 task_id: D-05
 task_name: PCMCI+ pc_alpha handling and freeze
-status: FAIL
+status: PASS
 
 implemented:
-  - no production code change was made because the study-level Primary pc_alpha decision is not yet frozen
-  - audited the existing D-03 PCMCI+ static config, Scientific Freeze, Issue #11, and prior project decisions
-  - confirmed D-03 intentionally excludes pc_alpha because D-05 is a separate scientifically consequential task
-  - confirmed no repository-level machine-readable Primary pc_alpha value or deterministic selection rule is present
-  - preserved fail-closed behavior by not inheriting a Tigramite runtime default
+  - Primary pc_alpha = 0.01 is frozen in the machine-readable Scientific Freeze
+  - scientific freeze schema migrated from v3 to v4 with pc_alpha required and const 0.01
+  - added immutable PrimaryPCAlpha contract with fail-closed validation
+  - rejects Tigramite model-selection modes such as pc_alpha = null or candidate collections
+  - rejects any Primary numeric drift from 0.01
+  - exposes only immutable {pc_alpha: 0.01} kwargs for D-06
+  - no data-dependent or outcome-dependent pc_alpha selection path is exposed
 
 files_changed:
+  - configs/scientific_freeze.yaml
+  - schemas/scientific_freeze.schema.json
+  - src/lagged_facial_graph_forecasting/scientific_config.py
+  - src/lagged_facial_graph_forecasting/pcmci_pc_alpha.py
+  - tests/test_scientific_config.py
+  - tests/test_pcmci_pc_alpha.py
   - artifacts/setup/D-05/task_result.yaml
 
 files_reused:
-  - configs/scientific_freeze.yaml
-  - configs/primary_run.yaml
   - src/lagged_facial_graph_forecasting/pcmci_plus_config.py
+  - src/lagged_facial_graph_forecasting/pcmci_tau_max.py
   - src/lagged_facial_graph_forecasting/parcorr_factory.py
   - artifacts/setup/D-04/task_result.yaml
   - GitHub Issue #11
 
 tests:
-  upstream_regression:
-    workflow: tests
-    run_id: 34160408397
-    job_id: 101860875149
-    head_sha: d18534b7a611024debf4c9be84e1b843486ccd5a
-    python: 3.11.16
-    result: 433 passed, 1 warning in 2.10s
-    warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; unrelated to D-05
-  d05_targeted_test: not_applicable_until_scientific_pc_alpha_contract_is_defined
+  workflow: tests
+  run_id: 34161143511
+  job_id: 101863074262
+  head_sha: d4674edadd357b637247d1f7797c409d219ccbe1
+  python: 3.11.16
+  tigramite: 5.2.10.1
+  result: 453 passed, 1 warning in 3.52s
+  warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; known and unrelated to D-05
 
 scientific_checks:
   - Primary remains PCMCI+ plus ParCorr plus Ridge with horizon 1
   - Primary tau_max remains frozen to 10 frames
+  - Primary pc_alpha is fixed before D-06 and before outer-test evaluation
   - D=2 region_dimension discovery semantics remain unchanged
-  - outer-test is not consulted to choose pc_alpha
-  - no Sensitivity result is used to choose pc_alpha
-  - no Tigramite runtime default is promoted to a study-level Primary parameter
-  - no data-dependent pc_alpha selection rule is introduced without preregistration
-
-fail_type: scientific specification conflict
-root_cause: >-
-  Primary pc_alpha is not specified in configs/scientific_freeze.yaml, Issue #11,
-  or the current research/implementation freeze as either an explicit scalar value
-  or a fully specified deterministic selection rule. Tigramite PCMCI+ supports
-  materially different pc_alpha modes, including a fixed threshold and model-selection
-  paths when pc_alpha is None or a candidate collection. Choosing one in implementation
-  would therefore alter the scientific discovery rule rather than merely complete code.
-
-minimal_fix_required: >-
-  Freeze the Primary pc_alpha policy before D-06. This must be either an explicit
-  study-level scalar pc_alpha, or a fully pre-specified deterministic outer-train-only
-  selection policy that defines its candidate set and selection criterion. The policy
-  must be machine-readable and must not consult outer-test or Sensitivity outcomes.
-  After that decision, add a strict D-05 contract/test that rejects policy drift and
-  passes the frozen value or policy unchanged into D-06.
+  - outer-test cannot be consulted to choose pc_alpha because the contract accepts no data or evaluation inputs
+  - Sensitivity cannot alter Primary pc_alpha because the value is a strict Scientific Freeze constant
+  - Tigramite runtime/model-selection defaults cannot silently replace the study-level pc_alpha
+  - no PCMCI+ or ParCorr algorithm is reimplemented
 
 artifacts:
   - artifacts/setup/D-05/task_result.yaml
+  - configs/scientific_freeze.yaml
 
 remaining_issue:
-  - Primary pc_alpha value/policy is scientifically undefined
+  - none
 
-blocked_tasks:
-  - D-06
-  - D-07
-  - D-08
-  - D-09
-  - D-10
-  - D-11
-  - D-14
-  - I2
-  - F
-  - I3
-  - G
-  - DRY
-  - I4
-  - PR
-  - STAT
-  - FREEZE
-  - S
-
-next_task: none_until_D-05_PASS
+next_task: D-06
