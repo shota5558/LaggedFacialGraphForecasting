@@ -16,7 +16,7 @@ reused_files:
   - tests/test_alignment.py
   - src/lagged_facial_graph_forecasting/design_matrix.py
 
- tests:
+tests:
   workflow: tests
   run_id: 34147524791
   head_sha: d1dfa4e76dfc76136e049fae752b69f5899d6596
