@@ -25,6 +25,7 @@ def _matrix(
         y=y,
         subject_id=("s01",) * n_rows,
         region_id=("mouth",) * n_rows,
+        target_dimensions=("vx", "vy"),
         forecast_origin=np.arange(n_rows, dtype=float),
         target_time=np.arange(1, n_rows + 1, dtype=float),
         feature_names=feature_names,
@@ -58,6 +59,7 @@ def test_prediction_returns_row_aligned_artifact() -> None:
     assert artifact.condition == "self"
     assert artifact.subject_id == matrix.subject_id
     assert artifact.region_id == matrix.region_id
+    assert artifact.target_dimensions == matrix.target_dimensions
     assert np.array_equal(artifact.forecast_origin, matrix.forecast_origin)
     assert np.array_equal(artifact.target_time, matrix.target_time)
     assert np.array_equal(artifact.y_true, matrix.y)
