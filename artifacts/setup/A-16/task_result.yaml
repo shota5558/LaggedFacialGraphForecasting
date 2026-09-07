@@ -1,0 +1,48 @@
+task_id: A-16
+task_name: Lane A unit tests
+status: PASS
+
+implemented:
+  - audited unit-test coverage for Lane A preprocessing tasks A-00 through A-15
+  - reused the existing task-specific unit tests rather than adding a redundant aggregate implementation test
+  - confirmed the complete repository pytest suite remains green after A-15 duplicate-test cleanup
+  - confirmed Lane A tests cover reader validation, timestamp/shape validation, region definition/aggregation, normalization, motion features, quality/missingness/interpolation, subject assembly, and serialization
+
+files_changed:
+  - artifacts/setup/A-16/task_result.yaml
+
+reused_tests:
+  - tests/test_landmark_io.py
+  - tests/test_preprocessing_validation.py
+  - tests/test_region_definition.py
+  - tests/test_region_aggregation.py
+  - tests/test_spatial_normalization.py
+  - tests/test_displacement.py
+  - tests/test_velocity.py
+  - tests/test_acceleration.py
+  - tests/test_quality_flags.py
+  - tests/test_missing_frame_handling.py
+  - tests/test_interpolation_policy.py
+  - tests/test_subject_sequence_assembly.py
+  - tests/test_core_contract_io.py
+  - tests/test_subject_sequence_serialization.py
+
+tests:
+  workflow: tests
+  run_id: 34153804344
+  job_id: 101841325896
+  head_sha: 70c5e12634d7e4a022bbe2946db229a83f799338
+  result: success
+
+scientific_checks:
+  - Lane A unit tests preserve subject identity and observed temporal provenance
+  - no test or implementation introduces outer-test-dependent preprocessing fitting
+  - no implicit interpolation, imputation, resampling, or outcome-dependent policy selection is introduced
+  - Primary scientific freeze remains PCMCI+ + ParCorr + Ridge, h=1
+  - no GPDC, LPCMCI, h>1, GRU, GNN, or other Sensitivity execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-16/task_result.yaml
+
+remaining_issue: none
+next_task: A-17
