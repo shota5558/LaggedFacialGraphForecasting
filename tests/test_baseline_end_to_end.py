@@ -28,6 +28,7 @@ from lagged_facial_graph_forecasting.synthetic import generate_synthetic_face_ti
 
 
 _TARGET_REGION = "left_eye"
+_TARGET_DIMENSION = "vx"
 _LAGS = (1, 2, 3)
 _ALIGNMENT_LAG = 3
 _ALPHA_GRID = (0.1, 1.0, 10.0)
@@ -59,6 +60,7 @@ def _builder(condition: str):
         return lambda series: build_persistence_design_matrix(
             series,
             target_region=_TARGET_REGION,
+            target_dimension=_TARGET_DIMENSION,
             horizon=1,
             alignment_lag=_ALIGNMENT_LAG,
         )
@@ -66,6 +68,7 @@ def _builder(condition: str):
         return lambda series: build_self_history_design_matrix(
             series,
             target_region=_TARGET_REGION,
+            target_dimension=_TARGET_DIMENSION,
             lags=_LAGS,
             horizon=1,
             alignment_lag=_ALIGNMENT_LAG,
@@ -74,6 +77,7 @@ def _builder(condition: str):
         return lambda series: build_full_history_design_matrix(
             series,
             target_region=_TARGET_REGION,
+            target_dimension=_TARGET_DIMENSION,
             lags=_LAGS,
             horizon=1,
             alignment_lag=_ALIGNMENT_LAG,
@@ -106,6 +110,7 @@ def _run_gate(repository_root: Path):
         )
         assert set(train_matrix.subject_id) == set(manifest.train_subject_ids)
         assert not (set(train_matrix.subject_id) & set(manifest.test_subject_ids))
+        assert train_matrix.y.ndim == 1
 
         scores = evaluate_ridge_inner_cv(
             train_matrix,
@@ -135,6 +140,8 @@ def _run_gate(repository_root: Path):
 
         assert set(prediction.subject_id) == set(manifest.test_subject_ids)
         assert prediction.condition == condition
+        assert prediction.y_true.ndim == 1
+        assert prediction.y_pred.ndim == 1
         assert np.isfinite(rmse)
         assert rmse >= 0.0
         assert np.array_equal(prediction.valid_mask, test_matrix.valid_mask)
@@ -216,6 +223,7 @@ def test_baseline_inner_cv_rejects_outer_test_subject_rows() -> None:
         build_self_history_design_matrix(
             series_by_subject[subject_id],
             target_region=_TARGET_REGION,
+            target_dimension=_TARGET_DIMENSION,
             lags=_LAGS,
             horizon=1,
             alignment_lag=_ALIGNMENT_LAG,
