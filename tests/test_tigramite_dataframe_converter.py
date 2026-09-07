@@ -48,10 +48,9 @@ def _series(subject_id: str, *, length: int, sampling_rate: float = 25.0) -> Fac
 
 
 def test_converter_keeps_subjects_as_separate_tigramite_datasets() -> None:
-    bundle = face_time_series_to_tigramite_dataframe(
-        _manifest(),
-        (_series("s1", length=4), _series("s2", length=5)),
-    )
+    s1 = _series("s1", length=4)
+    s2 = _series("s2", length=5)
+    bundle = face_time_series_to_tigramite_dataframe(_manifest(), (s1, s2))
 
     frame = bundle.dataframe
     assert frame.analysis_mode == "multiple"
@@ -71,6 +70,9 @@ def test_converter_keeps_subjects_as_separate_tigramite_datasets() -> None:
         ("mouth", "vx"),
         ("mouth", "vy"),
     )
+    assert bundle.sampling_rate == 25.0
+    np.testing.assert_array_equal(frame.datatime["s1"], s1.time_index)
+    np.testing.assert_array_equal(frame.datatime["s2"], s2.time_index)
 
 
 def test_invalid_values_are_finite_placeholders_under_tigramite_mask() -> None:
