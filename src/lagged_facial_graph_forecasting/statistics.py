@@ -1,14 +1,14 @@
 """Primary subject-level paired statistics.
 
-This module starts with the G-02 pairing boundary only.  Aggregation and bootstrap
-inference are deliberately separate later tasks so the subject-level observations
-remain inspectable and reproducible.
+Pairing, median aggregation, and bootstrap inference are kept as separate stages so
+subject-level observations remain inspectable and reproducible.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections import defaultdict
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -19,7 +19,7 @@ from .core_contracts import MetricsResult
 class PairedMetricDifference:
     """One matched subject-region error difference.
 
-    ``difference`` is always ``reference_value - comparison_value``.  Therefore,
+    ``difference`` is always ``reference_value - comparison_value``. Therefore,
     for the Primary Self-vs-PCMCI error comparison, a positive value is exactly the
     preregistered Incremental Gain ``Error_Self - Error_PCMCI``.
     """
@@ -36,7 +36,11 @@ class PairedMetricDifference:
     n_valid: int
 
     def __post_init__(self) -> None:
-        if not isinstance(self.outer_fold, int) or isinstance(self.outer_fold, bool) or self.outer_fold < 0:
+        if (
+            not isinstance(self.outer_fold, int)
+            or isinstance(self.outer_fold, bool)
+            or self.outer_fold < 0
+        ):
             raise ValueError("outer_fold must be a non-negative integer")
         for name in (
             "subject_id",
@@ -55,8 +59,64 @@ class PairedMetricDifference:
             if not np.isfinite(value):
                 raise ValueError(f"{name} must be finite")
             object.__setattr__(self, name, value)
-        if not isinstance(self.n_valid, int) or isinstance(self.n_valid, bool) or self.n_valid < 1:
+        if (
+            not isinstance(self.n_valid, int)
+            or isinstance(self.n_valid, bool)
+            or self.n_valid < 1
+        ):
             raise ValueError("n_valid must be a positive integer")
+
+
+@dataclass(frozen=True, slots=True)
+class MedianPairedDifference:
+    """Unweighted median of subject-level paired differences for one region."""
+
+    region_id: str
+    metric_name: str
+    reference_condition: str
+    comparison_condition: str
+    median_difference: float
+    n_subjects: int
+    subject_ids: tuple[str, ...]
+    outer_folds: tuple[int, ...]
+
+    def __post_init__(self) -> None:
+        for name in (
+            "region_id",
+            "metric_name",
+            "reference_condition",
+            "comparison_condition",
+        ):
+            value = getattr(self, name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{name} must be a non-empty string")
+        if self.reference_condition == self.comparison_condition:
+            raise ValueError("paired conditions must be different")
+        median_difference = float(self.median_difference)
+        if not np.isfinite(median_difference):
+            raise ValueError("median_difference must be finite")
+        object.__setattr__(self, "median_difference", median_difference)
+        if (
+            not isinstance(self.n_subjects, int)
+            or isinstance(self.n_subjects, bool)
+            or self.n_subjects < 1
+        ):
+            raise ValueError("n_subjects must be a positive integer")
+        subject_ids = tuple(self.subject_ids)
+        outer_folds = tuple(self.outer_folds)
+        if len(subject_ids) != self.n_subjects or len(outer_folds) != self.n_subjects:
+            raise ValueError("subject_ids and outer_folds must match n_subjects")
+        if any(not isinstance(subject, str) or not subject.strip() for subject in subject_ids):
+            raise ValueError("subject_ids entries must be non-empty strings")
+        if len(set(subject_ids)) != len(subject_ids):
+            raise ValueError("subject_ids must be unique within an aggregation")
+        if any(
+            not isinstance(fold, int) or isinstance(fold, bool) or fold < 0
+            for fold in outer_folds
+        ):
+            raise ValueError("outer_folds entries must be non-negative integers")
+        object.__setattr__(self, "subject_ids", subject_ids)
+        object.__setattr__(self, "outer_folds", outer_folds)
 
 
 def _index_metric_results(
@@ -147,3 +207,61 @@ def subject_level_paired_difference(
         )
 
     return tuple(paired)
+
+
+def median_paired_difference(
+    paired_results: Sequence[PairedMetricDifference],
+) -> tuple[MedianPairedDifference, ...]:
+    """Aggregate paired differences by region/metric/condition using the median.
+
+    Each subject contributes exactly one unweighted paired difference per group.
+    The returned subject/fold tuples preserve which held-out units support each
+    median; duplicate subject contributions are rejected rather than averaged.
+    """
+
+    normalized = tuple(paired_results)
+    if not normalized:
+        raise ValueError("paired_results must not be empty")
+    if any(not isinstance(result, PairedMetricDifference) for result in normalized):
+        raise TypeError("paired_results entries must be PairedMetricDifference instances")
+
+    grouped: dict[
+        tuple[str, str, str, str], list[PairedMetricDifference]
+    ] = defaultdict(list)
+    for result in normalized:
+        key = (
+            result.region_id,
+            result.metric_name,
+            result.reference_condition,
+            result.comparison_condition,
+        )
+        grouped[key].append(result)
+
+    summaries: list[MedianPairedDifference] = []
+    for key in sorted(grouped):
+        rows = sorted(
+            grouped[key],
+            key=lambda result: (result.subject_id, result.outer_fold),
+        )
+        subjects = tuple(result.subject_id for result in rows)
+        if len(set(subjects)) != len(subjects):
+            raise ValueError(
+                "each subject must contribute exactly one paired difference per "
+                f"aggregation group; group={key!r}"
+            )
+        folds = tuple(result.outer_fold for result in rows)
+        differences = np.asarray([result.difference for result in rows], dtype=float)
+        summaries.append(
+            MedianPairedDifference(
+                region_id=key[0],
+                metric_name=key[1],
+                reference_condition=key[2],
+                comparison_condition=key[3],
+                median_difference=float(np.median(differences)),
+                n_subjects=len(rows),
+                subject_ids=subjects,
+                outer_folds=folds,
+            )
+        )
+
+    return tuple(summaries)
