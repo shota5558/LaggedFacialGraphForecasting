@@ -1,11 +1,9 @@
-"""Canonical facial region definitions and explicit aggregation primitives."""
+"""Canonical, extractor-neutral facial region definitions (A-03)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Iterable, Mapping
-
-import numpy as np
 
 
 class RegionDefinitionError(ValueError):
@@ -127,47 +125,3 @@ def validate_region_landmark_bounds(
                     f"landmark_count={landmark_count}"
                 )
     return definition
-
-
-def aggregate_landmark_regions(
-    landmarks: np.ndarray,
-    definition: RegionDefinition,
-    *,
-    method: str,
-) -> np.ndarray:
-    """Aggregate raw ``(T, P, C)`` landmarks into ordered ``(T, K, C)`` regions.
-
-    The aggregation method must be stated explicitly by the caller so the
-    scientific preprocessing choice is never hidden in a default. A-04 supports
-    only the arithmetic mean. NumPy's ordinary mean is used deliberately: any NaN
-    in a selected region/coordinate propagates instead of being silently dropped,
-    imputed, or interpolated before A-12/A-13.
-    """
-
-    values = np.asarray(landmarks)
-    if values.ndim != 3:
-        raise RegionDefinitionError(
-            "landmarks must have shape (frames, landmarks, coordinates)"
-        )
-    if any(size < 1 for size in values.shape):
-        raise RegionDefinitionError("landmark tensor axes must be non-empty")
-    if not np.issubdtype(values.dtype, np.number) or np.issubdtype(
-        values.dtype, np.bool_
-    ):
-        raise RegionDefinitionError("landmarks must contain numeric values")
-    if not isinstance(definition, RegionDefinition):
-        raise RegionDefinitionError("definition must be a RegionDefinition")
-    if method != "mean":
-        raise RegionDefinitionError("A-04 supports only explicit method='mean'")
-
-    validate_region_landmark_bounds(definition, landmark_count=values.shape[1])
-    aggregated = np.stack(
-        [
-            np.mean(values[:, indices, :], axis=1)
-            for indices in definition.landmark_indices
-        ],
-        axis=1,
-    )
-    aggregated = np.array(aggregated, copy=True)
-    aggregated.setflags(write=False)
-    return aggregated
