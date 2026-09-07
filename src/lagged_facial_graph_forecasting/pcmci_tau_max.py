@@ -1,10 +1,9 @@
-"""Fail-closed handling for the Primary PCMCI+ maximum lag.
+"""Frozen Primary PCMCI+ maximum lag.
 
-D-04 intentionally does not choose a study-specific numeric maximum lag.  The
-research specification requires that value to be fixed before discovery, but no
-numeric value is currently frozen.  This module therefore accepts only an
-explicitly supplied integer and records it as an immutable configuration value.
-No data-dependent or outer-test-dependent inference path exists here.
+The study-level decision is final: Primary PCMCI+ uses ``tau_max = 10`` frames
+for every outer fold.  This value is a scientific freeze parameter, not a runtime
+tuning knob, and must not be changed after observing outer-test or Sensitivity
+results.
 """
 
 from __future__ import annotations
@@ -15,20 +14,16 @@ from types import MappingProxyType
 from typing import Mapping
 
 
-PRIMARY_TAU_MAX_SCHEMA_VERSION = 1
+PRIMARY_TAU_MAX_SCHEMA_VERSION = 2
 PRIMARY_FORECAST_HORIZON = 1
+PRIMARY_TAU_MAX = 10
 
 
 @dataclass(frozen=True, slots=True)
 class PrimaryTauMax:
-    """Explicitly frozen ``tau_max`` for Primary PCMCI+ discovery.
+    """Immutable Primary ``tau_max`` fixed to 10 frames."""
 
-    ``tau_max`` has no default by design.  A caller must supply the value chosen
-    by the pre-registered scientific configuration before discovery is run.
-    Primary forecasting uses ``h=1``, so ``tau_max`` must include at least lag 1.
-    """
-
-    tau_max: int
+    tau_max: int = PRIMARY_TAU_MAX
     schema_version: int = PRIMARY_TAU_MAX_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
@@ -40,6 +35,11 @@ class PrimaryTauMax:
             raise TypeError("Primary PCMCI+ tau_max must be an integer")
 
         tau_max = int(self.tau_max)
+        if tau_max != PRIMARY_TAU_MAX:
+            raise ValueError(
+                "Primary PCMCI+ tau_max is scientifically frozen to "
+                f"{PRIMARY_TAU_MAX}; got {tau_max}"
+            )
         if tau_max < PRIMARY_FORECAST_HORIZON:
             raise ValueError(
                 "Primary PCMCI+ tau_max must be >= the frozen forecast horizon "
@@ -53,7 +53,7 @@ class PrimaryTauMax:
         return MappingProxyType({"tau_max": self.tau_max})
 
 
-def freeze_primary_tau_max(tau_max: int) -> PrimaryTauMax:
-    """Freeze one explicit Primary maximum lag without consulting any data."""
+def freeze_primary_tau_max(tau_max: int = PRIMARY_TAU_MAX) -> PrimaryTauMax:
+    """Return the final Primary maximum-lag freeze; reject any value other than 10."""
 
     return PrimaryTauMax(tau_max=tau_max)
