@@ -1,0 +1,39 @@
+task_id: P0B-02
+task_name: SplitManifest
+status: PASS
+
+implemented:
+  - canonical SplitManifest contract
+  - InnerFold helper for subject-grouped inner CV
+  - outer train/test overlap rejection
+  - inner train/validation overlap rejection
+  - outer-test intrusion rejection
+  - rejection of subjects outside outer-train in inner folds
+  - duplicate subject ID rejection
+  - deterministic non-negative seed and outer_fold validation
+  - duplicate alternate implementation removed
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/contracts.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_split_manifest.py
+
+tests:
+  workflow: tests
+  run_id: 34144269459
+  head_sha: 7405afeb6b87d005ea790884593e2ce8bf17e15b
+  result: 27 passed in 0.18s
+
+scientific_checks:
+  - outer train/test subject overlap is structurally forbidden
+  - inner folds cannot contain outer-test subjects
+  - inner folds cannot contain subjects outside outer-train
+  - split provenance includes outer_fold and seed
+  - no module-specific split implementation was introduced
+  - no Primary or Sensitivity method was changed
+
+artifacts:
+  - artifacts/setup/P0B-02/task_result.yaml
+
+remaining_issue: none
+next_task: P0B-03
