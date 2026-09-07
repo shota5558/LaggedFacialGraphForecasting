@@ -7,8 +7,10 @@ implemented:
   - requires the canonical SplitManifest and reuses assert_discovery_fit_scope before DataFrame construction
   - rejects outer-test and otherwise out-of-scope subject IDs at the discovery-facing conversion boundary
   - preserves subjects as separate datasets in analysis_mode='multiple' rather than concatenating subject boundaries
-  - flattens only region/dimension axes and records deterministic variable/component provenance
   - preserves each subject's original time_index as Tigramite datatime and carries the common sampling_rate for later frame-to-time lag provenance
+  - exposes exactly one scalar discovery variable per facial region, matching Primary ParCorr and the frozen region-only ParentSet boundary
+  - rejects multi-component region states such as (vx, vy) instead of silently creating component-level discovery nodes whose identity cannot be represented by ParentSet
+  - records deterministic region/component provenance for the accepted scalar representation
   - converts canonical valid_mask semantics into Tigramite invalid-mask semantics
   - replaces invalid non-finite entries with a fixed finite placeholder only under the corresponding Tigramite mask because Tigramite rejects NaN before masking
   - rejects duplicate subject IDs and incompatible region/dimension/sampling-rate schemas
@@ -20,32 +22,34 @@ files_changed:
 
 source_commits:
   initial_converter: bf5c52d9da02c73ea888fc361afcca336586cc13
-  initial_tests: fe640be1268815b319109062354554ac7b82bc33
   leakage_guard_integration: bc954fa327783923f5a22c64f2eb9d8b38600506
-  leakage_regression_test: d5310256f44adef39932a2c93ea3ac0573551365
-  temporal_provenance: 9ef983ac89be23b8ec7248af419a4d3c25858b32
   temporal_provenance_test: 24cc04c07704180a28ab66e41705042ecf907747
+  scalar_contract_guard: 9685f5863070a76f820cca1507643a446c8002c2
+  scalar_contract_test: ac3b6bdf5a64d8724390b24f187e7725f0914fc4
 
 tests:
   workflow: tests
-  run_id: 34154468700
-  job_id: 101843306120
-  head_sha: 24cc04c07704180a28ab66e41705042ecf907747
+  run_id: 34154590485
+  job_id: 101843669592
+  head_sha: ac3b6bdf5a64d8724390b24f187e7725f0914fc4
   result: success
-  suite_result: 383 passed in 2.15s
   cases:
     - independent subjects remain separate Tigramite datasets with different lengths
-    - variable names and region/dimension component provenance are deterministic
+    - region names and accepted scalar component provenance are deterministic
     - subject time_index arrays and common sampling_rate provenance are preserved
     - invalid NaN is replaced only at a masked location and all Tigramite data are finite
     - duplicate subjects and incompatible schemas are rejected
     - outer-test subject input raises LeakageGuardError before Tigramite DataFrame construction
+    - multi-component region state is rejected until a scientifically frozen mapping exists
 
 scientific_checks:
   - discovery-facing conversion is structurally limited to outer-train subjects by the frozen SplitManifest
   - no cross-subject concatenation or boundary transition is introduced
   - observed temporal labels and sampling-rate provenance are retained without interpolation or resampling
   - invalid observations are represented by the Tigramite mask; D-02 must freeze a ParCorr mask_type that consumes this mask
+  - Primary ParCorr is not silently replaced by ParCorrMult or another multivariate CI test
+  - frozen ParentSet region identity is not made lossy by component-level discovery nodes
+  - no component aggregation rule is invented from outer-test or any outcome data
   - conversion performs no preprocessing fit, discovery, tuning, feature/lag selection, or Null construction
   - Primary remains PCMCI+ + ParCorr + Ridge with h=1
   - no Sensitivity execution path is introduced
@@ -53,5 +57,6 @@ scientific_checks:
 artifacts:
   - artifacts/setup/D-01/task_result.yaml
 
-remaining_issue: none
+remaining_issue:
+  - real-data Primary discovery still requires an explicitly frozen one-scalar-per-region motion representation upstream; D-01 intentionally fails closed for D>1 rather than choosing that scientific mapping implicitly
 next_task: D-02
