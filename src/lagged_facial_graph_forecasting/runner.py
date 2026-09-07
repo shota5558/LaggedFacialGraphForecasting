@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Mapping
+from typing import Any, Iterable, Mapping
 
 import numpy as np
 
@@ -17,6 +17,7 @@ from .forecaster import (
     predict_ridge_forecaster,
 )
 from .metrics import velocity_rmse
+from .scientific_config import load_scientific_config
 
 
 class OuterTestLockedError(RuntimeError):
@@ -65,17 +66,23 @@ def _concatenate_design_matrices(matrices: Iterable[DesignMatrix]) -> DesignMatr
 
 @dataclass(slots=True)
 class MinimalFoldRunner:
-    """V0 runner with explicit outer-test lock and one-shot frozen evaluation."""
+    """V0 runner with mandatory Scientific Freeze validation and outer-test lock."""
 
     manifest: SplitManifest
     series_by_subject: Mapping[str, FaceTimeSeries]
+    scientific_config_path: str | Path = Path("configs/scientific_freeze.yaml")
     _state: str = field(init=False, default="locked")
     _fitted: FittedRidgeForecaster | None = field(init=False, default=None)
     _target_region: str | None = field(init=False, default=None)
     _lags: tuple[int, ...] | None = field(init=False, default=None)
     _training_matrix: DesignMatrix | None = field(init=False, default=None)
+    _scientific_config: dict[str, Any] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        # P0A execution gate: no experiment runner may start without first
+        # loading and strictly validating the frozen scientific specification.
+        self._scientific_config = load_scientific_config(self.scientific_config_path)
+
         provided = dict(self.series_by_subject)
         required = set(self.manifest.train_subject_ids) | set(self.manifest.test_subject_ids)
         missing = sorted(required - set(provided))
