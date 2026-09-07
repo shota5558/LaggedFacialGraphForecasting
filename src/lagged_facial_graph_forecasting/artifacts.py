@@ -16,13 +16,13 @@ def _jsonable_numeric_array(values: np.ndarray) -> list[Any]:
     array = np.asarray(values)
 
     def convert(value: Any) -> Any:
+        if isinstance(value, (np.bool_, bool)):
+            return bool(value)
         if isinstance(value, (np.floating, float)):
             number = float(value)
             return number if np.isfinite(number) else None
         if isinstance(value, (np.integer, int)):
             return int(value)
-        if isinstance(value, (np.bool_, bool)):
-            return bool(value)
         return value
 
     if array.ndim == 1:
