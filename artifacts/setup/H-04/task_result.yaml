@@ -1,0 +1,39 @@
+task_id: H-04
+task_name: Seed registry
+status: PASS
+
+implemented:
+  - added deterministic named seed derivation from the frozen experiment root seed
+  - component seeds use SHA-256 instead of Python's process-randomized hash function
+  - derived seeds are uint32-compatible for NumPy/scikit-learn/Tigramite-facing consumers
+  - seed registry JSON is deterministically sorted and records root seed plus all derived keys
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/seed_registry.py
+  - tests/test_seed_registry.py
+  - artifacts/setup/H-04/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34150527861
+  job_id: 101831689710
+  head_sha: 4711d1c4398193c2b8a3da63790ee4fafef2160d
+  result: success
+  cases:
+    - same root seed and key produce identical component seed
+    - registration order does not change serialized seed registry
+    - repeated key returns the same seed without duplicate entry
+    - derived seeds are uint32-compatible
+    - invalid root seed and empty key are rejected
+
+scientific_checks:
+  - stochastic components can be keyed from a single recorded Primary root seed
+  - seed derivation does not depend on observed outer-test values
+  - seed registry is deterministic across process executions
+  - no Sensitivity method or scientific config change is introduced
+
+artifacts:
+  - artifacts/setup/H-04/task_result.yaml
+
+remaining_issue: none
+next_task: H-05
