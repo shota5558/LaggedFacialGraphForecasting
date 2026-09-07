@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from lagged_facial_graph_forecasting import (
+    build_grouped_kfold_split_manifests,
     build_loso_split_manifests,
     build_subject_split_manifest,
 )
@@ -111,3 +112,46 @@ def test_loso_is_deterministic_for_same_subject_order_and_seed() -> None:
     second = build_loso_split_manifests(SUBJECTS, n_inner_folds=3, seed=99)
 
     assert first == second
+
+
+def test_grouped_kfold_holds_each_subject_out_exactly_once() -> None:
+    manifests = build_grouped_kfold_split_manifests(
+        SUBJECTS, n_outer_folds=4, n_inner_folds=3, seed=17
+    )
+
+    assert len(manifests) == 4
+    test_subjects = [
+        subject_id
+        for manifest in manifests
+        for subject_id in manifest.test_subject_ids
+    ]
+    assert sorted(test_subjects) == sorted(SUBJECTS)
+    assert len(test_subjects) == len(set(test_subjects))
+
+    for manifest in manifests:
+        assert set(manifest.train_subject_ids).isdisjoint(manifest.test_subject_ids)
+        assert set(manifest.train_subject_ids) | set(manifest.test_subject_ids) == set(SUBJECTS)
+        for inner_fold in manifest.inner_folds:
+            inner_subjects = set(inner_fold.inner_train_subject_ids) | set(
+                inner_fold.inner_val_subject_ids
+            )
+            assert inner_subjects <= set(manifest.train_subject_ids)
+            assert inner_subjects.isdisjoint(manifest.test_subject_ids)
+
+
+def test_grouped_kfold_is_deterministic_for_same_seed() -> None:
+    first = build_grouped_kfold_split_manifests(
+        SUBJECTS, n_outer_folds=4, n_inner_folds=3, seed=23
+    )
+    second = build_grouped_kfold_split_manifests(
+        SUBJECTS, n_outer_folds=4, n_inner_folds=3, seed=23
+    )
+
+    assert first == second
+
+
+def test_grouped_kfold_rejects_too_many_outer_folds() -> None:
+    with pytest.raises(ValueError, match="must not exceed"):
+        build_grouped_kfold_split_manifests(
+            SUBJECTS, n_outer_folds=len(SUBJECTS) + 1, n_inner_folds=2, seed=0
+        )
