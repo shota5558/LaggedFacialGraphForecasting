@@ -6,10 +6,13 @@ implemented:
   - reused the existing schema-versioned core_contract_io serialization path instead of adding a second FaceTimeSeries serializer
   - confirmed FaceTimeSeries is a canonical core contract in the v1 registry
   - confirmed serialization preserves X, subject_id, time_index, region_id, dimension, valid_mask, sampling_rate, dtype, and shape
+  - confirmed A-14 assembled sequences round-trip with invalid/missing observations preserved under valid_mask
   - confirmed deserialization reconstructs the canonical FaceTimeSeries contract with strict field/version validation
+  - removed the parallel duplicate A-15 regression test; one canonical FaceTimeSeries serialization test remains
   - no new serialization algorithm or parallel wire format was introduced
 
 files_changed:
+  - tests/test_face_time_series_serialization.py
   - artifacts/setup/A-15/task_result.yaml
 
 reused_files:
@@ -17,23 +20,28 @@ reused_files:
   - tests/test_core_contract_io.py
   - schemas/core_contracts_v1.yaml
 
+source_commits:
+  specific_round_trip_test: 6119f46be056e1b336416fd85db8feed85002e4f
+  preprocessed_sequence_validation: a5026a52ed0fcf1852132a6aac9d14672efb14d7
+  duplicate_test_removal: 70c5e12634d7e4a022bbe2946db229a83f799338
+
 tests:
   workflow: tests
-  run_id: 34153654983
-  job_id: 101840878860
-  head_sha: 6245d58ad218d67edd99afe7847b04a84d1f4251
+  run_id: 34153804344
+  job_id: 101841325896
+  head_sha: 70c5e12634d7e4a022bbe2946db229a83f799338
   result: success
-  python: 3.11.16
-  suite_result: 371 passed in 2.24s
   cases:
-    - FaceTimeSeries participates in deterministic JSON round-trip for all canonical core contracts
-    - round-trip preserves contract type and serialized payload deterministically
-    - backward and forward schema-version drift is rejected
-    - unknown contract types and payload extensions/missing fields are rejected
+    - A-14 FaceTimeSeries round-trip preserves missingness and provenance
+    - serialization is deterministic for the same canonical contract
+    - existing all-core-contract deterministic round-trip remains covered
+    - backward/forward schema-version drift is rejected
+    - unknown contract types and payload shape drift are rejected
 
 scientific_checks:
   - serialization is metadata-preserving only and performs no preprocessing fit, discovery, tuning, feature selection, lag selection, or Null construction
   - no subject mixing or outer-test-dependent transformation is introduced
+  - invalid observations remain explicit through X plus valid_mask; serialization does not repair them
   - valid_mask and temporal/region/dimension provenance are serialized explicitly
   - schema_version=1 remains the frozen core-contract version
   - Primary scientific freeze remains PCMCI+ + ParCorr + Ridge, h=1
