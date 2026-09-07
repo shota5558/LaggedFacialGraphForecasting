@@ -98,7 +98,7 @@ def build_persistence_design_matrix(
     """Build the frozen Persistence condition: current target-region value only.
 
     With Primary ``h=1``, the value available at forecast origin ``t`` is the
-    target-relative lag-1 value for target ``t+1``.  Persistence therefore uses
+    target-relative lag-1 value for target ``t+1``. Persistence therefore uses
     exactly the target region's dimensions at lag 1 and no other region/history.
     The returned matrix remains compatible with the common Ridge pipeline so that
     conditions differ by input information rather than estimator implementation.
@@ -109,4 +109,70 @@ def build_persistence_design_matrix(
         target_region=target_region,
         lags=(1,),
         horizon=horizon,
+    )
+
+
+def build_full_history_design_matrix(
+    series: FaceTimeSeries,
+    *,
+    target_region: str,
+    lags: Iterable[int] = (1,),
+    horizon: int = 1,
+) -> DesignMatrix:
+    """Build the Full condition using every facial region at every requested lag.
+
+    Column order is deterministic: ``lag -> region -> dimension``. All lags are
+    target-relative and share the target rows implied by the maximum lag. The
+    target remains the requested facial region, while predictors span the complete
+    observed facial state at each lag.
+    """
+
+    normalized_lags = _normalize_lags(lags)
+    if target_region not in series.region_id:
+        raise ValueError(f"unknown target_region: {target_region!r}")
+
+    common = aligned_indices(
+        len(series.time_index),
+        lag=max(normalized_lags),
+        horizon=horizon,
+    )
+    target_indices = common.target_index
+    origin_indices = common.forecast_origin
+    target_region_index = series.region_id.index(target_region)
+
+    feature_columns: list[np.ndarray] = []
+    feature_valid_columns: list[np.ndarray] = []
+    feature_names: list[str] = []
+    feature_lags: list[int] = []
+
+    for lag in normalized_lags:
+        source_indices = target_indices - lag
+        for region_index, region_name in enumerate(series.region_id):
+            for dimension_index, dimension_name in enumerate(series.dimension):
+                feature_columns.append(
+                    series.X[source_indices, region_index, dimension_index]
+                )
+                feature_valid_columns.append(
+                    series.valid_mask[source_indices, region_index, dimension_index]
+                )
+                feature_names.append(f"{region_name}.{dimension_name}")
+                feature_lags.append(lag)
+
+    X = np.column_stack(feature_columns)
+    feature_valid = np.column_stack(feature_valid_columns)
+    y = series.X[target_indices, target_region_index, :]
+    target_valid = series.valid_mask[target_indices, target_region_index, :]
+    valid_mask = np.all(feature_valid, axis=1) & np.all(target_valid, axis=1)
+
+    row_count = len(target_indices)
+    return DesignMatrix(
+        X=X,
+        y=y,
+        subject_id=(series.subject_id,) * row_count,
+        region_id=(target_region,) * row_count,
+        forecast_origin=series.time_index[origin_indices],
+        target_time=series.time_index[target_indices],
+        feature_names=tuple(feature_names),
+        feature_lags=tuple(feature_lags),
+        valid_mask=valid_mask.astype(bool, copy=False),
     )
