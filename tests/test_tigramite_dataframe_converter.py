@@ -30,24 +30,32 @@ def _manifest() -> SplitManifest:
     )
 
 
-def _series(subject_id: str, *, length: int, sampling_rate: float = 25.0) -> FaceTimeSeries:
-    values = np.arange(length * 4, dtype=float).reshape(length, 2, 2)
+def _series(
+    subject_id: str,
+    *,
+    length: int,
+    sampling_rate: float = 25.0,
+    dimensions: tuple[str, ...] = ("velocity",),
+) -> FaceTimeSeries:
+    values = np.arange(length * 2 * len(dimensions), dtype=float).reshape(
+        length, 2, len(dimensions)
+    )
     valid = np.ones_like(values, dtype=bool)
     if subject_id == "s2":
-        values[1, 0, 1] = np.nan
-        valid[1, 0, 1] = False
+        values[1, 0, 0] = np.nan
+        valid[1, 0, 0] = False
     return FaceTimeSeries(
         X=values,
         subject_id=subject_id,
         time_index=np.arange(length, dtype=float) / sampling_rate,
         region_id=("left_eye", "mouth"),
-        dimension=("vx", "vy"),
+        dimension=dimensions,
         valid_mask=valid,
         sampling_rate=sampling_rate,
     )
 
 
-def test_converter_keeps_subjects_as_separate_tigramite_datasets() -> None:
+def test_converter_keeps_subjects_separate_and_preserves_time_provenance() -> None:
     s1 = _series("s1", length=4)
     s2 = _series("s2", length=5)
     bundle = face_time_series_to_tigramite_dataframe(_manifest(), (s1, s2))
@@ -56,19 +64,12 @@ def test_converter_keeps_subjects_as_separate_tigramite_datasets() -> None:
     assert frame.analysis_mode == "multiple"
     assert frame.datasets == ["s1", "s2"]
     assert frame.T == {"s1": 4, "s2": 5}
-    assert frame.N == 4
+    assert frame.N == 2
     assert bundle.subject_ids == ("s1", "s2")
-    assert bundle.variable_names == (
-        "left_eye.vx",
-        "left_eye.vy",
-        "mouth.vx",
-        "mouth.vy",
-    )
+    assert bundle.variable_names == ("left_eye", "mouth")
     assert bundle.variable_components == (
-        ("left_eye", "vx"),
-        ("left_eye", "vy"),
-        ("mouth", "vx"),
-        ("mouth", "vy"),
+        ("left_eye", "velocity"),
+        ("mouth", "velocity"),
     )
     assert bundle.sampling_rate == 25.0
     np.testing.assert_array_equal(frame.datatime["s1"], s1.time_index)
@@ -82,11 +83,10 @@ def test_invalid_values_are_finite_placeholders_under_tigramite_mask() -> None:
     )
 
     frame = bundle.dataframe
-    # [region=left_eye, dimension=vy] maps to flattened column 1.
-    assert frame.values["s2"][1, 1] == 0.0
-    assert bool(frame.mask["s2"][1, 1]) is True
+    assert frame.values["s2"][1, 0] == 0.0
+    assert bool(frame.mask["s2"][1, 0]) is True
     assert np.isfinite(frame.values["s2"]).all()
-    assert not frame.mask["s2"][0, 1]
+    assert not frame.mask["s2"][0, 0]
 
 
 def test_converter_rejects_outer_test_before_dataframe_construction() -> None:
@@ -94,6 +94,14 @@ def test_converter_rejects_outer_test_before_dataframe_construction() -> None:
         face_time_series_to_tigramite_dataframe(
             _manifest(),
             (_series("outer_test", length=4),),
+        )
+
+
+def test_converter_rejects_multicomponent_region_state_without_frozen_mapping() -> None:
+    with pytest.raises(TigramiteAdapterError, match="exactly one scalar dimension per region"):
+        face_time_series_to_tigramite_dataframe(
+            _manifest(),
+            (_series("s1", length=4, dimensions=("vx", "vy")),),
         )
 
 
@@ -108,12 +116,12 @@ def test_converter_rejects_subject_or_schema_mixing() -> None:
         face_time_series_to_tigramite_dataframe(manifest, (s1, incompatible_rate))
 
     incompatible_region = FaceTimeSeries(
-        X=np.zeros((4, 2, 2)),
+        X=np.zeros((4, 2, 1)),
         subject_id="s3",
         time_index=np.arange(4, dtype=float) / 25.0,
         region_id=("mouth", "left_eye"),
-        dimension=("vx", "vy"),
-        valid_mask=np.ones((4, 2, 2), dtype=bool),
+        dimension=("velocity",),
+        valid_mask=np.ones((4, 2, 1), dtype=bool),
         sampling_rate=25.0,
     )
     with pytest.raises(TigramiteAdapterError, match="region_id order"):
