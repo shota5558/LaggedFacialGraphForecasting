@@ -4,11 +4,12 @@ status: PASS
 
 implemented:
   - audited unit-test coverage for Lane A preprocessing tasks A-00 through A-15
-  - reused the existing task-specific unit tests rather than adding a redundant aggregate implementation test
-  - confirmed the complete repository pytest suite remains green after A-15 duplicate-test cleanup
-  - confirmed Lane A tests cover reader validation, timestamp/shape validation, region definition/aggregation, normalization, motion features, quality/missingness/interpolation, subject assembly, and serialization
+  - retained the existing task-specific unit tests and added one non-redundant cross-contract regression test
+  - the new regression verifies that a finite frame invalidated by the explicit A-11 quality rule is never silently revalidated by A-12 missingness handling, A-13 no-interpolation policy, A-14 subject assembly, or A-15 serialization
+  - confirmed the complete repository pytest suite remains green with the new boundary test
 
 files_changed:
+  - tests/test_lane_a_contract_chain.py
   - artifacts/setup/A-16/task_result.yaml
 
 reused_tests:
@@ -27,16 +28,21 @@ reused_tests:
   - tests/test_core_contract_io.py
   - tests/test_face_time_series_serialization.py
 
+source_commits:
+  cross_contract_regression: 6ec7f7748c8ace3f8544222781a149682d2c4014
+
 tests:
   workflow: tests
-  run_id: 34153804344
-  job_id: 101841325896
-  head_sha: 70c5e12634d7e4a022bbe2946db229a83f799338
+  run_id: 34153937862
+  job_id: 101841718856
+  head_sha: 6ec7f7748c8ace3f8544222781a149682d2c4014
   result: success
-  suite_result: 375 passed in 2.33s
+  new_case:
+    - finite low-quality frame remains invalid through quality -> missingness -> no-interpolation -> FaceTimeSeries assembly -> serialization round-trip
 
 scientific_checks:
-  - Lane A unit tests preserve subject identity and observed temporal provenance
+  - Lane A tests preserve subject identity, observed temporal provenance, and explicit invalidity provenance
+  - quality-invalid observations cannot be silently repaired or promoted to valid by downstream preprocessing contracts
   - no test or implementation introduces outer-test-dependent preprocessing fitting
   - no implicit interpolation, imputation, resampling, or outcome-dependent policy selection is introduced
   - Primary scientific freeze remains PCMCI+ + ParCorr + Ridge, h=1
