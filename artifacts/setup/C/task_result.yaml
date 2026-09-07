@@ -9,12 +9,18 @@ completed_tasks:
   - C-03 Persistence matrix
   - C-04 Self-history matrix
   - C-05 Full-history matrix
-  - C-06 PCMCI ParentSet matrix
+  - C-06 incremental PCMCI ParentSet matrix
   - C-07 feature provenance
   - C-08 tau >= h availability guard
   - C-09 missing-value alignment
   - C-10 train/test feature consistency
   - C-11 unit tests
+
+contract_correction:
+  fail_type: contract mismatch
+  corrected_semantics: PCMCI condition is the exact fixed Self-history block plus frozen selected inter-regional ParentSet links
+  empty_parent_behavior: deterministically reduce PCMCI to Self
+  rationale: preserve a nested Self-vs-PCMCI comparison so the measured gain is attributable to additional inter-regional information
 
 canonical_implementation:
   alignment: src/lagged_facial_graph_forecasting/alignment.py
@@ -26,7 +32,9 @@ scientific_contract:
   target_relative_lags: true
   future_parent_after_forecast_origin: rejected
   source_region_dimension_lag_provenance: lossless
-  pcmci_inputs_from_frozen_parentset_only: true
+  pcmci_fixed_self_block: true
+  pcmci_incremental_features_from_frozen_interregional_parentset_only: true
+  empty_interregional_parentset_reduces_to_self: true
   train_test_feature_identity: enforced
   missingness_alignment: enforced
   outer_test_dependent_selection: false
@@ -34,11 +42,11 @@ scientific_contract:
 
 validation:
   workflow: tests
-  run_id: 34148712365
-  job_id: 101826210417
-  validated_head_sha: 78bade3f4274b732931323ca8221bf5282fc91af
+  run_id: 34149026741
+  job_id: 101827151606
+  validated_head_sha: c436c5510015c4a6b902e09050ca1ae666db773b
   python: 3.11.16
-  result: 185 passed in 1.16s
+  result: 196 passed in 1.75s
 
 evidence:
   - artifacts/setup/C-00/task_result.yaml
