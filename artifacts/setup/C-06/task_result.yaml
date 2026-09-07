@@ -10,6 +10,7 @@ implemented:
   - common target/forecast-origin alignment is determined by the maximum selected parent lag
   - target/source region and lag provenance are preserved in DesignMatrix metadata
   - parent-feature and target missingness propagate into row-level validity
+  - duplicate alternate implementation was removed so design_matrix.py remains the single canonical builder location
 
 files_changed:
   - src/lagged_facial_graph_forecasting/design_matrix.py
@@ -17,11 +18,15 @@ files_changed:
   - tests/test_pcmci_parent_design_matrix.py
   - artifacts/setup/C-06/task_result.yaml
 
+removed_duplicate:
+  - src/lagged_facial_graph_forecasting/pcmci_design_matrix.py
+
 tests:
   workflow: tests
-  run_id: 34148333928
-  head_sha: 49e2a92ed7e68c2bee7c0f0b42400a8373e45638
-  result: success
+  run_id: 34148389243
+  job_id: 101825231861
+  head_sha: 474d8941fc76e1722b849b2e79f1f3b22eefd03f
+  result: 180 passed in 1.58s
   workflow_scope: full pytest suite
   cases:
     - only ParentSet links are used and parent order is preserved
