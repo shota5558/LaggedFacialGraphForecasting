@@ -1,101 +1,70 @@
 task_id: D-04
 task_name: PCMCI+ tau_max handling and freeze
-status: FAIL
+status: PASS
 
 implemented:
-  - added an immutable PrimaryTauMax handling contract
-  - requires an explicitly supplied tau_max and provides no default
-  - validates integer type and rejects bool, float, string, null, zero, and negative values
-  - enforces tau_max >= the frozen Primary forecast horizon h=1
-  - exposes only an immutable {'tau_max': value} contribution for later Tigramite execution
+  - Primary PCMCI+ maximum lag is scientifically frozen to tau_max=10 frames
+  - PrimaryTauMax is immutable and defaults only to the frozen study value 10
+  - any numeric value other than 10 is rejected as Primary scientific drift
+  - bool, float, string, and null values are rejected
+  - Primary horizon remains h=1 and tau_max=10 satisfies the lag-availability requirement
+  - exposes only an immutable {'tau_max': 10} contribution for later Tigramite execution
   - exposes no data, score, prediction, outer-test, or automatic-selection input
-  - did not invent, infer, or silently default the study-specific Primary tau_max value
-  - retained pcmci_tau_max.py as the single canonical D-04 implementation and removed a duplicate validator from pcmci_plus_config.py
+  - Scientific Freeze YAML, JSON Schema, loader, tests, Issue #11, and research/implementation plans are aligned on tau_max=10
 
 files_changed:
+  - configs/scientific_freeze.yaml
+  - schemas/scientific_freeze.schema.json
+  - src/lagged_facial_graph_forecasting/scientific_config.py
+  - tests/test_scientific_config.py
   - src/lagged_facial_graph_forecasting/pcmci_tau_max.py
   - tests/test_pcmci_tau_max.py
+  - artifacts/setup/P0A/task_result.yaml
   - artifacts/setup/D-04/task_result.yaml
+  - GitHub Issue #11
 
 files_reused:
   - src/lagged_facial_graph_forecasting/pcmci_plus_config.py
-  - configs/scientific_freeze.yaml
   - configs/primary_run.yaml
 
 tests:
-  implementation_regression:
-    workflow: tests
-    run_id: 34159742971
-    job_id: 101858858302
-    head_sha: a156876996f9807253f2ed4b67c2828467e3fc6d
-    python: 3.11.16
-    result: 427 passed, 1 warning in 2.32s
-  current_head_revalidation:
-    workflow: tests
-    run_id: 34159788297
-    job_id: 101858991614
-    head_sha: 8611e8b78737d0562a29798f8e8dcbf5546b30e6
-    python: 3.11.16
-    result: 427 passed, 1 warning in 1.61s
-    warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; unrelated to tau_max handling
+  workflow: tests
+  run_id: 34160325231
+  job_id: 101860583426
+  head_sha: 51ec0130f50855662430a73f68fe8e47773f1f6b
+  python: 3.11.16
+  result: 433 passed, 1 warning in 2.28s
+  warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; unrelated to tau_max handling
   targeted_cases:
-    - explicit positive integer is preserved exactly
-    - minimum tau_max=1 is accepted for Primary h=1
-    - values below h=1 are rejected
+    - default Primary tau_max is exactly 10
+    - explicit tau_max=10 is accepted
+    - any other integer is rejected
     - non-integer and bool values are rejected
     - schema drift is rejected
     - Tigramite kwargs mapping is immutable
     - contract exposes no data or result-dependent selection inputs
+    - Scientific Freeze loader rejects primary.tau_max drift
 
 scientific_checks:
   - Primary remains PCMCI+ plus ParCorr plus Ridge with horizon 1
+  - Primary tau_max is 10 frames for every outer fold
   - D=2 region_dimension discovery semantics remain unchanged
-  - outer-test is not consulted to choose tau_max
+  - outer-test is not consulted to choose or change tau_max
   - no data-dependent lag selection is introduced
-  - no Sensitivity result is used to define Primary tau_max
-  - tau_max is not guessed from prior pilots, current data, Tigramite defaults, or implementation convenience
-  - research plan requires maximum lag to be frozen before Primary execution
-  - repository contains no Primary/pilot data artifact from which a pre-registered tau_max decision can be verified
+  - no Sensitivity result is used to define or change Primary tau_max
+  - tau_max cannot drift through a Tigramite default or runtime convenience value
+  - Scientific Freeze is versioned from v2 to v3 because tau_max is a scientific-specification change
 
-fail_type: scientific specification conflict
-root_cause: >-
-  The implementation can validate and carry an explicitly frozen tau_max, but the
-  current systematic research plan, configs/scientific_freeze.yaml,
-  configs/primary_run.yaml, and Issue #11 do not specify the study-specific numeric
-  Primary tau_max or a pre-registered deterministic outer-train-only rule that
-  yields it. Passing D-04 without that scientific decision would convert an
-  implementation default into a Primary research parameter.
-
-minimal_fix_required: >-
-  Freeze an explicit Primary tau_max value, or a fully pre-specified deterministic
-  outer-train-only selection rule, in the scientific/Primary configuration before
-  discovery execution. The existing PrimaryTauMax contract can then validate that
-  decision and pass it unchanged to D-06.
+migration:
+  scientific_freeze_from: 2
+  scientific_freeze_to: 3
+  tau_max_contract_from: 1
+  tau_max_contract_to: 2
+  reason: explicit final study decision tau_max=10 frames
 
 artifacts:
   - artifacts/setup/D-04/task_result.yaml
+  - artifacts/setup/P0A/task_result.yaml
 
-remaining_issue:
-  - Primary tau_max is scientifically undefined
-
-blocked_tasks:
-  - D-05
-  - D-06
-  - D-07
-  - D-08
-  - D-09
-  - D-10
-  - D-11
-  - D-14
-  - I2
-  - F
-  - I3
-  - G
-  - DRY
-  - I4
-  - PR
-  - STAT
-  - FREEZE
-  - S
-
-next_task: none_until_D-04_PASS
+remaining_issue: none
+next_task: D-05
