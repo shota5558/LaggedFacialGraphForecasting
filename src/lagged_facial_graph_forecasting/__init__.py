@@ -39,6 +39,10 @@ from .forecaster import (
     fit_ridge_forecaster,
     predict_ridge_forecaster,
 )
+from .lag_response_statistics import (
+    LagResponseMetricAggregate,
+    aggregate_lag_response_metrics,
+)
 from .leakage_guard import (
     LeakageGuardError,
     assert_discovery_fit_scope,
@@ -47,6 +51,10 @@ from .leakage_guard import (
     assert_ridge_tuning_scope,
 )
 from .metrics import velocity_rmse
+from .primary_statistics import (
+    PrimaryPairedStatistics,
+    compute_primary_velocity_paired_statistics,
+)
 from .runner import FoldRunResult, MinimalFoldRunner, OuterTestLockedError
 from .scientific_config import ScientificConfigError, load_scientific_config
 from .split_manifest_io import (
@@ -81,6 +89,7 @@ __all__ = [
     "FittedRidgeForecaster",
     "FoldRunResult",
     "InnerFold",
+    "LagResponseMetricAggregate",
     "LeakageGuardError",
     "MetricsResult",
     "MinimalFoldRunner",
@@ -89,12 +98,14 @@ __all__ = [
     "ParentLink",
     "ParentSet",
     "PredictionArtifact",
+    "PrimaryPairedStatistics",
     "SPLIT_MANIFEST_SCHEMA_VERSION",
     "SplitManifest",
     "SplitManifestReadError",
     "ScientificConfigError",
     "SubjectMetadataLoadError",
     "SubjectMetadataValidationError",
+    "aggregate_lag_response_metrics",
     "aligned_indices",
     "assert_discovery_fit_scope",
     "assert_null_construction_scope",
@@ -109,6 +120,7 @@ __all__ = [
     "build_split_manifest_payload",
     "build_subject_split_manifest",
     "build_v0_result_payload",
+    "compute_primary_velocity_paired_statistics",
     "decode_feature_name",
     "deserialize_core_contract",
     "dumps_core_contract",
