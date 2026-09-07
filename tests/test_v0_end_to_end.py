@@ -63,14 +63,17 @@ def test_v0_self_only_vertical_slice_end_to_end_is_traceable_and_deterministic(
 
     payload = json.loads(first.artifact_path.read_text(encoding="utf-8"))
 
-    # Gate V0 provenance: fold, subject, region, time alignment, features/lags,
-    # validity mask, prediction, and ground truth all survive the full path.
-    assert payload["schema_version"] == 1
+    # Gate V0 provenance: fold, subject, region, target dimensions, time alignment,
+    # features/lags, validity mask, prediction, and ground truth survive the full path.
+    assert payload["schema_version"] == 2
     assert payload["outer_fold"] == manifest.outer_fold
     assert payload["condition"] == "self"
     assert payload["feature_provenance"] == {
         "feature_names": ["mouth.vx", "mouth.vy", "mouth.vx", "mouth.vy"],
         "feature_lags": [1, 1, 2, 2],
+    }
+    assert payload["target_provenance"] == {
+        "target_dimensions": ["vx", "vy"],
     }
     assert payload["model"]["forecaster"] == "ridge"
     assert payload["model"]["alpha"] == 1.0
