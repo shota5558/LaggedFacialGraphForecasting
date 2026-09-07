@@ -123,9 +123,9 @@ def build_loso_split_manifests(
 ) -> tuple[SplitManifest, ...]:
     """Build deterministic leave-one-subject-out outer folds.
 
-    Each validated subject is held out exactly once.  Input subject order defines
+    Each validated subject is held out exactly once. Input subject order defines
     ``outer_fold`` numbering; ``seed`` affects only inner-fold assignment inside
-    each outer-train partition.  No outcome or measurement data are consulted.
+    each outer-train partition. No outcome or measurement data are consulted.
     """
 
     subject_ids = _validate_subject_ids(subject_ids)
@@ -159,5 +159,72 @@ def build_loso_split_manifests(
                 seed=seed,
             )
         )
+
+    return tuple(manifests)
+
+
+def build_grouped_kfold_split_manifests(
+    subject_ids: tuple[str, ...],
+    *,
+    n_outer_folds: int,
+    n_inner_folds: int = 2,
+    seed: int = 0,
+) -> tuple[SplitManifest, ...]:
+    """Build deterministic grouped K-fold outer splits at subject granularity.
+
+    Subject IDs are the groups: each subject appears in outer-test exactly once
+    and is never split across train/test. The outer partition depends only on the
+    validated subject IDs and seed, never on outcomes or facial measurements.
+    """
+
+    subject_ids = _validate_subject_ids(subject_ids)
+    _validate_inner_split_parameters(n_inner_folds, seed)
+    if not isinstance(n_outer_folds, int) or isinstance(n_outer_folds, bool):
+        raise ValueError("n_outer_folds must be an integer")
+    if n_outer_folds < 2:
+        raise ValueError("n_outer_folds must be >= 2")
+    if n_outer_folds > len(subject_ids):
+        raise ValueError("n_outer_folds must not exceed the number of subjects")
+
+    rng = np.random.default_rng(seed)
+    outer_order = list(subject_ids)
+    rng.shuffle(outer_order)
+    test_chunks = [
+        tuple(chunk.tolist())
+        for chunk in np.array_split(
+            np.asarray(outer_order, dtype=object), n_outer_folds
+        )
+    ]
+
+    manifests: list[SplitManifest] = []
+    all_subjects = set(subject_ids)
+    for outer_fold, test_subject_ids in enumerate(test_chunks):
+        test_set = set(test_subject_ids)
+        train_subject_ids = tuple(
+            subject_id for subject_id in subject_ids if subject_id not in test_set
+        )
+        if len(train_subject_ids) < n_inner_folds:
+            raise ValueError(
+                "each grouped outer-train partition must contain at least "
+                f"n_inner_folds={n_inner_folds} subjects"
+            )
+        inner_rng = np.random.default_rng(
+            np.random.SeedSequence([seed, outer_fold, n_outer_folds])
+        )
+        inner_folds = _build_inner_folds(
+            train_subject_ids,
+            n_inner_folds=n_inner_folds,
+            rng=inner_rng,
+        )
+        manifest = SplitManifest(
+            outer_fold=outer_fold,
+            train_subject_ids=train_subject_ids,
+            test_subject_ids=test_subject_ids,
+            inner_folds=inner_folds,
+            seed=seed,
+        )
+        if set(manifest.train_subject_ids) | set(manifest.test_subject_ids) != all_subjects:
+            raise RuntimeError("grouped outer split lost a subject")
+        manifests.append(manifest)
 
     return tuple(manifests)
