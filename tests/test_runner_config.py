@@ -44,8 +44,20 @@ def _write_fixture(
     return path
 
 
+def test_repository_primary_run_descriptor_is_loadable() -> None:
+    loaded = load_primary_experiment_config(
+        "configs/primary_run.yaml", repository_root=REPOSITORY_ROOT
+    )
+
+    assert loaded.experiment_id == "primary"
+    assert loaded.scientific_config_path == "configs/scientific_freeze.yaml"
+    assert loaded.run_config_path == "configs/primary_run.yaml"
+    assert loaded.artifact_root == "artifacts/primary"
+    assert loaded.seed == 20260908
+
+
 def test_load_primary_experiment_config_reuses_frozen_scientific_config(tmp_path: Path) -> None:
-    path = _write_fixture(tmp_path)
+    _write_fixture(tmp_path)
 
     loaded = load_primary_experiment_config(
         "configs/primary_run.yaml", repository_root=tmp_path
