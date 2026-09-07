@@ -18,7 +18,7 @@ class ScientificConfigError(ValueError):
 
 
 _EXPECTED: dict[str, Any] = {
-    "schema_version": 4,
+    "schema_version": 5,
     "primary": {
         "discovery": "pcmci_plus",
         "ci_test": "parcorr",
@@ -36,6 +36,27 @@ _EXPECTED: dict[str, Any] = {
             "matched_sparsity",
             "time_shuffle",
         ],
+        "lag_response": {
+            "delta_frames": [-2, -1, 0, 1, 2],
+            "reference_delta": 0,
+            "shift_mode": "common_shift_all_selected_parents",
+            "valid_lag_min": 1,
+            "valid_lag_max": 10,
+            "boundary_policy": "mark_target_fold_unevaluable",
+            "clipping": "forbidden",
+            "wrapping": "forbidden",
+            "feature_dropping": "forbidden",
+            "one_sided_grid": "forbidden",
+            "evaluability": {
+                "require_complete_symmetric_grid": True,
+                "empty_parent_set": "unevaluable_no_parents",
+            },
+            "aggregation": {
+                "support": "complete_grid_target_folds_only",
+                "same_units_across_all_deltas": True,
+                "report_unevaluable_counts": True,
+            },
+        },
     },
     "discovery_representation": {
         "node_unit": "region_dimension",

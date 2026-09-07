@@ -6,8 +6,11 @@ from lagged_facial_graph_forecasting.contracts import InnerFold, SplitManifest
 from lagged_facial_graph_forecasting.core_contracts import ParentLink, ParentSet
 from lagged_facial_graph_forecasting.leakage_guard import LeakageGuardError
 from lagged_facial_graph_forecasting.null_lag_response import (
+    LAG_RESPONSE_EVALUABLE,
+    LAG_RESPONSE_UNEVALUABLE_INCOMPLETE_GRID,
+    LAG_RESPONSE_UNEVALUABLE_NO_PARENTS,
+    PRIMARY_LAG_RESPONSE_DELTAS,
     construct_lag_response_grid,
-    feasible_common_lag_deltas,
 )
 
 
@@ -21,7 +24,7 @@ def _manifest() -> SplitManifest:
     )
 
 
-def test_feasible_grid_is_exhaustive_common_shift_interval_and_contains_zero() -> None:
+def test_complete_symmetric_grid_uses_frozen_common_shifts() -> None:
     parents = ParentSet(
         outer_fold=0,
         target_region="mouth",
@@ -32,19 +35,22 @@ def test_feasible_grid_is_exhaustive_common_shift_interval_and_contains_zero() -
         discovery_method="pcmci_plus",
     )
 
-    assert feasible_common_lag_deltas(parents) == tuple(range(-2, 4))
-
     grid = construct_lag_response_grid(
         _manifest(),
         parents,
         construction_subject_ids=("train_a", "train_b"),
     )
 
-    assert tuple(point.delta for point in grid) == (-2, -1, 0, 1, 2, 3)
-    center = next(point for point in grid if point.delta == 0)
+    assert grid.status == LAG_RESPONSE_EVALUABLE
+    assert grid.is_evaluable is True
+    assert grid.infeasible_deltas == ()
+    assert tuple(point.delta for point in grid.points) == PRIMARY_LAG_RESPONSE_DELTAS
+    assert PRIMARY_LAG_RESPONSE_DELTAS == (-2, -1, 0, 1, 2)
+
+    center = next(point for point in grid.points if point.delta == 0)
     assert center.mapping is None
 
-    for point in grid:
+    for point in grid.points:
         if point.delta == 0:
             continue
         assert point.mapping is not None
@@ -62,7 +68,7 @@ def test_feasible_grid_is_exhaustive_common_shift_interval_and_contains_zero() -
             assert 1 <= mapped.lag <= 10
 
 
-def test_grid_is_boundary_determined_not_clipped_or_performance_selected() -> None:
+def test_boundary_violation_marks_entire_target_fold_unevaluable() -> None:
     parents = ParentSet(
         outer_fold=0,
         target_region="mouth",
@@ -73,10 +79,38 @@ def test_grid_is_boundary_determined_not_clipped_or_performance_selected() -> No
         discovery_method="pcmci_plus",
     )
 
-    assert feasible_common_lag_deltas(parents) == (0, 1)
+    grid = construct_lag_response_grid(
+        _manifest(),
+        parents,
+        construction_subject_ids=("train_a", "train_b"),
+    )
+
+    assert grid.status == LAG_RESPONSE_UNEVALUABLE_INCOMPLETE_GRID
+    assert grid.is_evaluable is False
+    assert grid.points == ()
+    assert grid.infeasible_deltas == (-2, -1, 2)
 
 
-def test_empty_parent_set_has_only_unmodified_center() -> None:
+def test_boundary_policy_never_returns_one_sided_or_feature_dropped_grid() -> None:
+    parents = ParentSet(
+        outer_fold=0,
+        target_region="mouth",
+        parents=(ParentLink("left_cheek", 2, "vx", "vy"),),
+        discovery_method="pcmci_plus",
+    )
+
+    grid = construct_lag_response_grid(
+        _manifest(),
+        parents,
+        construction_subject_ids=("train_a", "train_b"),
+    )
+
+    assert grid.status == LAG_RESPONSE_UNEVALUABLE_INCOMPLETE_GRID
+    assert grid.points == ()
+    assert grid.infeasible_deltas == (-2,)
+
+
+def test_empty_parent_set_is_unevaluable_no_parents() -> None:
     parents = ParentSet(
         outer_fold=0,
         target_region="mouth",
@@ -90,9 +124,10 @@ def test_empty_parent_set_has_only_unmodified_center() -> None:
         construction_subject_ids=("train_a", "train_b"),
     )
 
-    assert len(grid) == 1
-    assert grid[0].delta == 0
-    assert grid[0].mapping is None
+    assert grid.status == LAG_RESPONSE_UNEVALUABLE_NO_PARENTS
+    assert grid.is_evaluable is False
+    assert grid.points == ()
+    assert grid.infeasible_deltas == ()
 
 
 def test_lag_response_grid_rejects_outer_test_construction_scope() -> None:
