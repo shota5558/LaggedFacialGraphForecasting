@@ -29,7 +29,12 @@ from .metrics import velocity_rmse
 from .runner import FoldRunResult, MinimalFoldRunner, OuterTestLockedError
 from .scientific_config import ScientificConfigError, load_scientific_config
 from .splits import build_subject_split_manifest
-from .subject_metadata import SubjectMetadataLoadError, load_subject_metadata_csv
+from .subject_metadata import (
+    SubjectMetadataLoadError,
+    SubjectMetadataValidationError,
+    load_subject_metadata_csv,
+    validate_subject_ids,
+)
 from .synthetic import generate_synthetic_face_time_series
 
 __all__ = [
@@ -53,6 +58,7 @@ __all__ = [
     "SplitManifest",
     "ScientificConfigError",
     "SubjectMetadataLoadError",
+    "SubjectMetadataValidationError",
     "aligned_indices",
     "build_self_history_design_matrix",
     "build_subject_split_manifest",
@@ -62,6 +68,7 @@ __all__ = [
     "load_scientific_config",
     "load_subject_metadata_csv",
     "predict_ridge_forecaster",
+    "validate_subject_ids",
     "velocity_rmse",
     "write_v0_result_json",
 ]
