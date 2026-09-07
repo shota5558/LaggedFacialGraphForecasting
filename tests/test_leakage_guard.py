@@ -6,6 +6,7 @@ from lagged_facial_graph_forecasting.contracts import InnerFold, SplitManifest
 from lagged_facial_graph_forecasting.leakage_guard import (
     LeakageGuardError,
     assert_discovery_fit_scope,
+    assert_null_construction_scope,
     assert_preprocessing_fit_scope,
     assert_ridge_tuning_scope,
 )
@@ -32,10 +33,7 @@ def _manifest() -> SplitManifest:
 
 def test_preprocessing_scope_accepts_outer_train_subjects_only() -> None:
     manifest = _manifest()
-
-    assert assert_preprocessing_fit_scope(
-        manifest, ("s01", "s03")
-    ) == ("s01", "s03")
+    assert assert_preprocessing_fit_scope(manifest, ("s01", "s03")) == ("s01", "s03")
 
 
 def test_preprocessing_scope_rejects_outer_test_subject() -> None:
@@ -59,28 +57,27 @@ def test_preprocessing_scope_rejects_empty_subject_scope() -> None:
 
 
 def test_discovery_scope_accepts_outer_train_subjects_only() -> None:
-    assert assert_discovery_fit_scope(
-        _manifest(), ("s02", "s04")
-    ) == ("s02", "s04")
+    assert assert_discovery_fit_scope(_manifest(), ("s02", "s04")) == ("s02", "s04")
 
 
 def test_discovery_scope_rejects_outer_test_subject_before_discovery() -> None:
-    with pytest.raises(
-        LeakageGuardError,
-        match="discovery fit cannot access outer-test subjects",
-    ):
+    with pytest.raises(LeakageGuardError, match="discovery fit cannot access outer-test subjects"):
         assert_discovery_fit_scope(_manifest(), ("s02", "s06"))
 
 
 def test_ridge_tuning_scope_accepts_outer_train_subjects_only() -> None:
-    assert assert_ridge_tuning_scope(
-        _manifest(), ("s01", "s02")
-    ) == ("s01", "s02")
+    assert assert_ridge_tuning_scope(_manifest(), ("s01", "s02")) == ("s01", "s02")
 
 
 def test_ridge_tuning_scope_rejects_outer_test_subject_before_tuning() -> None:
-    with pytest.raises(
-        LeakageGuardError,
-        match="ridge tuning cannot access outer-test subjects",
-    ):
+    with pytest.raises(LeakageGuardError, match="ridge tuning cannot access outer-test subjects"):
         assert_ridge_tuning_scope(_manifest(), ("s01", "s05"))
+
+
+def test_null_construction_scope_accepts_outer_train_subjects_only() -> None:
+    assert assert_null_construction_scope(_manifest(), ("s03", "s04")) == ("s03", "s04")
+
+
+def test_null_construction_scope_rejects_outer_test_subject_before_mapping() -> None:
+    with pytest.raises(LeakageGuardError, match="null construction cannot access outer-test subjects"):
+        assert_null_construction_scope(_manifest(), ("s03", "s06"))
