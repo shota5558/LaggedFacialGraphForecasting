@@ -102,6 +102,64 @@ def test_candidate_space_rejects_unknown_selected_target_component() -> None:
         _candidate_space(parent_set=parent_set)
 
 
+@pytest.mark.parametrize(
+    ("parent_set", "region_ids", "dimension_ids"),
+    (
+        (
+            ParentSet(
+                outer_fold=4,
+                target_region="mouth",
+                parents=(ParentLink("brow", 2, "vx", "vx"),),
+                discovery_method="pcmci_plus",
+            ),
+            ("mouth", "jaw", "eye"),
+            ("vx", "vy"),
+        ),
+        (
+            ParentSet(
+                outer_fold=4,
+                target_region="mouth",
+                parents=(ParentLink("jaw", 2, "vz", "vx"),),
+                discovery_method="pcmci_plus",
+            ),
+            ("mouth", "jaw", "eye"),
+            ("vx", "vy"),
+        ),
+        (
+            ParentSet(
+                outer_fold=4,
+                target_region="mouth",
+                parents=(ParentLink("jaw", 11, "vx", "vx"),),
+                discovery_method="pcmci_plus",
+            ),
+            ("mouth", "jaw", "eye"),
+            ("vx", "vy"),
+        ),
+        (
+            ParentSet(
+                outer_fold=4,
+                target_region="mouth",
+                parents=(ParentLink("mouth", 2, "vx", "vx"),),
+                discovery_method="pcmci_plus",
+            ),
+            ("mouth", "jaw", "eye"),
+            ("vx", "vy"),
+        ),
+    ),
+)
+def test_candidate_space_fails_closed_if_selected_link_is_not_in_frozen_universe(
+    parent_set: ParentSet,
+    region_ids: tuple[str, ...],
+    dimension_ids: tuple[str, ...],
+) -> None:
+    with pytest.raises(MatchedSparsityMappingError, match="every selected ParentLink"):
+        _candidate_space(
+            parent_set=parent_set,
+            region_ids=region_ids,
+            dimension_ids=dimension_ids,
+        )
+
+
 def test_candidate_space_rejects_outer_test_construction_scope() -> None:
     with pytest.raises(LeakageGuardError, match="outer-test"):
         build_matched_sparsity_candidate_space(
