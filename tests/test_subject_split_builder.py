@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from lagged_facial_graph_forecasting import build_subject_split_manifest
+from lagged_facial_graph_forecasting import (
+    build_loso_split_manifests,
+    build_subject_split_manifest,
+)
 
 
 SUBJECTS = tuple(f"s{index:02d}" for index in range(1, 9))
@@ -75,3 +78,36 @@ def test_rejects_insufficient_subject_count() -> None:
         build_subject_split_manifest(
             ("s01", "s02", "s03"), test_subject_count=1, n_inner_folds=3
         )
+
+
+def test_loso_holds_each_subject_out_exactly_once() -> None:
+    manifests = build_loso_split_manifests(SUBJECTS, n_inner_folds=3, seed=41)
+
+    assert len(manifests) == len(SUBJECTS)
+    assert [manifest.outer_fold for manifest in manifests] == list(range(len(SUBJECTS)))
+    assert [manifest.test_subject_ids[0] for manifest in manifests] == list(SUBJECTS)
+
+    for manifest in manifests:
+        assert len(manifest.test_subject_ids) == 1
+        assert set(manifest.train_subject_ids).isdisjoint(manifest.test_subject_ids)
+        assert set(manifest.train_subject_ids) | set(manifest.test_subject_ids) == set(SUBJECTS)
+
+
+def test_loso_inner_folds_never_contain_held_out_subject() -> None:
+    manifests = build_loso_split_manifests(SUBJECTS, n_inner_folds=3, seed=7)
+
+    for manifest in manifests:
+        held_out = set(manifest.test_subject_ids)
+        for inner_fold in manifest.inner_folds:
+            inner_subjects = set(inner_fold.inner_train_subject_ids) | set(
+                inner_fold.inner_val_subject_ids
+            )
+            assert inner_subjects <= set(manifest.train_subject_ids)
+            assert inner_subjects.isdisjoint(held_out)
+
+
+def test_loso_is_deterministic_for_same_subject_order_and_seed() -> None:
+    first = build_loso_split_manifests(SUBJECTS, n_inner_folds=3, seed=99)
+    second = build_loso_split_manifests(SUBJECTS, n_inner_folds=3, seed=99)
+
+    assert first == second
