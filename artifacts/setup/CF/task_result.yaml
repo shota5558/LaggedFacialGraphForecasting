@@ -10,21 +10,42 @@ implemented:
   - added content-addressed ExperimentArtifact registry entry contract
   - added stable path-based ExperimentConfig envelope
   - added machine-readable core contract schema registry at version 1
+  - added deterministic JSON serialization/deserialization for all nine canonical contracts
+  - added strict versioned wire envelope with exact payload-field validation
+  - added explicit backward/forward incompatibility rejection
   - added migration policy requiring reason, impact scope, migration, and tests for future contract changes
 
 files_changed:
   - src/lagged_facial_graph_forecasting/core_contracts.py
+  - src/lagged_facial_graph_forecasting/core_contract_io.py
   - schemas/core_contracts_v1.yaml
   - tests/test_core_contract_freeze.py
+  - tests/test_core_contract_io.py
   - src/lagged_facial_graph_forecasting/__init__.py
 
 tests:
   workflow: tests
-  run_id: 34146087765
-  job_id: 101818324472
-  head_sha: 8353109cf95588f563b96822942201b2f9077335
+  run_id: 34147802837
+  job_id: 101823490247
+  head_sha: 13164ed711cf5e98170dc9def5ec3e4517dc9c61
   python: 3.11.16
-  result: 110 passed in 1.53s
+  result: 167 passed in 1.52s
+  round_trip_coverage:
+    - FaceTimeSeries
+    - SplitManifest
+    - ParentSet
+    - DesignMatrix
+    - PredictionArtifact
+    - NullMapping
+    - MetricsResult
+    - ExperimentArtifact
+    - ExperimentConfig
+  incompatibility_cases:
+    - schema_version 0 rejected
+    - schema_version 2 rejected
+    - unknown contract type rejected
+    - additional payload field rejected
+    - missing payload field rejected
 
 scientific_checks:
   - ParentSet is a Tigramite-independent discovery/forecasting boundary
@@ -33,8 +54,15 @@ scientific_checks:
   - MetricsResult is aligned at subject/region/condition level for paired outer-test analysis
   - ExperimentArtifact requires a content hash and repository-relative path for immutable provenance
   - ExperimentConfig references versioned scientific/run configs rather than embedding mutable ad-hoc settings
+  - serialized forms retain subject/fold/lag/time provenance defined by their canonical contracts
   - Primary/Sensitivity definitions remain governed by the already frozen scientific config
-  - no PCMCI, Null algorithm, real-data, Ridge tuning, or Sensitivity implementation was introduced during contract freeze
+  - no PCMCI discovery, Null algorithm, real-data, Ridge tuning, or Sensitivity execution was introduced during contract freeze
+
+source_commits:
+  core_contract_serialization: d05a0a01d0dd39ccf97e4b283c109d493dd5d104
+  round_trip_tests: 3a24b91dd7e778422cd316cb6f66bd36707c6f8b
+  io_exports: 13164ed711cf5e98170dc9def5ec3e4517dc9c61
+  schema_wire_format: da9c419fa9adc1110e9b0d4554d03b7f99b8ac51
 
 artifacts:
   - schemas/core_contracts_v1.yaml
