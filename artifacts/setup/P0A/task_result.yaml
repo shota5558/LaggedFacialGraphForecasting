@@ -1,8 +1,8 @@
 task_id: P0A
 task_name: Scientific Freeze
 status: PASS
-audit_type: scientific_specification_update_and_revalidation
-scientific_freeze_schema_version: 3
+audit_type: scientific_specification_revalidation
+scientific_freeze_schema_version: 4
 
 implemented:
   - machine-readable scientific freeze config
@@ -10,12 +10,15 @@ implemented:
   - strict loader and exact-value validator
   - Primary fixed to PCMCI+ + ParCorr + Ridge with h=1
   - Primary PCMCI+ maximum lag fixed to tau_max=10 frames for every outer fold
-  - tau_max=10 is immutable with respect to outer-test, Sensitivity, and observed experimental outcomes
+  - Primary PCMCI+ pc_alpha fixed to 0.01 before discovery execution
+  - tau_max=10 and pc_alpha=0.01 are immutable with respect to outer-test, Sensitivity, and observed experimental outcomes
   - subject-level outer split and frozen-final-evaluation-only outer-test usage
-  - preprocessing, discovery, Ridge tuning, and Null construction restricted to outer-train
+  - preprocessing, discovery, Ridge tuning, Null construction, feature selection, and lag selection restricted to outer-train
   - Primary/Sensitivity separation with Sensitivity gated after PRIMARY FREEZE
   - component-aware discovery node identity frozen as region_dimension
-  - per-dimension targets with component-aware parent identity
+  - identity component mapping and exact-selected-component forecasting feature rule
+  - region-lag reporting projection retained without scalarizing discovery nodes
+  - separate artifact roots for Primary and Sensitivity
   - mandatory Scientific Freeze validation at runner startup
 
 files:
@@ -25,16 +28,28 @@ files:
   - tests/test_scientific_config.py
   - artifacts/setup/P0A/task_result.yaml
 
-tests:
-  validation_scope: scientific-freeze schema-v3 tau_max=10 migration and full regression suite
-  execution: github_actions
-  python: 3.11.16
-  github_actions_run_id: 34160325231
-  github_actions_job_id: 101860583426
-  github_actions_head: 51ec0130f50855662430a73f68fe8e47773f1f6b
-  result: 433 passed, 1 warning in 2.28s
-  conclusion: success
-  warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; unrelated to Scientific Freeze correctness
+validation_evidence:
+  scientific_freeze_v4_pc_alpha:
+    source_task: D-05
+    workflow: tests
+    run_id: 34161143511
+    job_id: 101863074262
+    head_sha: d4674edadd357b637247d1f7797c409d219ccbe1
+    python: 3.11.16
+    tigramite: 5.2.10.1
+    result: 453 passed, 1 warning in 3.52s
+    conclusion: success
+  latest_regression_before_this_revalidation:
+    source_task: D-08
+    workflow: tests
+    run_id: 34161761955
+    job_id: 101864870635
+    head_sha: e3b783eaedc1a509251c11601146e1ec186d67cd
+    python: 3.11.16
+    tigramite: 5.2.10.1
+    result: 478 passed, 1 warning in 2.86s
+    conclusion: success
+  warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; known and unrelated to Scientific Freeze correctness
 
 scientific_checks:
   primary_discovery: pcmci_plus
@@ -43,46 +58,49 @@ scientific_checks:
   primary_horizon: 1
   primary_tau_max_frames: 10
   primary_tau_max_status: frozen_final
+  primary_pc_alpha: 0.01
+  primary_pc_alpha_status: frozen_final
   tau_max_outer_test_driven_change: forbidden
+  pc_alpha_outer_test_driven_change: forbidden
   tau_max_sensitivity_driven_change: forbidden
+  pc_alpha_sensitivity_driven_change: forbidden
   discovery_node_unit: region_dimension
-  discovery_cross_region_only: true
-  discovery_target_policy: per_dimension
-  component_aware_edge_identity: true
+  discovery_component_mapping: identity
+  forecasting_feature_rule: exact_selected_component
+  reporting_projection: region_lag
   split_unit: subject
   outer_test_usage: frozen_final_evaluation_only
   preprocessing_fit: outer_train_only
   discovery: outer_train_only
   ridge_tuning: outer_train_only
   null_mapping: outer_train_only
+  feature_selection: outer_train_only
+  lag_selection: outer_train_only
   sensitivity_after_primary_freeze: true
+  primary_artifact_root: artifacts/primary
+  sensitivity_artifact_root: artifacts/sensitivity
 
 migration:
-  from_schema_version: 2
-  to_schema_version: 3
+  from_schema_version: 3
+  to_schema_version: 4
   reason: >-
-    The study-specific Primary PCMCI+ maximum lag has now been explicitly decided
-    as tau_max=10 frames. Because this is a scientific parameter, the machine-readable
-    Scientific Freeze is versioned and exact-value validation rejects any drift.
+    Primary PCMCI+ pc_alpha has been explicitly fixed to 0.01. Because pc_alpha is
+    a scientific discovery parameter, the machine-readable Scientific Freeze was
+    migrated to schema v4 and exact-value validation now rejects numeric drift,
+    null/model-selection mode, or unreviewed configuration extensions.
   impact_scope:
     - configs/scientific_freeze.yaml
     - schemas/scientific_freeze.schema.json
     - scientific_config loader
-    - D-04 tau_max contract
-    - downstream D-06 run_pcmciplus configuration
+    - D-05 pc_alpha contract
+    - downstream PCMCI+ execution configuration
   migration_rule: >-
-    Primary runs created under Scientific Freeze v2 are not considered fully frozen
-    for discovery execution until migrated to v3 with tau_max=10.
-
-source_commits:
-  schema_v2_component_freeze: dc78cbd2e4bcb3a607b689311efdf35c0273113e
-  schema_v3_tau_max_config: 893de3d4feb736234146e1e4cb62e083dca66e66
-  schema_v3_json_schema: eef2507ae85eff9234893e2ef6f49b1e2d3fc8d8
-  schema_v3_loader: 174c364ea964cfb14d609a93473ab9155e01b1e2
-  schema_v3_tests: 4ab74aa6f841671f50112ee01d79b325ebf3533b
+    Primary runs created under Scientific Freeze v3 are not considered fully frozen
+    for discovery execution until migrated to v4 with pc_alpha=0.01.
 
 artifacts:
   - artifacts/setup/P0A/task_result.yaml
+  - configs/scientific_freeze.yaml
 
 remaining_issue: none
 next_task: P0B-01
