@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
+import yaml
 
 from lagged_facial_graph_forecasting import (
     MinimalFoldRunner,
     OuterTestLockedError,
+    ScientificConfigError,
     build_subject_split_manifest,
     generate_synthetic_face_time_series,
 )
@@ -82,3 +85,34 @@ def test_runner_rejects_missing_manifest_subject() -> None:
 
     with pytest.raises(ValueError, match="missing FaceTimeSeries"):
         MinimalFoldRunner(manifest, series_by_subject)
+
+
+def test_runner_rejects_missing_scientific_freeze(tmp_path) -> None:
+    manifest, series_by_subject = _fixture()
+
+    with pytest.raises(ScientificConfigError, match="scientific config not found"):
+        MinimalFoldRunner(
+            manifest,
+            series_by_subject,
+            scientific_config_path=tmp_path / "missing_scientific_freeze.yaml",
+        )
+
+
+def test_runner_rejects_altered_scientific_freeze(tmp_path) -> None:
+    manifest, series_by_subject = _fixture()
+    config = yaml.safe_load(
+        Path("configs/scientific_freeze.yaml").read_text(encoding="utf-8")
+    )
+    config["primary"]["horizon"] = 2
+    altered_config = tmp_path / "altered_scientific_freeze.yaml"
+    altered_config.write_text(
+        yaml.safe_dump(config, sort_keys=False),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ScientificConfigError, match="primary.horizon"):
+        MinimalFoldRunner(
+            manifest,
+            series_by_subject,
+            scientific_config_path=altered_config,
+        )
