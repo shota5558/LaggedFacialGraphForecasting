@@ -1,0 +1,48 @@
+task_id: V0-06
+task_name: Prediction
+status: PASS
+
+implemented:
+  - existing Ridge prediction path reused without duplication
+  - PredictionArtifact creation with row provenance
+  - fitted feature-name and lag provenance checks
+  - invalid rows preserved as masked NaN predictions
+  - single-output sklearn prediction shape normalized to the DesignMatrix target contract
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/forecaster.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_ridge_forecaster_prediction.py
+
+failure_history:
+  initial_run_id: 34145220394
+  initial_result: 1 failed, 94 passed
+  fail_type: implementation bug
+  root_cause: >-
+    scikit-learn Ridge squeezed a single-output target from shape (N, 1) to
+    prediction shape (N,), violating the exact PredictionArtifact target shape.
+  minimal_fix: >-
+    Restore (N, 1) only when the DesignMatrix target is two-dimensional with
+    exactly one output and sklearn returns a one-dimensional prediction.
+
+tests:
+  workflow: tests
+  run_id: 34145289879
+  job_id: 101815894924
+  head_sha: b77961c418b55504b9277efddcb0ef0e3d530cb9
+  python: 3.11.16
+  result: 98 passed in 1.36s
+
+scientific_checks:
+  - prediction does not fit or tune scaler/Ridge parameters
+  - prediction feature names and lags must match the fitted model provenance
+  - subject, region, outer_fold, condition, forecast_origin, and target_time are preserved
+  - invalid rows are never submitted to the predictor and remain masked in the artifact
+  - no discovery, Null, real-data preprocessing, or Sensitivity path was introduced
+  - no outer-test result can alter model settings through this prediction function
+
+artifacts:
+  - artifacts/setup/V0-06/task_result.yaml
+
+remaining_issue: none
+next_task: V0-07
