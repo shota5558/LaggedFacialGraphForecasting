@@ -18,7 +18,7 @@ class ScientificConfigError(ValueError):
 
 
 _EXPECTED: dict[str, Any] = {
-    "schema_version": 1,
+    "schema_version": 2,
     "primary": {
         "discovery": "pcmci_plus",
         "ci_test": "parcorr",
