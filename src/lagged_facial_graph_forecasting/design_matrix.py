@@ -8,7 +8,7 @@ import numpy as np
 
 from .alignment import aligned_indices
 from .contracts import DesignMatrix, FaceTimeSeries
-from .core_contracts import ParentSet
+from .core_contracts import ParentLink, ParentSet
 
 
 def _escape_feature_component(value: str) -> str:
@@ -83,10 +83,9 @@ def _resolve_alignment_lag(
 ) -> int:
     """Return a common row-support lag without permitting unavailable features.
 
-    ``alignment_lag`` is not a predictor.  It only fixes the earliest target row
-    so conditions with different feature sets can be evaluated on the exact same
-    forecast origins/targets.  Primary callers should pass the same frozen value
-    (normally the configured ``tau_max``) to Persistence, Self, Full, and PCMCI.
+    ``alignment_lag`` is not a predictor. It only fixes the earliest target row so
+    conditions with different feature sets can be evaluated on the exact same
+    forecast origins/targets.
     """
 
     required_lag = max(feature_lags)
@@ -105,6 +104,94 @@ def _resolve_alignment_lag(
     return alignment_lag
 
 
+def _validate_target_dimension(
+    series: FaceTimeSeries, target_dimension: str | None
+) -> tuple[int | None, str | None]:
+    if target_dimension is None:
+        return None, None
+    if target_dimension not in series.dimension:
+        raise ValueError(f"unknown target_dimension: {target_dimension!r}")
+    return series.dimension.index(target_dimension), target_dimension
+
+
+def _target_values(
+    series: FaceTimeSeries,
+    target_indices: np.ndarray,
+    target_region_index: int,
+    target_dimension: str | None,
+) -> tuple[np.ndarray, np.ndarray]:
+    dimension_index, _ = _validate_target_dimension(series, target_dimension)
+    if dimension_index is None:
+        return (
+            series.X[target_indices, target_region_index, :],
+            np.all(series.valid_mask[target_indices, target_region_index, :], axis=1),
+        )
+    return (
+        series.X[target_indices, target_region_index, dimension_index],
+        series.valid_mask[target_indices, target_region_index, dimension_index],
+    )
+
+
+def _resolve_link_dimension(
+    series: FaceTimeSeries,
+    value: str,
+    *,
+    field_name: str,
+) -> str:
+    """Resolve legacy ``value`` only when the series is provably scalar.
+
+    Component-aware v2 artifacts must carry real dimension labels for D>1. The legacy
+    default exists only for source compatibility with certified scalar fixtures and is
+    never interpreted as a component choice in a multicomponent series.
+    """
+
+    if value == "value":
+        if len(series.dimension) != 1:
+            raise ValueError(
+                f"{field_name}='value' is ambiguous for multicomponent FaceTimeSeries"
+            )
+        return series.dimension[0]
+    if value not in series.dimension:
+        raise ValueError(f"unknown {field_name}: {value!r}")
+    return value
+
+
+def _resolve_pcmci_target_dimension(
+    series: FaceTimeSeries,
+    parent_set: ParentSet,
+    requested: str | None,
+) -> str:
+    if requested is not None:
+        if requested not in series.dimension:
+            raise ValueError(f"unknown target_dimension: {requested!r}")
+        # Validate every stored target label even though links for other target
+        # components are filtered below. This prevents lossy/ambiguous v2 artifacts.
+        for parent in parent_set.parents:
+            _resolve_link_dimension(
+                series, parent.target_dimension, field_name="target_dimension"
+            )
+        return requested
+
+    if not parent_set.parents:
+        if len(series.dimension) == 1:
+            return series.dimension[0]
+        raise ValueError(
+            "target_dimension is required for a multicomponent empty ParentSet"
+        )
+
+    target_dimensions = {
+        _resolve_link_dimension(
+            series, parent.target_dimension, field_name="target_dimension"
+        )
+        for parent in parent_set.parents
+    }
+    if len(target_dimensions) != 1:
+        raise ValueError(
+            "target_dimension is required when ParentSet contains multiple target components"
+        )
+    return next(iter(target_dimensions))
+
+
 def build_self_history_design_matrix(
     series: FaceTimeSeries,
     *,
@@ -112,19 +199,19 @@ def build_self_history_design_matrix(
     lags: Iterable[int] = (1,),
     horizon: int = 1,
     alignment_lag: int | None = None,
+    target_dimension: str | None = None,
 ) -> DesignMatrix:
-    """Build a self-history-only matrix for one subject and target region.
+    """Build Self history for one target region.
 
-    Every feature is drawn from the target region itself. Lags are target-relative:
-    feature ``tau`` for target index ``u`` is observed at ``u - tau``. The frozen
-    Primary horizon is enforced by ``aligned_indices``. ``alignment_lag`` may be
-    used to force common row support across Primary conditions without adding a
-    predictor at that lag.
+    The predictor set remains the full past vector of the target region. When
+    ``target_dimension`` is supplied, only that scalar output component is predicted;
+    this is the fair baseline for component-level PCMCI+ discovery.
     """
 
     normalized_lags = _normalize_lags(lags)
     if target_region not in series.region_id:
         raise ValueError(f"unknown target_region: {target_region!r}")
+    _validate_target_dimension(series, target_dimension)
 
     support_lag = _resolve_alignment_lag(normalized_lags, alignment_lag)
     common = aligned_indices(len(series.time_index), lag=support_lag, horizon=horizon)
@@ -151,21 +238,19 @@ def build_self_history_design_matrix(
 
     X = np.column_stack(feature_columns)
     feature_valid = np.column_stack(feature_valid_columns)
-    y = series.X[target_indices, region_index, :]
-    target_valid = series.valid_mask[target_indices, region_index, :]
-    valid_mask = np.all(feature_valid, axis=1) & np.all(target_valid, axis=1)
+    y, target_valid = _target_values(
+        series, target_indices, region_index, target_dimension
+    )
+    valid_mask = np.all(feature_valid, axis=1) & target_valid
 
-    forecast_origin = series.time_index[origin_indices]
-    target_time = series.time_index[target_indices]
     row_count = len(target_indices)
-
     return DesignMatrix(
         X=X,
         y=y,
         subject_id=(series.subject_id,) * row_count,
         region_id=(target_region,) * row_count,
-        forecast_origin=forecast_origin,
-        target_time=target_time,
+        forecast_origin=series.time_index[origin_indices],
+        target_time=series.time_index[target_indices],
         feature_names=tuple(feature_names),
         feature_lags=tuple(feature_lags),
         valid_mask=valid_mask.astype(bool, copy=False),
@@ -178,15 +263,9 @@ def build_persistence_design_matrix(
     target_region: str,
     horizon: int = 1,
     alignment_lag: int | None = None,
+    target_dimension: str | None = None,
 ) -> DesignMatrix:
-    """Build the frozen Persistence condition: current target-region value only.
-
-    With Primary ``h=1``, the value available at forecast origin ``t`` is the
-    target-relative lag-1 value for target ``t+1``. Persistence therefore uses
-    exactly the target region's dimensions at lag 1 and no other region/history.
-    ``alignment_lag`` can truncate rows to the same frozen support as the other
-    Primary conditions while leaving the Persistence feature set unchanged.
-    """
+    """Build the frozen Persistence condition on identical target support."""
 
     return build_self_history_design_matrix(
         series,
@@ -194,6 +273,7 @@ def build_persistence_design_matrix(
         lags=(1,),
         horizon=horizon,
         alignment_lag=alignment_lag,
+        target_dimension=target_dimension,
     )
 
 
@@ -204,23 +284,18 @@ def build_full_history_design_matrix(
     lags: Iterable[int] = (1,),
     horizon: int = 1,
     alignment_lag: int | None = None,
+    target_dimension: str | None = None,
 ) -> DesignMatrix:
-    """Build the Full condition using every facial region at every requested lag.
-
-    Column order is deterministic: ``lag -> region -> dimension``. All lags are
-    target-relative. ``alignment_lag`` may fix row support across Primary
-    conditions without changing the Full predictor set.
-    """
+    """Build Full using every region component at every requested lag."""
 
     normalized_lags = _normalize_lags(lags)
     if target_region not in series.region_id:
         raise ValueError(f"unknown target_region: {target_region!r}")
+    _validate_target_dimension(series, target_dimension)
 
     support_lag = _resolve_alignment_lag(normalized_lags, alignment_lag)
     common = aligned_indices(
-        len(series.time_index),
-        lag=support_lag,
-        horizon=horizon,
+        len(series.time_index), lag=support_lag, horizon=horizon
     )
     target_indices = common.target_index
     origin_indices = common.forecast_origin
@@ -246,9 +321,10 @@ def build_full_history_design_matrix(
 
     X = np.column_stack(feature_columns)
     feature_valid = np.column_stack(feature_valid_columns)
-    y = series.X[target_indices, target_region_index, :]
-    target_valid = series.valid_mask[target_indices, target_region_index, :]
-    valid_mask = np.all(feature_valid, axis=1) & np.all(target_valid, axis=1)
+    y, target_valid = _target_values(
+        series, target_indices, target_region_index, target_dimension
+    )
+    valid_mask = np.all(feature_valid, axis=1) & target_valid
 
     row_count = len(target_indices)
     return DesignMatrix(
@@ -271,17 +347,21 @@ def build_pcmci_parent_design_matrix(
     self_lags: Iterable[int] = (1,),
     horizon: int = 1,
     alignment_lag: int | None = None,
+    target_dimension: str | None = None,
 ) -> DesignMatrix:
-    """Build PCMCI as fixed Self history plus selected inter-regional parents.
+    """Build one target-component PCMCI matrix from exact selected components.
 
-    PCMCI contains the exact same Self-history block as the Self condition and may
-    add only PCMCI-selected inter-regional ``ParentSet`` links. Self-region links
-    present in ``ParentSet`` are not added a second time. If no inter-regional
-    parent survives, PCMCI deterministically reduces to Self.
+    Primary ParCorr discovery nodes are scalar ``region × dimension`` components.
+    Accordingly, this builder predicts one scalar target component at a time and adds
+    only ParentLinks retained for that target component. Each selected inter-regional
+    link contributes exactly its ``source_dimension``; selecting one component never
+    expands to all dimensions of the source region.
 
-    ``alignment_lag`` fixes common target/forecast-origin support across conditions
-    without becoming a predictor. Primary callers should pass the same frozen
-    support lag to Persistence, Self, Full, and PCMCI.
+    The fixed Self block remains the target region's full past vector so the
+    incremental comparison is Self-region history plus selected cross-region
+    components versus the identical Self baseline. Same-region ParentLinks are not
+    duplicated. A mixed-target ParentSet therefore requires ``target_dimension`` to be
+    supplied explicitly.
     """
 
     normalized_self_lags = _normalize_lags(self_lags)
@@ -289,17 +369,30 @@ def build_pcmci_parent_design_matrix(
     if target_region not in series.region_id:
         raise ValueError(f"unknown target_region from ParentSet: {target_region!r}")
 
-    interregional_parents = tuple(
-        parent for parent in parent_set.parents if parent.source_region != target_region
+    resolved_target_dimension = _resolve_pcmci_target_dimension(
+        series, parent_set, target_dimension
     )
-    for parent in interregional_parents:
+
+    selected_parents: list[tuple[ParentLink, str]] = []
+    for parent in parent_set.parents:
+        parent_target = _resolve_link_dimension(
+            series, parent.target_dimension, field_name="target_dimension"
+        )
+        if parent_target != resolved_target_dimension:
+            continue
+        if parent.source_region == target_region:
+            continue
         if parent.source_region not in series.region_id:
             raise ValueError(
                 f"unknown source_region from ParentSet: {parent.source_region!r}"
             )
+        source_dimension = _resolve_link_dimension(
+            series, parent.source_dimension, field_name="source_dimension"
+        )
+        selected_parents.append((parent, source_dimension))
 
     all_lags = normalized_self_lags + tuple(
-        parent.lag for parent in interregional_parents
+        parent.lag for parent, _ in selected_parents
     )
     support_lag = _resolve_alignment_lag(all_lags, alignment_lag)
     common = aligned_indices(
@@ -314,7 +407,6 @@ def build_pcmci_parent_design_matrix(
     feature_names: list[str] = []
     feature_lags: list[int] = []
 
-    # Fixed Self-history block: identical semantic features across Self/PCMCI.
     for lag in normalized_self_lags:
         source_indices = target_indices - lag
         for dimension_index, dimension_name in enumerate(series.dimension):
@@ -327,27 +419,30 @@ def build_pcmci_parent_design_matrix(
             feature_names.append(encode_feature_name(target_region, dimension_name))
             feature_lags.append(lag)
 
-    # Incremental information: only selected parents from other regions.
-    for parent in interregional_parents:
+    for parent, source_dimension in selected_parents:
         source_indices = target_indices - parent.lag
         source_region_index = series.region_id.index(parent.source_region)
-        for dimension_index, dimension_name in enumerate(series.dimension):
-            feature_columns.append(
-                series.X[source_indices, source_region_index, dimension_index]
-            )
-            feature_valid_columns.append(
-                series.valid_mask[source_indices, source_region_index, dimension_index]
-            )
-            feature_names.append(
-                encode_feature_name(parent.source_region, dimension_name)
-            )
-            feature_lags.append(parent.lag)
+        source_dimension_index = series.dimension.index(source_dimension)
+        feature_columns.append(
+            series.X[source_indices, source_region_index, source_dimension_index]
+        )
+        feature_valid_columns.append(
+            series.valid_mask[source_indices, source_region_index, source_dimension_index]
+        )
+        feature_names.append(
+            encode_feature_name(parent.source_region, source_dimension)
+        )
+        feature_lags.append(parent.lag)
 
     X = np.column_stack(feature_columns)
     feature_valid = np.column_stack(feature_valid_columns)
-    y = series.X[target_indices, target_region_index, :]
-    target_valid = series.valid_mask[target_indices, target_region_index, :]
-    valid_mask = np.all(feature_valid, axis=1) & np.all(target_valid, axis=1)
+    y, target_valid = _target_values(
+        series,
+        target_indices,
+        target_region_index,
+        resolved_target_dimension,
+    )
+    valid_mask = np.all(feature_valid, axis=1) & target_valid
 
     row_count = len(target_indices)
     return DesignMatrix(
