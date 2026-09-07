@@ -1,0 +1,42 @@
+task_id: H-00
+task_name: Config loader
+status: PASS
+
+implemented:
+  - reused the strict P0A scientific configuration loader; no duplicate runtime parser was added
+  - MinimalFoldRunner loads and validates the scientific freeze during construction before any fold work can start
+  - missing scientific config prevents runner construction
+  - scientific drift such as Primary horizon changes prevents runner construction
+
+files_changed:
+  - artifacts/setup/H-00/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/scientific_config.py
+  - src/lagged_facial_graph_forecasting/runner.py
+  - tests/test_minimal_fold_runner.py
+
+tests:
+  workflow: tests
+  run_id: 34149857891
+  job_id: 101829669707
+  head_sha: 355721042b1bfd01ce51354978d0d9c574521576
+  result: success
+  suite_result: 229 passed
+  cases:
+    - runner starts with the canonical frozen scientific config
+    - missing scientific config is rejected before fold execution
+    - altered Primary horizon is rejected before fold execution
+
+scientific_checks:
+  - Primary remains pcmci_plus + parcorr + ridge with h=1
+  - subject-level outer-test final-evaluation-only policy remains machine-readable and strictly validated
+  - preprocessing/discovery/ridge tuning/null mapping/feature and lag selection remain outer-train only
+  - Primary and Sensitivity artifact roots remain separate
+  - no Sensitivity execution path is introduced
+
+artifacts:
+  - artifacts/setup/H-00/task_result.yaml
+
+remaining_issue: none
+next_task: H-01
