@@ -5,17 +5,19 @@ status: PASS
 fail_history:
   initial_status: FAIL
   fail_type: contract mismatch
-  root_cause: feature names used an unescaped region.dimension delimiter even though valid FaceTimeSeries region/dimension identifiers may themselves contain '.' or '\\', so source region and dimension were not losslessly recoverable for all valid identifiers
-  resolution: added a reversible escaped feature-name codec while preserving the historical region.dimension form for simple identifiers
+  root_causes:
+    - feature names originally used an unescaped region.dimension delimiter, so valid identifiers containing reserved characters were not losslessly recoverable
+    - the earlier provenance artifact described PCMCI as ParentSet-only, while the corrected incremental forecasting contract is fixed Self-history plus selected inter-regional ParentSet links
+  resolution:
+    - added reversible escaped feature-name encoding
+    - updated PCMCI provenance tests to verify the fixed Self block followed by frozen selected inter-regional parents
 
 implemented:
-  - reused the frozen DesignMatrix.feature_names and DesignMatrix.feature_lags schema without a schema migration
-  - added encode_feature_name / decode_feature_name with escaping for '.' and '\\'
-  - updated Self, Full, and PCMCI ParentSet builders to use the reversible codec; Persistence inherits the same path through Self
-  - preserved existing simple names such as mouth.vx exactly
-  - verified every design-matrix column retains exact source region, dimension, and target-relative lag
-  - verified PCMCI provenance is inherited exactly from the frozen ParentSet without reselection
-  - exported the provenance codec through the package public API
+  - retained frozen DesignMatrix.feature_names and DesignMatrix.feature_lags fields without schema migration
+  - encode_feature_name/decode_feature_name losslessly preserve source region and dimension, including reserved dots and backslashes
+  - Persistence, Self, Full, and PCMCI builders use the same reversible provenance convention
+  - PCMCI provenance is deterministic: fixed Self-history features first, then selected inter-regional ParentSet links in frozen ParentSet order
+  - target-relative lag remains explicit for every column
 
 files_changed:
   - src/lagged_facial_graph_forecasting/design_matrix.py
@@ -25,28 +27,23 @@ files_changed:
 
 tests:
   workflow: tests
-  final_run_id: 34148646645
-  final_job_id: 101826011530
-  final_head_sha: d251113262c9c936633d6ae55f357b2b6ae53ac9
+  run_id: 34149026741
+  job_id: 101827151606
+  head_sha: c436c5510015c4a6b902e09050ca1ae666db773b
   python: 3.11.16
-  final_result: 185 passed in 2.25s
+  result: 196 passed in 1.75s
   cases:
-    - Persistence provenance identifies target-region dimensions at lag 1
-    - Self provenance preserves target region, dimension, and every requested lag
-    - Full provenance preserves every region/dimension/lag column deterministically
-    - PCMCI provenance matches ParentSet source-region/lag links without reselection
-    - reserved '.' and '\\' characters round-trip through feature-name encoding
-    - design-matrix feature names round-trip to the exact source region and dimension
-    - public API export does not regress the full suite
+    - Persistence/Self/Full provenance identifies exact source region, dimension, and lag
+    - PCMCI provenance is fixed Self plus selected inter-regional ParentSet provenance
+    - reserved dot/backslash identifiers round-trip losslessly
+    - no selected self-link is duplicated into the fixed Self block
 
 scientific_checks:
-  - source region, target region, dimension, and lag are losslessly traceable for every valid identifier accepted by FaceTimeSeries
-  - no outcome-dependent feature or lag selection is introduced
-  - PCMCI condition inputs remain defined solely by the frozen ParentSet
-  - target-relative lag semantics are preserved
+  - source region, target region, dimension, and target-relative lag are losslessly traceable
+  - PCMCI input provenance is nested over the fixed Self baseline and uses no test-side reselection
+  - selected inter-regional provenance comes only from the frozen ParentSet
   - Primary h=1 and Primary/Sensitivity separation remain unchanged
   - no outer-test information is consumed by provenance construction or validation
-  - frozen DesignMatrix fields and core schema_version are unchanged
 
 artifacts:
   - artifacts/setup/C-07/task_result.yaml
