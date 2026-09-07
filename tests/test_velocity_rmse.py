@@ -11,6 +11,7 @@ def _artifact(*, valid_mask: np.ndarray) -> PredictionArtifact:
         outer_fold=0,
         subject_id=("s01", "s01", "s01"),
         region_id=("mouth", "mouth", "mouth"),
+        target_dimensions=("vx", "vy"),
         condition="self",
         forecast_origin=np.array([0.0, 1.0, 2.0]),
         target_time=np.array([1.0, 2.0, 3.0]),
