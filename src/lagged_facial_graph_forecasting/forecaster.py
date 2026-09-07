@@ -14,11 +14,12 @@ from .contracts import DesignMatrix, PredictionArtifact
 
 @dataclass(slots=True)
 class FittedRidgeForecaster:
-    """A fitted StandardScaler + Ridge pipeline with frozen feature provenance."""
+    """A fitted StandardScaler + Ridge pipeline with frozen input/output provenance."""
 
     pipeline: Pipeline
     feature_names: tuple[str, ...]
     feature_lags: tuple[int, ...]
+    target_dimensions: tuple[str, ...]
     alpha: float
     training_row_count: int
 
@@ -57,6 +58,7 @@ def fit_ridge_forecaster(
         pipeline=pipeline,
         feature_names=matrix.feature_names,
         feature_lags=matrix.feature_lags,
+        target_dimensions=matrix.target_dimensions,
         alpha=alpha,
         training_row_count=int(np.count_nonzero(valid_rows)),
     )
@@ -75,6 +77,8 @@ def predict_ridge_forecaster(
         raise ValueError("prediction feature_names do not match fitted model provenance")
     if matrix.feature_lags != fitted.feature_lags:
         raise ValueError("prediction feature_lags do not match fitted model provenance")
+    if matrix.target_dimensions != fitted.target_dimensions:
+        raise ValueError("prediction target_dimensions do not match fitted model provenance")
 
     valid_rows = np.asarray(matrix.valid_mask, dtype=bool)
     y_pred = np.full(matrix.y.shape, np.nan, dtype=float)
