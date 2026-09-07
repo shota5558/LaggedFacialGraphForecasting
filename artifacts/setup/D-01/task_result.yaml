@@ -4,6 +4,8 @@ status: PASS
 
 implemented:
   - added a converter from canonical FaceTimeSeries sequences to Tigramite DataFrame
+  - requires the canonical SplitManifest and reuses assert_discovery_fit_scope before DataFrame construction
+  - rejects outer-test and otherwise out-of-scope subject IDs at the discovery-facing conversion boundary
   - preserves subjects as separate datasets in analysis_mode='multiple' rather than concatenating subject boundaries
   - flattens only region/dimension axes and records deterministic variable/component provenance
   - converts canonical valid_mask semantics into Tigramite invalid-mask semantics
@@ -15,24 +17,30 @@ files_changed:
   - tests/test_tigramite_dataframe_converter.py
   - artifacts/setup/D-01/task_result.yaml
 
+source_commits:
+  initial_converter: bf5c52d9da02c73ea888fc361afcca336586cc13
+  initial_tests: fe640be1268815b319109062354554ac7b82bc33
+  leakage_guard_integration: bc954fa327783923f5a22c64f2eb9d8b38600506
+  leakage_regression_test: d5310256f44adef39932a2c93ea3ac0573551365
+
 tests:
   workflow: tests
-  run_id: 34154279406
-  job_id: 101842733327
-  head_sha: fe640be1268815b319109062354554ac7b82bc33
+  run_id: 34154372210
+  job_id: 101843018223
+  head_sha: d5310256f44adef39932a2c93ea3ac0573551365
   result: success
-  suite_result: 380 passed in 2.23s
   cases:
     - independent subjects remain separate Tigramite datasets with different lengths
     - variable names and region/dimension component provenance are deterministic
     - invalid NaN is replaced only at a masked location and all Tigramite data are finite
     - duplicate subjects and incompatible schemas are rejected
+    - outer-test subject input raises LeakageGuardError before Tigramite DataFrame construction
 
 scientific_checks:
+  - discovery-facing conversion is structurally limited to outer-train subjects by the frozen SplitManifest
   - no cross-subject concatenation or boundary transition is introduced
-  - invalid observations cannot enter conditional-independence samples as valid evidence
+  - invalid observations are represented by the Tigramite mask; D-02 must freeze a ParCorr mask_type that consumes this mask
   - conversion performs no preprocessing fit, discovery, tuning, feature/lag selection, or Null construction
-  - outer-test is not accessed or used
   - Primary remains PCMCI+ + ParCorr + Ridge with h=1
   - no Sensitivity execution path is introduced
 
