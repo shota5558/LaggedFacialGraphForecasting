@@ -78,26 +78,56 @@ def _normalize_lags(lags: Iterable[int]) -> tuple[int, ...]:
     return tuple(sorted(normalized))
 
 
+def _resolve_alignment_lag(
+    feature_lags: Iterable[int], alignment_lag: int | None
+) -> int:
+    """Return a common row-support lag without permitting unavailable features.
+
+    ``alignment_lag`` is not a predictor.  It only fixes the earliest target row
+    so conditions with different feature sets can be evaluated on the exact same
+    forecast origins/targets.  Primary callers should pass the same frozen value
+    (normally the configured ``tau_max``) to Persistence, Self, Full, and PCMCI.
+    """
+
+    required_lag = max(feature_lags)
+    if alignment_lag is None:
+        return required_lag
+    if (
+        not isinstance(alignment_lag, (int, np.integer))
+        or isinstance(alignment_lag, (bool, np.bool_))
+    ):
+        raise ValueError("alignment_lag must be an integer")
+    alignment_lag = int(alignment_lag)
+    if alignment_lag < required_lag:
+        raise ValueError(
+            "alignment_lag must be >= every feature lag to preserve valid row support"
+        )
+    return alignment_lag
+
+
 def build_self_history_design_matrix(
     series: FaceTimeSeries,
     *,
     target_region: str,
     lags: Iterable[int] = (1,),
     horizon: int = 1,
+    alignment_lag: int | None = None,
 ) -> DesignMatrix:
     """Build a self-history-only matrix for one subject and target region.
 
     Every feature is drawn from the target region itself. Lags are target-relative:
     feature ``tau`` for target index ``u`` is observed at ``u - tau``. The frozen
-    Primary horizon is enforced by ``aligned_indices``.
+    Primary horizon is enforced by ``aligned_indices``. ``alignment_lag`` may be
+    used to force common row support across Primary conditions without adding a
+    predictor at that lag.
     """
 
     normalized_lags = _normalize_lags(lags)
     if target_region not in series.region_id:
         raise ValueError(f"unknown target_region: {target_region!r}")
 
-    max_lag = max(normalized_lags)
-    common = aligned_indices(len(series.time_index), lag=max_lag, horizon=horizon)
+    support_lag = _resolve_alignment_lag(normalized_lags, alignment_lag)
+    common = aligned_indices(len(series.time_index), lag=support_lag, horizon=horizon)
     target_indices = common.target_index
     origin_indices = common.forecast_origin
     region_index = series.region_id.index(target_region)
@@ -147,14 +177,15 @@ def build_persistence_design_matrix(
     *,
     target_region: str,
     horizon: int = 1,
+    alignment_lag: int | None = None,
 ) -> DesignMatrix:
     """Build the frozen Persistence condition: current target-region value only.
 
     With Primary ``h=1``, the value available at forecast origin ``t`` is the
     target-relative lag-1 value for target ``t+1``. Persistence therefore uses
     exactly the target region's dimensions at lag 1 and no other region/history.
-    The returned matrix remains compatible with the common Ridge pipeline so that
-    conditions differ by input information rather than estimator implementation.
+    ``alignment_lag`` can truncate rows to the same frozen support as the other
+    Primary conditions while leaving the Persistence feature set unchanged.
     """
 
     return build_self_history_design_matrix(
@@ -162,6 +193,7 @@ def build_persistence_design_matrix(
         target_region=target_region,
         lags=(1,),
         horizon=horizon,
+        alignment_lag=alignment_lag,
     )
 
 
@@ -171,22 +203,23 @@ def build_full_history_design_matrix(
     target_region: str,
     lags: Iterable[int] = (1,),
     horizon: int = 1,
+    alignment_lag: int | None = None,
 ) -> DesignMatrix:
     """Build the Full condition using every facial region at every requested lag.
 
     Column order is deterministic: ``lag -> region -> dimension``. All lags are
-    target-relative and share the target rows implied by the maximum lag. The
-    target remains the requested facial region, while predictors span the complete
-    observed facial state at each lag.
+    target-relative. ``alignment_lag`` may fix row support across Primary
+    conditions without changing the Full predictor set.
     """
 
     normalized_lags = _normalize_lags(lags)
     if target_region not in series.region_id:
         raise ValueError(f"unknown target_region: {target_region!r}")
 
+    support_lag = _resolve_alignment_lag(normalized_lags, alignment_lag)
     common = aligned_indices(
         len(series.time_index),
-        lag=max(normalized_lags),
+        lag=support_lag,
         horizon=horizon,
     )
     target_indices = common.target_index
@@ -237,18 +270,18 @@ def build_pcmci_parent_design_matrix(
     parent_set: ParentSet,
     self_lags: Iterable[int] = (1,),
     horizon: int = 1,
+    alignment_lag: int | None = None,
 ) -> DesignMatrix:
-    """Build the PCMCI condition as fixed Self history plus selected other regions.
+    """Build PCMCI as fixed Self history plus selected inter-regional parents.
 
-    The scientific comparison is incremental: PCMCI must contain the exact same
-    Self-history block as the Self condition and may add only PCMCI-selected
-    inter-regional ``ParentSet`` links. Self-region links present in ``ParentSet``
-    are therefore not added a second time. If no inter-regional parent survives,
-    PCMCI deterministically reduces to Self rather than changing estimator family
-    or selecting a fallback from evaluation results.
+    PCMCI contains the exact same Self-history block as the Self condition and may
+    add only PCMCI-selected inter-regional ``ParentSet`` links. Self-region links
+    present in ``ParentSet`` are not added a second time. If no inter-regional
+    parent survives, PCMCI deterministically reduces to Self.
 
-    Column order is deterministic: sorted Self lags first (dimension order), then
-    inter-regional ParentSet order (dimension order). All lags are target-relative.
+    ``alignment_lag`` fixes common target/forecast-origin support across conditions
+    without becoming a predictor. Primary callers should pass the same frozen
+    support lag to Persistence, Self, Full, and PCMCI.
     """
 
     normalized_self_lags = _normalize_lags(self_lags)
@@ -268,8 +301,9 @@ def build_pcmci_parent_design_matrix(
     all_lags = normalized_self_lags + tuple(
         parent.lag for parent in interregional_parents
     )
+    support_lag = _resolve_alignment_lag(all_lags, alignment_lag)
     common = aligned_indices(
-        len(series.time_index), lag=max(all_lags), horizon=horizon
+        len(series.time_index), lag=support_lag, horizon=horizon
     )
     target_indices = common.target_index
     origin_indices = common.forecast_origin
