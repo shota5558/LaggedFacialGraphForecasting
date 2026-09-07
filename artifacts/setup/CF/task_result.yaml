@@ -1,0 +1,44 @@
+task_id: CF
+task_name: Core Contract Freeze
+status: PASS
+
+implemented:
+  - retained the V0-proven FaceTimeSeries, SplitManifest, DesignMatrix, and PredictionArtifact implementations without duplication
+  - added canonical ParentSet with explicit source-region and positive-lag provenance
+  - added NullMapping with frozen source/mapped parents, deterministic seed, and optional validated row permutation
+  - added subject-region-condition MetricsResult for paired downstream statistics
+  - added content-addressed ExperimentArtifact registry entry contract
+  - added stable path-based ExperimentConfig envelope
+  - added machine-readable core contract schema registry at version 1
+  - added migration policy requiring reason, impact scope, migration, and tests for future contract changes
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+  - schemas/core_contracts_v1.yaml
+  - tests/test_core_contract_freeze.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+
+tests:
+  workflow: tests
+  run_id: 34146087765
+  job_id: 101818324472
+  head_sha: 8353109cf95588f563b96822942201b2f9077335
+  python: 3.11.16
+  result: 110 passed in 1.53s
+
+scientific_checks:
+  - ParentSet is a Tigramite-independent discovery/forecasting boundary
+  - ParentSet preserves outer_fold, target_region, source_region, and lag provenance
+  - NullMapping records deterministic seed and mapping/permutation without consulting evaluation results
+  - MetricsResult is aligned at subject/region/condition level for paired outer-test analysis
+  - ExperimentArtifact requires a content hash and repository-relative path for immutable provenance
+  - ExperimentConfig references versioned scientific/run configs rather than embedding mutable ad-hoc settings
+  - Primary/Sensitivity definitions remain governed by the already frozen scientific config
+  - no PCMCI, Null algorithm, real-data, Ridge tuning, or Sensitivity implementation was introduced during contract freeze
+
+artifacts:
+  - schemas/core_contracts_v1.yaml
+  - artifacts/setup/CF/task_result.yaml
+
+remaining_issue: none
+next_task: B-00
