@@ -1,4 +1,4 @@
-"""Static Primary PCMCI+ configuration and fail-closed free-parameter guards."""
+"""Static Primary PCMCI+ configuration excluding D-04/D-05 free parameters."""
 
 from __future__ import annotations
 
@@ -8,27 +8,6 @@ from typing import Mapping
 
 
 PCMCI_PLUS_CONFIG_SCHEMA_VERSION = 1
-
-
-class PCMCIPlusParameterFreezeError(ValueError):
-    """Raised when a scientifically consequential PCMCI+ parameter is not frozen."""
-
-
-def validate_primary_tau_max(tau_max: object) -> int:
-    """Validate an explicitly frozen Primary ``tau_max`` value.
-
-    D-04 must not derive or silently default the scientific maximum lag.  The
-    selected value therefore has to be supplied explicitly by the scientific
-    freeze/pilot decision.  ``bool`` is rejected even though it is an ``int``
-    subclass in Python.
-    """
-
-    if isinstance(tau_max, bool) or not isinstance(tau_max, int) or tau_max < 1:
-        raise PCMCIPlusParameterFreezeError(
-            "Primary tau_max must be explicitly frozen as an integer >= 1; "
-            "no default or data-dependent selection is permitted"
-        )
-    return tau_max
 
 
 @dataclass(frozen=True, slots=True)
