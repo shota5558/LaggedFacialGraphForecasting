@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Mapping, object as _typing_object
+from typing import Mapping
 
 
 PCMCI_PLUS_CONFIG_SCHEMA_VERSION = 1
@@ -15,7 +15,7 @@ class PrimaryPCMCIPlusConfig:
     """Frozen static options for Tigramite ``run_pcmciplus``.
 
     ``tau_max`` and ``pc_alpha`` are intentionally absent: they are separate
-    scientifically consequential tasks (D-04 and D-05).  The options here match
+    scientifically consequential tasks (D-04 and D-05). The options here match
     Tigramite's stable PCMCI+ defaults, but are recorded explicitly so an upstream
     default change cannot silently alter a Primary run.
     """
