@@ -4,7 +4,9 @@ import pytest
 
 from lagged_facial_graph_forecasting.subject_metadata import (
     SubjectMetadataLoadError,
+    SubjectMetadataValidationError,
     load_subject_metadata_csv,
+    validate_subject_ids,
 )
 
 
@@ -62,3 +64,30 @@ def test_subject_metadata_loader_rejects_malformed_tables(
 def test_subject_metadata_loader_rejects_missing_file(tmp_path) -> None:
     with pytest.raises(SubjectMetadataLoadError, match="does not exist"):
         load_subject_metadata_csv(tmp_path / "missing.csv")
+
+
+def test_validate_subject_ids_returns_ordered_unique_ids_without_split_creation() -> None:
+    rows = (
+        {"subject_id": "s03", "session": "visit_a"},
+        {"subject_id": "s01", "session": "visit_b"},
+        {"subject_id": "s02", "session": "visit_c"},
+    )
+
+    assert validate_subject_ids(rows) == ("s03", "s01", "s02")
+
+
+@pytest.mark.parametrize(
+    ("rows", "message"),
+    [
+        ((), "at least one row"),
+        (({"session": "visit_a"},), "missing subject_id"),
+        (({"subject_id": ""},), "non-empty"),
+        (({"subject_id": "   "},), "non-empty"),
+        (({"subject_id": " s01"},), "leading/trailing whitespace"),
+        (({"subject_id": "s01 "},), "leading/trailing whitespace"),
+        (({"subject_id": "s01"}, {"subject_id": "s01"}), "duplicate"),
+    ],
+)
+def test_validate_subject_ids_rejects_invalid_identifiers(rows, message: str) -> None:
+    with pytest.raises(SubjectMetadataValidationError, match=message):
+        validate_subject_ids(rows)
