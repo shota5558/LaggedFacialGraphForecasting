@@ -10,11 +10,17 @@ implemented:
   - exposes only an immutable {'tau_max': value} contribution for later Tigramite execution
   - exposes no data, score, prediction, outer-test, or automatic-selection input
   - did not invent, infer, or silently default the study-specific Primary tau_max value
+  - retained pcmci_tau_max.py as the single canonical D-04 implementation and removed a duplicate validator from pcmci_plus_config.py
 
 files_changed:
   - src/lagged_facial_graph_forecasting/pcmci_tau_max.py
   - tests/test_pcmci_tau_max.py
   - artifacts/setup/D-04/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/pcmci_plus_config.py
+  - configs/scientific_freeze.yaml
+  - configs/primary_run.yaml
 
 tests:
   implementation_regression:
@@ -24,6 +30,13 @@ tests:
     head_sha: a156876996f9807253f2ed4b67c2828467e3fc6d
     python: 3.11.16
     result: 427 passed, 1 warning in 2.32s
+  current_head_revalidation:
+    workflow: tests
+    run_id: 34159788297
+    job_id: 101858991614
+    head_sha: 8611e8b78737d0562a29798f8e8dcbf5546b30e6
+    python: 3.11.16
+    result: 427 passed, 1 warning in 1.61s
     warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; unrelated to tau_max handling
   targeted_cases:
     - explicit positive integer is preserved exactly
@@ -42,6 +55,7 @@ scientific_checks:
   - no Sensitivity result is used to define Primary tau_max
   - tau_max is not guessed from prior pilots, current data, Tigramite defaults, or implementation convenience
   - research plan requires maximum lag to be frozen before Primary execution
+  - repository contains no Primary/pilot data artifact from which a pre-registered tau_max decision can be verified
 
 fail_type: scientific specification conflict
 root_cause: >-
