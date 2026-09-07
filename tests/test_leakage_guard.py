@@ -7,6 +7,7 @@ from lagged_facial_graph_forecasting.leakage_guard import (
     LeakageGuardError,
     assert_discovery_fit_scope,
     assert_preprocessing_fit_scope,
+    assert_ridge_tuning_scope,
 )
 
 
@@ -69,3 +70,17 @@ def test_discovery_scope_rejects_outer_test_subject_before_discovery() -> None:
         match="discovery fit cannot access outer-test subjects",
     ):
         assert_discovery_fit_scope(_manifest(), ("s02", "s06"))
+
+
+def test_ridge_tuning_scope_accepts_outer_train_subjects_only() -> None:
+    assert assert_ridge_tuning_scope(
+        _manifest(), ("s01", "s02")
+    ) == ("s01", "s02")
+
+
+def test_ridge_tuning_scope_rejects_outer_test_subject_before_tuning() -> None:
+    with pytest.raises(
+        LeakageGuardError,
+        match="ridge tuning cannot access outer-test subjects",
+    ):
+        assert_ridge_tuning_scope(_manifest(), ("s01", "s05"))
