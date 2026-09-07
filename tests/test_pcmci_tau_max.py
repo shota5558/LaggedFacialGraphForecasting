@@ -4,33 +4,36 @@ import pytest
 
 from lagged_facial_graph_forecasting.pcmci_tau_max import (
     PRIMARY_FORECAST_HORIZON,
+    PRIMARY_TAU_MAX,
     PRIMARY_TAU_MAX_SCHEMA_VERSION,
     PrimaryTauMax,
     freeze_primary_tau_max,
 )
 
 
-def test_explicit_tau_max_is_frozen_without_a_default() -> None:
-    frozen = freeze_primary_tau_max(5)
+def test_primary_tau_max_is_finally_frozen_to_10() -> None:
+    frozen = freeze_primary_tau_max()
 
-    assert frozen.tau_max == 5
-    assert frozen.schema_version == PRIMARY_TAU_MAX_SCHEMA_VERSION == 1
-    assert dict(frozen.tigramite_kwargs()) == {"tau_max": 5}
-
-
-def test_primary_tau_max_accepts_minimum_lag_available_at_h1() -> None:
-    frozen = freeze_primary_tau_max(PRIMARY_FORECAST_HORIZON)
-
-    assert frozen.tau_max == 1
+    assert PRIMARY_FORECAST_HORIZON == 1
+    assert PRIMARY_TAU_MAX == 10
+    assert frozen.tau_max == 10
+    assert frozen.schema_version == PRIMARY_TAU_MAX_SCHEMA_VERSION == 2
+    assert dict(frozen.tigramite_kwargs()) == {"tau_max": 10}
 
 
-@pytest.mark.parametrize("bad_value", [0, -1])
-def test_primary_tau_max_rejects_values_below_frozen_horizon(bad_value: int) -> None:
-    with pytest.raises(ValueError, match="frozen forecast horizon"):
+def test_explicit_matching_tau_max_is_accepted() -> None:
+    frozen = freeze_primary_tau_max(10)
+
+    assert frozen.tau_max == 10
+
+
+@pytest.mark.parametrize("bad_value", [0, 1, 5, 9, 11, 20, -1])
+def test_primary_tau_max_rejects_any_numeric_drift(bad_value: int) -> None:
+    with pytest.raises(ValueError, match="scientifically frozen to 10"):
         freeze_primary_tau_max(bad_value)
 
 
-@pytest.mark.parametrize("bad_value", [True, False, 1.5, "5", None])
+@pytest.mark.parametrize("bad_value", [True, False, 10.0, "10", None])
 def test_primary_tau_max_rejects_non_integer_values(bad_value: object) -> None:
     with pytest.raises(TypeError, match="must be an integer"):
         freeze_primary_tau_max(bad_value)  # type: ignore[arg-type]
@@ -38,11 +41,11 @@ def test_primary_tau_max_rejects_non_integer_values(bad_value: object) -> None:
 
 def test_primary_tau_max_rejects_schema_drift() -> None:
     with pytest.raises(ValueError, match="schema_version"):
-        PrimaryTauMax(tau_max=5, schema_version=2)
+        PrimaryTauMax(tau_max=10, schema_version=1)
 
 
 def test_tau_max_tigramite_mapping_is_immutable() -> None:
-    kwargs = freeze_primary_tau_max(5).tigramite_kwargs()
+    kwargs = freeze_primary_tau_max().tigramite_kwargs()
 
     with pytest.raises(TypeError):
         kwargs["tau_max"] = 3  # type: ignore[index]
