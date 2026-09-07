@@ -1,0 +1,54 @@
+task_id: G-00
+task_name: Metric interface
+status: PASS
+
+implemented:
+  - adds a generic PredictionArtifact -> MetricsResult metric interface without defining new metric mathematics
+  - evaluates metrics on valid rows only and groups results by held-out subject and target region
+  - preserves outer_fold, subject_id, region_id, condition, metric_name, value, and n_valid provenance for downstream paired statistics
+  - returns deterministic subject-region ordering
+  - fails closed when no valid prediction rows exist or when the metric contract is invalid
+  - reuses the frozen MetricsResult core contract and leaves the existing Velocity RMSE primitive unchanged for G-01
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/metrics.py
+  - tests/test_metric_interface.py
+  - artifacts/setup/G-00/task_result.yaml
+
+implementation_commits:
+  - sha: 0df0d877a73e89e3b97daeb725ae7d95daab7bb7
+    message: G-00: add subject-region metric interface
+  - sha: 74f8fc832cc967fb1b2d75e01df29fcb437e0bb2
+    message: G-00: test subject-region metric interface
+
+tests:
+  workflow: tests
+  run_id: 34165955284
+  job_id: 101876909876
+  head_sha: 74f8fc832cc967fb1b2d75e01df29fcb437e0bb2
+  result: 640 passed, 1 warning in 3.93s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to G-00
+  targeted_checks:
+    - valid rows grouped by subject and region
+    - outer-fold/subject/region/condition/metric provenance preserved
+    - n_valid records per-group evaluation support
+    - invalid rows are excluded before the metric callable receives data
+    - PredictionArtifact inputs are not mutated
+    - no-valid-row evaluation fails closed
+    - invalid metric name/callable inputs fail closed
+
+scientific_checks:
+  outer_test_evaluation_only: PASS
+  no_discovery_or_selection_in_metric_layer: PASS
+  subject_level_provenance_preserved: PASS
+  region_provenance_preserved: PASS
+  paired_statistics_ready: PASS
+  sensitivity_contamination: PASS
+
+artifacts:
+  - artifacts/setup/G-00/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: G-01
