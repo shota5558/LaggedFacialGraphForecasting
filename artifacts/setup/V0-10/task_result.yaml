@@ -1,0 +1,35 @@
+task_id: V0-10
+task_name: End-to-end test
+status: PASS
+
+implemented:
+  - added one end-to-end acceptance test for the complete V0 self-only vertical slice
+  - synthetic FaceTimeSeries -> SplitManifest -> outer-test lock -> Self-history DesignMatrix -> StandardScaler + Ridge -> fold freeze -> PredictionArtifact -> Velocity RMSE -> deterministic result artifact
+  - repeated the same run and asserted byte-identical artifacts, identical predictions, masks, and metric
+  - asserted Gate V0 provenance survives end-to-end
+
+files_changed:
+  - tests/test_v0_end_to_end.py
+
+tests:
+  workflow: tests
+  run_id: 34145754730
+  job_id: 101817329912
+  head_sha: fa00485b5009f2e74e79e27709671ec34c2f5f61
+  python: 3.11.16
+  result: 104 passed in 1.33s
+
+scientific_checks:
+  - SplitManifest remains the only subject-split source
+  - fitted training subjects equal outer-train and are disjoint from outer-test
+  - outer-test remains locked through fitting and is used only after explicit fold freeze
+  - V0 remains Self-history only and Primary horizon h=1
+  - no PCMCI, Null, real-data preprocessing, or Sensitivity path was introduced
+  - subject_id, outer_fold, region_id, forecast_origin, target_time, feature_name, lag, valid_mask, prediction, and ground_truth are all traceable in the final artifact
+  - same deterministic fixture and split produce identical artifact bytes, predictions, masks, and metric
+
+artifacts:
+  - artifacts/setup/V0-10/task_result.yaml
+
+remaining_issue: none
+next_task: Gate V0
