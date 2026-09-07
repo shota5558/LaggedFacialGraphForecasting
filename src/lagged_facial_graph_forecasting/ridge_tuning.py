@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .contracts import DesignMatrix, SplitManifest
-from .forecaster import fit_ridge_forecaster, predict_ridge_forecaster
+from .forecaster import FittedRidgeForecaster, fit_ridge_forecaster, predict_ridge_forecaster
 
 # Scientific tuning candidate set used by the Primary Ridge path.  The values are
 # explicit rather than generated at runtime so configuration/artifact provenance is
@@ -259,3 +259,44 @@ def select_ridge_alpha(
         validated.append(candidate)
 
     return min(validated, key=lambda candidate: (candidate.mean_rmse, candidate.alpha))
+
+
+def refit_selected_ridge(
+    matrix: DesignMatrix,
+    *,
+    split_manifest: SplitManifest,
+    selection: RidgeAlphaScore,
+) -> FittedRidgeForecaster:
+    """Refit scaler + Ridge once on complete outer-train after lambda selection.
+
+    This is the canonical E-06 implementation.  The DesignMatrix must contain
+    exactly the outer-train subject set and no outer-test/unknown subject.  The
+    already-selected alpha is revalidated and then passed to the common
+    StandardScaler + scikit-learn Ridge pipeline; no tuning occurs here.
+    """
+
+    matrix_subjects = set(matrix.subject_id)
+    outer_train_subjects = set(split_manifest.train_subject_ids)
+    outer_test_subjects = set(split_manifest.test_subject_ids)
+
+    leaked_test_subjects = matrix_subjects & outer_test_subjects
+    if leaked_test_subjects:
+        raise ValueError(
+            "Ridge frozen-refit matrix contains outer-test subjects: "
+            f"{sorted(leaked_test_subjects)}"
+        )
+    unexpected_subjects = matrix_subjects - outer_train_subjects
+    if unexpected_subjects:
+        raise ValueError(
+            "Ridge frozen-refit matrix contains subjects outside outer-train: "
+            f"{sorted(unexpected_subjects)}"
+        )
+    missing_subjects = outer_train_subjects - matrix_subjects
+    if missing_subjects:
+        raise ValueError(
+            "Ridge frozen-refit matrix is missing outer-train subjects: "
+            f"{sorted(missing_subjects)}"
+        )
+
+    selected = select_ridge_alpha((selection,))
+    return fit_ridge_forecaster(matrix, alpha=selected.alpha)
