@@ -5,19 +5,23 @@ status: PASS
 implemented:
   - audited unit-test coverage for Lane A preprocessing tasks A-00 through A-15
   - retained the existing task-specific unit tests and added one non-redundant cross-contract regression test
-  - the new regression verifies that a finite frame invalidated by the explicit A-11 quality rule is never silently revalidated by A-12 missingness handling, A-13 no-interpolation policy, A-14 subject assembly, or A-15 serialization
-  - confirmed the complete repository pytest suite remains green with the new boundary test
+  - the cross-contract regression verifies that a finite frame invalidated by the explicit A-11 quality rule is never silently revalidated by A-12 missingness handling, A-13 no-interpolation policy, A-14 subject assembly, or A-15 serialization
+  - removed stale test-path references from the task evidence and aligned provenance with the current repository tree
+  - confirmed the complete repository pytest suite remains green after A-15 duplicate-test cleanup
 
 files_changed:
   - tests/test_lane_a_contract_chain.py
   - artifacts/setup/A-16/task_result.yaml
 
 reused_tests:
-  - tests/test_landmark_io.py
-  - tests/test_preprocessing_validation.py
+  - tests/test_landmark_reader.py
+  - tests/test_timestamp_validation.py
+  - tests/test_landmark_shape_validation.py
   - tests/test_region_definition.py
   - tests/test_region_aggregation.py
-  - tests/test_spatial_normalization.py
+  - tests/test_translation_normalization.py
+  - tests/test_scale_normalization.py
+  - tests/test_rotation_normalization.py
   - tests/test_displacement.py
   - tests/test_velocity.py
   - tests/test_acceleration.py
@@ -30,13 +34,15 @@ reused_tests:
 
 source_commits:
   cross_contract_regression: 6ec7f7748c8ace3f8544222781a149682d2c4014
+  serialization_duplicate_cleanup: 7cb90089945d1ca31927a6b7085edd1cf55e7165
 
 tests:
   workflow: tests
-  run_id: 34153937862
-  job_id: 101841718856
-  head_sha: 6ec7f7748c8ace3f8544222781a149682d2c4014
+  run_id: 34154049803
+  job_id: 101842057232
+  head_sha: 7cb90089945d1ca31927a6b7085edd1cf55e7165
   result: success
+  suite_result: 377 passed in 2.29s
   new_case:
     - finite low-quality frame remains invalid through quality -> missingness -> no-interpolation -> FaceTimeSeries assembly -> serialization round-trip
 
