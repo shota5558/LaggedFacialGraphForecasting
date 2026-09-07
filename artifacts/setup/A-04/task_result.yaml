@@ -9,20 +9,27 @@ implemented:
   - validates raw landmark shape and region-index bounds before aggregation
   - ordinary mean intentionally propagates NaN instead of silently ignoring missing values
   - rejects non-frozen aggregation methods rather than changing preprocessing semantics at runtime
+  - removed an audit-detected duplicate aggregation implementation from regions.py; region_aggregation.py is the sole canonical A-04 implementation
 
 files_changed:
   - src/lagged_facial_graph_forecasting/region_aggregation.py
+  - src/lagged_facial_graph_forecasting/regions.py
   - tests/test_region_aggregation.py
   - artifacts/setup/A-04/task_result.yaml
 
 tests:
-  workflow: tests
-  run_id: 34151780393
-  job_id: 101835393294
-  head_sha: c5efd450664f04dbbe961ec43552c24193deb466
-  python: 3.11.16
-  result: success
-  suite_result: 305 passed in 2.06s
+  implementation_workflow: tests
+  implementation_run_id: 34151780393
+  implementation_job_id: 101835393294
+  implementation_head_sha: c5efd450664f04dbbe961ec43552c24193deb466
+  implementation_result: success
+  implementation_suite_result: 305 passed in 2.06s
+  deduplication_workflow: tests
+  deduplication_run_id: 34151825426
+  deduplication_job_id: 101835528979
+  deduplication_head_sha: 6182597f6d683f7db23423b048c22b44eea38030
+  deduplication_result: success
+  deduplication_suite_result: 305 passed in 2.23s
   cases:
     - arithmetic mean and region order are correct
     - coordinate dimensionality is preserved
@@ -31,12 +38,14 @@ tests:
     - out-of-bounds region indices are rejected
     - non-frozen aggregation methods are rejected
     - raw input landmarks are not modified
+    - no duplicate region aggregation implementation remains
 
 scientific_checks:
   - aggregation uses only the predeclared RegionDefinition and never outer-test outcomes
   - no data-dependent weighting or region selection is performed
   - missing values are not repaired or ignored before A-12/A-13
   - translation, scale, and rotation normalization are not introduced before A-05/A-06/A-07
+  - implementation duplication detected during audit was removed before PASS
   - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
 
 artifacts:
