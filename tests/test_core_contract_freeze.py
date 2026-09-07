@@ -17,13 +17,13 @@ from lagged_facial_graph_forecasting.core_contracts import (
 from lagged_facial_graph_forecasting.contracts import ContractError
 
 
-def test_core_contract_registry_freezes_all_required_contracts_at_v2() -> None:
+def test_core_contract_registry_freezes_all_required_contracts_at_v3() -> None:
     registry = yaml.safe_load(
-        Path("schemas/core_contracts_v2.yaml").read_text(encoding="utf-8")
+        Path("schemas/core_contracts_v3.yaml").read_text(encoding="utf-8")
     )
 
-    assert registry["schema_version"] == 2
-    assert registry["status"] == "frozen_after_scientific_freeze_v2"
+    assert registry["schema_version"] == 3
+    assert registry["status"] == "frozen_after_target_component_provenance_migration"
     assert set(registry["contracts"]) == {
         "FaceTimeSeries",
         "SplitManifest",
@@ -36,7 +36,7 @@ def test_core_contract_registry_freezes_all_required_contracts_at_v2() -> None:
         "ExperimentConfig",
     }
     assert all(
-        contract["schema_version"] == 2
+        contract["schema_version"] == 3
         for contract in registry["contracts"].values()
     )
     assert registry["contracts"]["ParentSet"]["parent_link_fields"] == [
@@ -45,15 +45,26 @@ def test_core_contract_registry_freezes_all_required_contracts_at_v2() -> None:
         "source_dimension",
         "target_dimension",
     ]
+    assert registry["contracts"]["DesignMatrix"]["target_provenance_fields"] == [
+        "region_id",
+        "target_dimensions",
+    ]
+    assert registry["contracts"]["PredictionArtifact"]["target_provenance_fields"] == [
+        "region_id",
+        "target_dimensions",
+    ]
     assert registry["migration_policy"]["required_on_change"] == [
         "reason",
         "impact_scope",
         "migration",
         "tests",
     ]
-    migration = registry["migration_from_v1"]
-    assert set(migration) == {"reason", "impact_scope", "migration", "tests"}
-    assert "regenerated" in migration["migration"]
+    migration_v1 = registry["migration_from_v1"]
+    migration_v2 = registry["migration_from_v2"]
+    assert set(migration_v1) == {"reason", "impact_scope", "migration", "tests"}
+    assert set(migration_v2) == {"reason", "impact_scope", "migration", "tests"}
+    assert "regenerated" in migration_v1["migration"]
+    assert "never be" in migration_v2["migration"]
 
 
 def test_parent_set_preserves_component_level_target_source_and_lag_without_tigramite_coupling() -> None:
@@ -66,7 +77,7 @@ def test_parent_set_preserves_component_level_target_source_and_lag_without_tigr
         ),
     )
 
-    assert parents.schema_version == CORE_CONTRACT_SCHEMA_VERSION == 2
+    assert parents.schema_version == CORE_CONTRACT_SCHEMA_VERSION == 3
     assert parents.target_region == "mouth"
     assert parents.parents == (
         ParentLink("left_cheek", 2, "vx", "vy"),
@@ -133,7 +144,7 @@ def test_null_mapping_is_frozen_reproducible_and_component_aware() -> None:
         permutation=(2, 0, 1),
     )
 
-    assert mapping.schema_version == 2
+    assert mapping.schema_version == 3
     assert mapping.seed == 11
     assert mapping.source_parents == source
     assert mapping.mapped_parents == mapped
@@ -162,7 +173,7 @@ def test_metrics_result_is_subject_region_condition_aligned() -> None:
         n_valid=37,
     )
 
-    assert result.schema_version == 2
+    assert result.schema_version == 3
     assert result.value == 0.125
     assert result.n_valid == 37
 
@@ -188,7 +199,7 @@ def test_experiment_artifact_requires_content_hash_and_relative_path() -> None:
         condition="self",
     )
 
-    assert artifact.schema_version == 2
+    assert artifact.schema_version == 3
     assert artifact.relative_path == "artifacts/primary/fold_00/prediction.json"
 
     with pytest.raises(ContractError, match="repository-relative"):
@@ -217,18 +228,18 @@ def test_experiment_config_is_stable_path_based_envelope() -> None:
         seed=20260908,
     )
 
-    assert config.schema_version == 2
+    assert config.schema_version == 3
     assert config.scientific_config_path == "configs/scientific_freeze.yaml"
     assert config.run_config_path == "configs/primary_run.yaml"
     assert config.artifact_root == "artifacts/primary"
     assert config.seed == 20260908
 
-    with pytest.raises(ContractError, match="schema_version must be 2"):
+    with pytest.raises(ContractError, match="schema_version must be 3"):
         ExperimentConfig(
             experiment_id="primary-001",
             scientific_config_path="configs/scientific_freeze.yaml",
             run_config_path="configs/primary_run.yaml",
             artifact_root="artifacts/primary",
             seed=0,
-            schema_version=1,
+            schema_version=2,
         )
