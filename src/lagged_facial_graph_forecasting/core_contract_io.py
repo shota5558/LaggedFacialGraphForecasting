@@ -123,8 +123,37 @@ def _decode_parent(value: Any, context: str) -> ParentLink:
     )
 
 
+def _certified_target_dimensions(
+    value: tuple[str, ...] | None,
+    *,
+    expected_count: int,
+    context: str,
+) -> tuple[str, ...]:
+    if value is None:
+        raise CoreContractIOError(
+            f"{context} migration requires certified_target_dimensions; "
+            "target component identity cannot be inferred"
+        )
+    dimensions = tuple(value)
+    if len(dimensions) != expected_count:
+        raise CoreContractIOError(
+            f"{context} certified_target_dimensions must contain "
+            f"{expected_count} entries; got {len(dimensions)}"
+        )
+    if any(not isinstance(item, str) or not item.strip() for item in dimensions):
+        raise CoreContractIOError(
+            f"{context} certified_target_dimensions entries must be non-empty strings"
+        )
+    dimensions = tuple(item.strip() for item in dimensions)
+    if len(set(dimensions)) != len(dimensions):
+        raise CoreContractIOError(
+            f"{context} certified_target_dimensions entries must be unique"
+        )
+    return dimensions
+
+
 def serialize_core_contract(value: Any) -> dict[str, Any]:
-    """Serialize one canonical contract into the frozen v2 envelope."""
+    """Serialize one canonical contract into the frozen v3 envelope."""
 
     contract_type = type(value).__name__
     if contract_type not in _CANONICAL_TYPES:
@@ -169,6 +198,7 @@ def serialize_core_contract(value: Any) -> dict[str, Any]:
             "y": _encode_array(value.y),
             "subject_id": list(value.subject_id),
             "region_id": list(value.region_id),
+            "target_dimensions": list(value.target_dimensions),
             "forecast_origin": _encode_array(value.forecast_origin),
             "target_time": _encode_array(value.target_time),
             "feature_names": list(value.feature_names),
@@ -180,6 +210,7 @@ def serialize_core_contract(value: Any) -> dict[str, Any]:
             "outer_fold": value.outer_fold,
             "subject_id": list(value.subject_id),
             "region_id": list(value.region_id),
+            "target_dimensions": list(value.target_dimensions),
             "condition": value.condition,
             "forecast_origin": _encode_array(value.forecast_origin),
             "target_time": _encode_array(value.target_time),
@@ -252,8 +283,7 @@ def migrate_core_contract_v1_to_v2(
     regenerated from discovery rather than guessed during migration.
 
     Other canonical payloads did not change structurally between v1 and v2, so
-    their envelope version can be migrated directly after strict v1 validation is
-    performed by the current decoder shape checks where applicable.
+    their envelope version can be migrated directly.
     """
 
     root = _strict_mapping(
@@ -317,7 +347,98 @@ def migrate_core_contract_v1_to_v2(
                 parent_payload["source_dimension"] = dimension
                 parent_payload["target_dimension"] = dimension
 
-    migrated["schema_version"] = CORE_CONTRACT_SCHEMA_VERSION
+    # This function deliberately produces v2, even when the current schema is newer.
+    migrated["schema_version"] = 2
+    return migrated
+
+
+def migrate_core_contract_v2_to_v3(
+    envelope: Any,
+    *,
+    certified_target_dimensions: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
+    """Migrate v2 to v3 while refusing to infer target component labels.
+
+    v2 DesignMatrix and PredictionArtifact payloads identify the target region but
+    omit output-dimension labels. They can be migrated only when the caller supplies
+    certified labels matching the serialized target output count. Other v2 contract
+    payloads are structurally unchanged and receive only the envelope version bump.
+    """
+
+    root = _strict_mapping(
+        envelope, {"schema_version", "contract_type", "payload"}, "envelope"
+    )
+    if root["schema_version"] != 2:
+        raise CoreContractIOError(
+            "v2 migration requires schema_version 2; "
+            f"actual={root['schema_version']!r}"
+        )
+    contract_type = root["contract_type"]
+    if contract_type not in _CANONICAL_TYPES:
+        raise CoreContractIOError(f"unknown core contract type: {contract_type!r}")
+
+    migrated = deepcopy(dict(root))
+    payload = migrated["payload"]
+
+    if contract_type == "DesignMatrix":
+        values = _strict_mapping(
+            payload,
+            {
+                "X",
+                "y",
+                "subject_id",
+                "region_id",
+                "forecast_origin",
+                "target_time",
+                "feature_names",
+                "feature_lags",
+                "valid_mask",
+            },
+            "DesignMatrix.v2.payload",
+        )
+        y = _decode_array(values["y"], "DesignMatrix.v2.y")
+        if y.ndim not in (1, 2) or y.shape[0] < 1:
+            raise CoreContractIOError(
+                "DesignMatrix.v2.y must have shape (N,) or (N, D) with N > 0"
+            )
+        expected_count = 1 if y.ndim == 1 else y.shape[1]
+        dimensions = _certified_target_dimensions(
+            certified_target_dimensions,
+            expected_count=expected_count,
+            context="DesignMatrix.v2",
+        )
+        payload["target_dimensions"] = list(dimensions)
+
+    elif contract_type == "PredictionArtifact":
+        values = _strict_mapping(
+            payload,
+            {
+                "outer_fold",
+                "subject_id",
+                "region_id",
+                "condition",
+                "forecast_origin",
+                "target_time",
+                "y_true",
+                "y_pred",
+                "valid_mask",
+            },
+            "PredictionArtifact.v2.payload",
+        )
+        y_true = _decode_array(values["y_true"], "PredictionArtifact.v2.y_true")
+        if y_true.ndim not in (1, 2) or y_true.shape[0] < 1:
+            raise CoreContractIOError(
+                "PredictionArtifact.v2.y_true must have shape (N,) or (N, D) with N > 0"
+            )
+        expected_count = 1 if y_true.ndim == 1 else y_true.shape[1]
+        dimensions = _certified_target_dimensions(
+            certified_target_dimensions,
+            expected_count=expected_count,
+            context="PredictionArtifact.v2",
+        )
+        payload["target_dimensions"] = list(dimensions)
+
+    migrated["schema_version"] = 3
     return migrated
 
 
@@ -429,6 +550,7 @@ def deserialize_core_contract(envelope: Any) -> Any:
                 "y",
                 "subject_id",
                 "region_id",
+                "target_dimensions",
                 "forecast_origin",
                 "target_time",
                 "feature_names",
@@ -442,6 +564,7 @@ def deserialize_core_contract(envelope: Any) -> Any:
             y=_decode_array(values["y"], "DesignMatrix.y"),
             subject_id=tuple(values["subject_id"]),
             region_id=tuple(values["region_id"]),
+            target_dimensions=tuple(values["target_dimensions"]),
             forecast_origin=_decode_array(
                 values["forecast_origin"], "DesignMatrix.forecast_origin"
             ),
@@ -460,6 +583,7 @@ def deserialize_core_contract(envelope: Any) -> Any:
                 "outer_fold",
                 "subject_id",
                 "region_id",
+                "target_dimensions",
                 "condition",
                 "forecast_origin",
                 "target_time",
@@ -473,6 +597,7 @@ def deserialize_core_contract(envelope: Any) -> Any:
             outer_fold=values["outer_fold"],
             subject_id=tuple(values["subject_id"]),
             region_id=tuple(values["region_id"]),
+            target_dimensions=tuple(values["target_dimensions"]),
             condition=values["condition"],
             forecast_origin=_decode_array(
                 values["forecast_origin"], "PredictionArtifact.forecast_origin"
@@ -581,7 +706,7 @@ def dumps_core_contract(value: Any) -> str:
 
 
 def loads_core_contract(text: str) -> Any:
-    """Load deterministic JSON and strictly validate the frozen v2 envelope."""
+    """Load deterministic JSON and strictly validate the frozen v3 envelope."""
 
     if not isinstance(text, str):
         raise CoreContractIOError("serialized core contract must be JSON text")
