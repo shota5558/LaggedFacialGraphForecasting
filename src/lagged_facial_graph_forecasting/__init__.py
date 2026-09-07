@@ -17,6 +17,7 @@ from .forecaster import (
     predict_ridge_forecaster,
 )
 from .metrics import velocity_rmse
+from .runner import FoldRunResult, MinimalFoldRunner, OuterTestLockedError
 from .scientific_config import ScientificConfigError, load_scientific_config
 from .splits import build_subject_split_manifest
 from .synthetic import generate_synthetic_face_time_series
@@ -27,7 +28,10 @@ __all__ = [
     "DesignMatrix",
     "FaceTimeSeries",
     "FittedRidgeForecaster",
+    "FoldRunResult",
     "InnerFold",
+    "MinimalFoldRunner",
+    "OuterTestLockedError",
     "PredictionArtifact",
     "SplitManifest",
     "ScientificConfigError",
