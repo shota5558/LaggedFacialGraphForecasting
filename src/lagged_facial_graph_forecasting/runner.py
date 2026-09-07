@@ -44,6 +44,8 @@ def _concatenate_design_matrices(matrices: Iterable[DesignMatrix]) -> DesignMatr
             raise ValueError(f"matrix {index} feature_names do not match")
         if matrix.feature_lags != first.feature_lags:
             raise ValueError(f"matrix {index} feature_lags do not match")
+        if matrix.target_dimensions != first.target_dimensions:
+            raise ValueError(f"matrix {index} target_dimensions do not match")
         if matrix.y.ndim != first.y.ndim or matrix.y.shape[1:] != first.y.shape[1:]:
             raise ValueError(f"matrix {index} target shape does not match")
 
@@ -54,6 +56,7 @@ def _concatenate_design_matrices(matrices: Iterable[DesignMatrix]) -> DesignMatr
             subject_id for matrix in items for subject_id in matrix.subject_id
         ),
         region_id=tuple(region_id for matrix in items for region_id in matrix.region_id),
+        target_dimensions=first.target_dimensions,
         forecast_origin=np.concatenate(
             [matrix.forecast_origin for matrix in items], axis=0
         ),
