@@ -25,10 +25,12 @@ def _write_config(tmp_path: Path, config: dict) -> Path:
 def test_scientific_freeze_loads() -> None:
     config = load_scientific_config(CONFIG_PATH)
 
+    assert config["schema_version"] == 3
     assert config["primary"]["discovery"] == "pcmci_plus"
     assert config["primary"]["ci_test"] == "parcorr"
     assert config["primary"]["forecaster"] == "ridge"
     assert config["primary"]["horizon"] == 1
+    assert config["primary"]["tau_max"] == 10
     assert config["discovery_representation"]["node_unit"] == "region_dimension"
     assert config["discovery_representation"]["component_mapping"] == "identity"
     assert (
@@ -46,6 +48,14 @@ def test_rejects_primary_drift(tmp_path: Path) -> None:
     config["primary"]["ci_test"] = "gpdc"
 
     with pytest.raises(ScientificConfigError, match="primary.ci_test"):
+        load_scientific_config(_write_config(tmp_path, config))
+
+
+def test_rejects_tau_max_drift(tmp_path: Path) -> None:
+    config = deepcopy(_load_raw())
+    config["primary"]["tau_max"] = 9
+
+    with pytest.raises(ScientificConfigError, match="primary.tau_max"):
         load_scientific_config(_write_config(tmp_path, config))
 
 
