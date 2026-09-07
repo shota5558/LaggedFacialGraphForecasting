@@ -1,0 +1,57 @@
+task_id: D-14
+task_name: Synthetic known-lag validation
+status: PASS
+
+implemented:
+  - added a deterministic multivariate synthetic fixture with a known cross-region component lag: left_cheek.vx(t-2) -> mouth.vy(t)
+  - exercised the real frozen Tigramite PCMCI+ + ParCorr execution path with tau_max=10 and pc_alpha=0.01
+  - exercised D-07 significant-link extraction
+  - exercised D-08 contemporaneous audit/exclusion policy
+  - exercised D-09 lagged-link filtering
+  - exercised D-10 ParentSet conversion
+  - exercised D-11 deterministic ParentSet serialization/reload
+  - asserted recovery of the exact source region, source component, target component, and lag
+
+files_changed:
+  - tests/test_pcmci_known_lag_validation.py
+  - artifacts/setup/D-14/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/tigramite_adapter.py
+  - src/lagged_facial_graph_forecasting/pcmci_runner.py
+  - src/lagged_facial_graph_forecasting/pcmci_link_extraction.py
+  - src/lagged_facial_graph_forecasting/pcmci_contemporaneous.py
+  - src/lagged_facial_graph_forecasting/pcmci_lagged_filter.py
+  - src/lagged_facial_graph_forecasting/pcmci_parent_set.py
+  - src/lagged_facial_graph_forecasting/core_contract_io.py
+
+tests:
+  workflow: tests
+  run_id: 34162309584
+  job_id: 101866466482
+  head_sha: c529c7136583f3c0bd506699d863e1e87a72c639
+  conclusion: success
+  regression_scope: prior suite plus D-14 real-Tigramite known-lag integration test
+  targeted_checks:
+    - exact known lag tau=2 recovered
+    - exact source/target region-dimension provenance recovered
+    - tau0 excluded from forecasting candidates
+    - same-region selected parents do not replace/duplicate the fixed Self block
+    - ParentSet survives deterministic serialization/reload
+
+scientific_checks:
+  - discovery uses only manifest outer-train subjects
+  - outer-test subject is present in the manifest but never supplied to Tigramite discovery
+  - Primary remains PCMCI+ + ParCorr + Ridge with h=1
+  - Primary tau_max remains 10 and pc_alpha remains 0.01
+  - no runtime tuning or outer-test-driven edge adjustment is introduced
+  - D-12 bootstrap discovery and D-13 selection-frequency aggregation remain deferred non-blockers and are not silently specified
+  - no Sensitivity method is executed
+
+artifacts:
+  - artifacts/setup/D-14/task_result.yaml
+
+remaining_issue:
+  - D-12/D-13 are intentionally deferred because they are not Gate-2 blockers; their bootstrap resampling policy must be scientifically frozen before implementation
+
+next_task: I2
