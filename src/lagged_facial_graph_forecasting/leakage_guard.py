@@ -71,3 +71,16 @@ def assert_discovery_fit_scope(
         subject_ids,
         operation="discovery fit",
     )
+
+
+def assert_ridge_tuning_scope(
+    manifest: SplitManifest,
+    subject_ids: Iterable[str],
+) -> tuple[str, ...]:
+    """Assert that Ridge hyperparameter tuning uses outer-train subjects only."""
+
+    return _assert_outer_train_only_subjects(
+        manifest,
+        subject_ids,
+        operation="ridge tuning",
+    )
