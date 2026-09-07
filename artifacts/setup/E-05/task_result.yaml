@@ -1,0 +1,43 @@
+task_id: E-05
+task_name: Lambda selection
+status: PASS
+
+implemented:
+  - added select_ridge_alpha for deterministic Primary lambda selection
+  - selection criterion is minimum E-04 mean inner-fold RMSE only
+  - exact RMSE ties are resolved by the numerically smallest alpha
+  - selection is independent of aggregate input ordering
+  - duplicate alpha aggregates and invalid aggregate values/counts are rejected
+  - no refit occurs in this task
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/ridge_tuning.py
+  - tests/test_ridge_alpha_selection.py
+  - artifacts/setup/E-05/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34149362126
+  job_id: 101828165161
+  head_sha: e85158020a3c5935d6d20d8ba80050871f4f6672
+  python: 3.11.16
+  result: 220 passed in 1.72s
+  cases:
+    - minimum mean-RMSE alpha is selected independent of input ordering
+    - exact RMSE tie deterministically chooses the smallest alpha
+    - duplicate alpha aggregates are rejected
+    - invalid alpha/RMSE/count metadata are rejected
+    - empty aggregate set is rejected
+
+scientific_checks:
+  - lambda selection consumes only outer-train inner-CV aggregate scores
+  - outer-test outcomes, coefficients, and condition-specific test performance are not selection inputs
+  - tie-breaking is frozen before outer-test evaluation
+  - Primary forecaster remains scikit-learn Ridge
+  - no Sensitivity result can affect selection
+
+artifacts:
+  - artifacts/setup/E-05/task_result.yaml
+
+remaining_issue: none
+next_task: E-06
