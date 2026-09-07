@@ -18,14 +18,17 @@ def _matrix(*, multi_output: bool) -> DesignMatrix:
     if multi_output:
         second = -0.5 * x[:, 0] + 3.0 * x[:, 1]
         y = np.column_stack((first, second))
+        target_dimensions = ("vx", "vy")
     else:
         y = first
+        target_dimensions = ("vx",)
     n_rows = x.shape[0]
     return DesignMatrix(
         X=x,
         y=y,
         subject_id=("s01",) * n_rows,
         region_id=("mouth",) * n_rows,
+        target_dimensions=target_dimensions,
         forecast_origin=np.arange(n_rows, dtype=float),
         target_time=np.arange(1, n_rows + 1, dtype=float),
         feature_names=("left_cheek.vx", "jaw.vx"),
