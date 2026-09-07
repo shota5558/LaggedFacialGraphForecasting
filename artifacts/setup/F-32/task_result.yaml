@@ -10,6 +10,9 @@ implemented:
   - fails closed when a target-component candidate stratum is too small
   - rejects duplicate candidates and unexpected target-component strata
   - strengthens the F-30 mapping boundary to verify per-target_dimension count preservation
+  - fail-closes if a caller bypasses F-31 with target-region Self-history candidates
+  - fail-closes if a caller bypasses F-31 with lag outside the frozen Primary 1..10 domain
+  - requires an empty candidate space when the PCMCI ParentSet is empty
   - intentionally generates only one sample; repeated sampling remains F-33
 
 files_changed:
@@ -22,13 +25,25 @@ implementation_commits:
     message: F-32: add equal-size matched-sparsity sampling
   - sha: 7ea6f4dcc802c6f891fc5d624ab2ecc2417b8088
     message: F-32: test equal-size matched-sparsity sampling
+  - sha: 862031482671904b94ba5b044e0388edae04969e
+    message: F-32: fail closed on invalid candidate-space bypass
+  - sha: 1b38e192e8f301b973f4efe4ffc3dd83fac078f4
+    message: F-32: test out-of-domain lag at sampler boundary
 
 tests:
-  workflow: tests
-  run_id: 34164674316
-  job_id: 101873255959
-  head_sha: 7ea6f4dcc802c6f891fc5d624ab2ecc2417b8088
-  result: 577 passed, 1 warning in 4.92s
+  original_workflow: tests
+  original_run_id: 34164674316
+  original_job_id: 101873255959
+  original_head_sha: 7ea6f4dcc802c6f891fc5d624ab2ecc2417b8088
+  original_result: 577 passed, 1 warning in 4.92s
+  reaudit_failed_run_id: 34164893084
+  reaudit_failed_head_sha: 862031482671904b94ba5b044e0388edae04969e
+  reaudit_failed_result: failure
+  reaudit_failed_reason: test fixture used lag=0, which is rejected by ParentLink before reaching the F-32 sampler boundary
+  reaudit_success_run_id: 34164970063
+  reaudit_success_job_id: 101874104749
+  reaudit_success_head_sha: 1b38e192e8f301b973f4efe4ffc3dd83fac078f4
+  reaudit_success_result: success
   warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-32
   targeted_checks:
     - exact total feature count matches PCMCI ParentSet
@@ -39,6 +54,9 @@ tests:
     - undersized target-component stratum fails closed
     - unexpected target-component candidates fail closed
     - equal-total but wrong per-component mapping fails closed
+    - target-region Self-history candidate bypass fails closed
+    - Primary lag-domain bypass at lag=11 fails closed
+    - empty ParentSet with nonempty bypassed candidate space fails closed
     - outer-test construction scope fails closed
     - ParentSet/manifest fold mismatch fails closed
 
@@ -49,8 +67,20 @@ scientific_checks:
   without_replacement: PASS
   deterministic_single_sample: PASS
   candidate_space_provenance: PASS
+  f31_candidate_contract_bypass_guard: PASS
+  primary_lag_domain_1_to_10: PASS
+  self_block_exclusion: PASS
   repeated_sampling_not_implemented_early: PASS
   sensitivity_contamination: PASS
+
+reaudit:
+  status: PASS
+  fail_type_found:
+    - contract mismatch
+    - implementation bug
+  root_cause: F-32 accepted a plain candidate sequence and therefore could bypass F-31 semantic guards; the first regression fixture also used a Core-Contract-invalid lag=0 and did not reach the sampler boundary
+  minimal_fix: validate Self-history exclusion, Primary lag domain, and empty-ParentSet candidate semantics in F-32/F-33 shared sampling helper; use lag=11 to test the sampler-specific upper-bound guard
+  regression_scope: the successful full-suite run includes the already-added F-33 repeated-sampling implementation and tests
 
 artifacts:
   - artifacts/setup/F-32/task_result.yaml
