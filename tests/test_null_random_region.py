@@ -77,5 +77,5 @@ def test_random_region_mapping_fails_when_no_replacement_exists() -> None:
             _manifest(),
             _parents(),
             construction_subject_ids=("train_a", "train_b"),
-            candidate_regions=("left_cheek", "jaw", "mouth"),
+            candidate_regions=("left_cheek", "mouth"),
         )
