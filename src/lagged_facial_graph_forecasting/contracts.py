@@ -35,6 +35,21 @@ def _normalize_row_labels(
     return normalized
 
 
+def _normalize_output_dimensions(
+    values: tuple[str, ...], expected_length: int, field_name: str
+) -> tuple[str, ...]:
+    normalized = tuple(values)
+    if len(normalized) != expected_length:
+        raise ContractError(
+            f"{field_name} must contain {expected_length} entries; got {len(normalized)}"
+        )
+    if any(not isinstance(value, str) or not value.strip() for value in normalized):
+        raise ContractError(f"{field_name} entries must be non-empty strings")
+    if len(set(normalized)) != len(normalized):
+        raise ContractError(f"{field_name} entries must be unique")
+    return normalized
+
+
 @dataclass(frozen=True, slots=True)
 class FaceTimeSeries:
     """Subject-level facial motion time series.
@@ -208,12 +223,13 @@ class SplitManifest:
 
 @dataclass(frozen=True, slots=True)
 class DesignMatrix:
-    """Forecast design matrix with row-level and feature-level provenance."""
+    """Forecast design matrix with row, input-feature, and target provenance."""
 
     X: np.ndarray
     y: np.ndarray
     subject_id: tuple[str, ...]
     region_id: tuple[str, ...]
+    target_dimensions: tuple[str, ...]
     forecast_origin: np.ndarray
     target_time: np.ndarray
     feature_names: tuple[str, ...]
@@ -243,6 +259,10 @@ class DesignMatrix:
             raise ContractError("y output dimension must be non-empty")
         if not np.issubdtype(y.dtype, np.number):
             raise ContractError("y must be numeric")
+        output_count = 1 if y.ndim == 1 else y.shape[1]
+        target_dimensions = _normalize_output_dimensions(
+            self.target_dimensions, output_count, "target_dimensions"
+        )
 
         subject_id = _normalize_row_labels(self.subject_id, N, "subject_id")
         region_id = _normalize_row_labels(self.region_id, N, "region_id")
@@ -302,6 +322,7 @@ class DesignMatrix:
         object.__setattr__(self, "y", y)
         object.__setattr__(self, "subject_id", subject_id)
         object.__setattr__(self, "region_id", region_id)
+        object.__setattr__(self, "target_dimensions", target_dimensions)
         object.__setattr__(self, "forecast_origin", forecast_origin)
         object.__setattr__(self, "target_time", target_time)
         object.__setattr__(self, "feature_names", feature_names)
@@ -316,6 +337,7 @@ class PredictionArtifact:
     outer_fold: int
     subject_id: tuple[str, ...]
     region_id: tuple[str, ...]
+    target_dimensions: tuple[str, ...]
     condition: str
     forecast_origin: np.ndarray
     target_time: np.ndarray
@@ -347,6 +369,10 @@ class PredictionArtifact:
             )
         if not np.issubdtype(y_pred.dtype, np.number):
             raise ContractError("y_pred must be numeric")
+        output_count = 1 if y_true.ndim == 1 else y_true.shape[1]
+        target_dimensions = _normalize_output_dimensions(
+            self.target_dimensions, output_count, "target_dimensions"
+        )
 
         N = y_true.shape[0]
         subject_id = _normalize_row_labels(self.subject_id, N, "subject_id")
@@ -377,6 +403,7 @@ class PredictionArtifact:
 
         object.__setattr__(self, "subject_id", subject_id)
         object.__setattr__(self, "region_id", region_id)
+        object.__setattr__(self, "target_dimensions", target_dimensions)
         object.__setattr__(self, "condition", self.condition.strip())
         object.__setattr__(self, "forecast_origin", forecast_origin)
         object.__setattr__(self, "target_time", target_time)
