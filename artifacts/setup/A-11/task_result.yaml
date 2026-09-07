@@ -1,0 +1,52 @@
+task_id: A-11
+task_name: Quality flag
+status: PASS
+
+implemented:
+  - added canonical deterministic quality-flag construction in src/lagged_facial_graph_forecasting/quality.py
+  - marks non-finite elements invalid without repairing or dropping observations
+  - optionally combines an externally supplied frame-level quality score with an explicit fixed threshold
+  - requires quality score and threshold to be supplied together; no threshold is estimated from data or predictive outcomes
+  - preserves immutable elementwise finite-mask, frame-level pass flag, final valid_mask, threshold, and method provenance
+  - removed the parallel duplicate quality_flags.py implementation before PASS
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/quality.py
+  - tests/test_quality_flags.py
+  - artifacts/setup/A-11/task_result.yaml
+
+source_commits:
+  quality_flag_implementation: 20ca318393e2c7ad106e1809c56381c71adad78f
+  duplicate_removal: b8d238f88dcadf887d6e8471a5a630dfadd4cbdf
+  quality_flag_tests: a6c0ab704f64544caf5b4ec989140abcb5fffe66
+  explicit_contract_test_refresh: ef3a8a8fbdd4e94d5eb2f180fa40c102972a5ee1
+
+tests:
+  workflow: tests
+  run_id: 34153107327
+  job_id: 101839267596
+  head_sha: ef3a8a8fbdd4e94d5eb2f180fa40c102972a5ee1
+  result: success
+  cases:
+    - finite values only produce an elementwise validity mask
+    - explicit frame-quality threshold invalidates the complete low-quality frame
+    - non-finite quality score fails without imputation
+    - external quality does not hide elementwise non-finite values
+    - score and threshold must be supplied together
+    - malformed and non-numeric inputs are rejected
+    - outputs are immutable and inputs are unchanged
+
+scientific_checks:
+  - A-11 only flags observations; missing-frame handling and interpolation remain deferred to A-12/A-13
+  - no extractor-specific quality metric or threshold is invented by the repository
+  - any threshold is explicit input provenance and is not selected from outer-test outcomes
+  - no population-level preprocessing statistic is fitted
+  - valid_mask semantics are compatible with the frozen FaceTimeSeries elementwise mask contract
+  - duplicate quality-flag implementation was removed before PASS
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-11/task_result.yaml
+
+remaining_issue: none
+next_task: A-12
