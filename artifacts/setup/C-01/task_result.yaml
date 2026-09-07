@@ -26,11 +26,11 @@ reused_files:
 
 tests:
   workflow: tests
-  run_id: 34149264770
-  job_id: 101827881757
-  head_sha: e046d297a77236836121c56e3b24e67ed5989377
+  run_id: 34149284888
+  job_id: 101827938902
+  head_sha: c9d5ab310f8f69dd5fc38a0fdb10e7f7a4682e1e
   python: 3.11.16
-  result: 204 passed in 1.71s
+  result: 210 passed in 1.26s
   direct_cases:
     - Persistence, Self, Full, and PCMCI share exact forecast_origin, target_time, y, subject, and region support when given the same alignment_lag
     - alignment_lag does not add a predictor
