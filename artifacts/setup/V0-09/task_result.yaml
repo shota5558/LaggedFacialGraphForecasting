@@ -1,0 +1,41 @@
+task_id: V0-09
+task_name: Minimal FoldRunner
+status: PASS
+
+implemented:
+  - existing MinimalFoldRunner reused without duplication
+  - precomputed SplitManifest is the only subject split source
+  - outer-test access is locked before training and remains locked after training
+  - explicit freeze is required before outer-test evaluation
+  - outer-test evaluation is one-shot and locks again after completion
+  - outer-train DesignMatrices are concatenated with feature/lag/target-shape consistency checks
+  - training subject provenance is asserted against SplitManifest and checked for test overlap
+  - frozen Self-history Ridge prediction, Velocity RMSE, and deterministic JSON artifact are orchestrated
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/runner.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_minimal_fold_runner.py
+
+tests:
+  workflow: tests
+  run_id: 34145652577
+  job_id: 101817020281
+  head_sha: ccfc2daa5a431b28e36c2ec9f54265937c523630
+  python: 3.11.16
+  result: 103 passed in 1.03s
+
+scientific_checks:
+  - runner never constructs an independent split; it consumes SplitManifest
+  - fitted training matrix contains exactly outer-train subjects and no outer-test subject
+  - outer-test cannot be evaluated before explicit fold freeze
+  - no fit or tuning occurs during outer-test evaluation
+  - V0 path is hard-coded to Primary horizon h=1
+  - only Self-history is orchestrated; PCMCI, Null, real-data preprocessing, and Sensitivity are not introduced
+  - evaluation preserves subject, region, outer_fold, condition, forecast_origin, target_time, valid_mask, and feature provenance through existing contracts/artifacts
+
+artifacts:
+  - artifacts/setup/V0-09/task_result.yaml
+
+remaining_issue: none
+next_task: V0-10
