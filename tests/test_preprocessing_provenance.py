@@ -38,15 +38,13 @@ def _provenance() -> PreprocessingProvenance:
 
 
 def test_preprocessing_provenance_json_round_trip_preserves_region_order_and_d2() -> None:
-    payload = _provenance().to_payload()
-    restored = json.loads(json.dumps(payload, sort_keys=True))
+    original = _provenance()
+    payload = json.loads(json.dumps(original.to_payload(), sort_keys=True))
+    restored = PreprocessingProvenance.from_payload(payload)
 
-    assert restored == payload
-    assert [
-        region["region_id"]
-        for region in restored["region_definition"]["ordered_regions"]
-    ] == ["left_eye", "mouth"]
-    assert restored["feature_semantics"]["dimensions"] == ["v_x", "v_y"]
+    assert restored == original
+    assert restored.region_definition.region_ids == ("left_eye", "mouth")
+    assert restored.feature_semantics.dimensions == ("v_x", "v_y")
 
 
 def test_feature_semantics_rejects_duplicate_dimension_names() -> None:
@@ -82,3 +80,11 @@ def test_preprocessing_provenance_requires_explicit_nonempty_policy_names() -> N
             interpolation_policy="",
             acceleration_primary=False,
         )
+
+
+def test_preprocessing_provenance_rejects_manifest_field_drift() -> None:
+    payload = _provenance().to_payload()
+    payload["unexpected"] = "drift"
+
+    with pytest.raises(PreprocessingProvenanceError, match="fields are incompatible"):
+        PreprocessingProvenance.from_payload(payload)

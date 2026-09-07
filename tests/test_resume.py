@@ -7,6 +7,11 @@ import pytest
 from lagged_facial_graph_forecasting.artifact_registry import ArtifactRegistry
 from lagged_facial_graph_forecasting.core_contracts import ExperimentConfig
 from lagged_facial_graph_forecasting.experiment_manifest import write_experiment_manifest
+from lagged_facial_graph_forecasting.preprocessing_provenance import (
+    FeatureSemantics,
+    PreprocessingProvenance,
+)
+from lagged_facial_graph_forecasting.regions import build_region_definition
 from lagged_facial_graph_forecasting.resume import ResumeError, load_verified_resume_state
 
 
@@ -17,6 +22,31 @@ def _config(*, seed: int = 17) -> ExperimentConfig:
         run_config_path="configs/primary_run.yaml",
         artifact_root="artifacts/primary",
         seed=seed,
+    )
+
+
+def _preprocessing_provenance() -> PreprocessingProvenance:
+    return PreprocessingProvenance(
+        region_definition=build_region_definition(
+            {
+                "mouth": (0, 1),
+                "left_cheek": (2, 3),
+            }
+        ),
+        feature_semantics=FeatureSemantics(
+            feature_name="velocity",
+            dimensions=("v_x", "v_y"),
+            method="displacement_over_observed_time_interval",
+            units="normalized_coordinate_per_timestamp_unit",
+            timestamp_basis="observed_frame_timestamps",
+        ),
+        region_aggregation_method="mean",
+        translation_normalization="reference_centroid",
+        scale_normalization="reference_pair_distance",
+        rotation_normalization="reference_pair_axis_alignment",
+        missing_frame_handling="preserve_invalidity",
+        interpolation_policy="none",
+        acceleration_primary=False,
     )
 
 
@@ -38,6 +68,7 @@ def _fixture(tmp_path: Path) -> tuple[ExperimentConfig, Path, Path]:
         config=config,
         artifacts=registry.entries,
         software_versions={"python": "3.11", "numpy": "2.0"},
+        preprocessing_provenance=_preprocessing_provenance(),
     )
     return config, manifest, artifact
 
@@ -52,6 +83,8 @@ def test_resume_accepts_only_exact_config_and_artifact_hashes(tmp_path: Path) ->
     )
 
     assert state.config == config
+    assert state.preprocessing_provenance == _preprocessing_provenance()
+    assert state.preprocessing_provenance.feature_semantics.dimensions == ("v_x", "v_y")
     assert [entry.relative_path for entry in state.artifacts] == [
         "artifacts/primary/fold_00/prediction.json"
     ]

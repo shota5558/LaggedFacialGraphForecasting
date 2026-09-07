@@ -10,6 +10,11 @@ from typing import Any
 
 from .core_contract_io import CoreContractIOError, deserialize_core_contract
 from .core_contracts import ExperimentArtifact, ExperimentConfig
+from .experiment_manifest import EXPERIMENT_MANIFEST_SCHEMA_VERSION
+from .preprocessing_provenance import (
+    PreprocessingProvenance,
+    PreprocessingProvenanceError,
+)
 
 
 class ResumeError(ValueError):
@@ -19,6 +24,7 @@ class ResumeError(ValueError):
 @dataclass(frozen=True, slots=True)
 class VerifiedResumeState:
     config: ExperimentConfig
+    preprocessing_provenance: PreprocessingProvenance
     artifacts: tuple[ExperimentArtifact, ...]
     software_versions: tuple[tuple[str, str], ...]
 
@@ -35,7 +41,7 @@ def load_verified_resume_state(
     expected_config: ExperimentConfig,
     repository_root: str | Path = Path("."),
 ) -> VerifiedResumeState:
-    """Return resume state only when config and every registered artifact still match."""
+    """Return resume state only when config, preprocessing, and artifacts match."""
 
     root = Path(repository_root).resolve()
     manifest = Path(manifest_path)
@@ -57,12 +63,16 @@ def load_verified_resume_state(
     if not isinstance(payload, dict) or set(payload) != {
         "schema_version",
         "experiment_config",
+        "preprocessing_provenance",
         "artifacts",
         "software_versions",
     }:
         raise ResumeError("resume manifest fields are incompatible")
-    if payload["schema_version"] != 1:
-        raise ResumeError("resume manifest schema_version must be 1")
+    if payload["schema_version"] != EXPERIMENT_MANIFEST_SCHEMA_VERSION:
+        raise ResumeError(
+            "resume manifest schema_version must be "
+            f"{EXPERIMENT_MANIFEST_SCHEMA_VERSION}"
+        )
 
     try:
         config = deserialize_core_contract(payload["experiment_config"])
@@ -72,6 +82,13 @@ def load_verified_resume_state(
         raise ResumeError("resume experiment_config must contain ExperimentConfig")
     if config != expected_config:
         raise ResumeError("resume ExperimentConfig does not match the current run")
+
+    try:
+        preprocessing_provenance = PreprocessingProvenance.from_payload(
+            payload["preprocessing_provenance"]
+        )
+    except PreprocessingProvenanceError as exc:
+        raise ResumeError("resume preprocessing_provenance is invalid") from exc
 
     artifact_payloads = payload["artifacts"]
     if not isinstance(artifact_payloads, list):
@@ -118,6 +135,7 @@ def load_verified_resume_state(
 
     return VerifiedResumeState(
         config=config,
+        preprocessing_provenance=preprocessing_provenance,
         artifacts=tuple(sorted(artifacts, key=lambda item: item.relative_path)),
         software_versions=tuple(sorted(normalized_versions)),
     )

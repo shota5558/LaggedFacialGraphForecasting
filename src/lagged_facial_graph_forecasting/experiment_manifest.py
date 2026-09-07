@@ -11,6 +11,9 @@ from .core_contracts import ExperimentArtifact, ExperimentConfig
 from .preprocessing_provenance import PreprocessingProvenance
 
 
+EXPERIMENT_MANIFEST_SCHEMA_VERSION = 2
+
+
 class ExperimentManifestError(ValueError):
     """Raised when manifest provenance is incomplete or inconsistent."""
 
@@ -75,7 +78,7 @@ def build_experiment_manifest(
 
     ordered_entries = sorted(entries, key=lambda entry: entry.relative_path)
     return {
-        "schema_version": 1,
+        "schema_version": EXPERIMENT_MANIFEST_SCHEMA_VERSION,
         "experiment_config": serialize_core_contract(config),
         "preprocessing_provenance": preprocessing_provenance.to_payload(),
         "artifacts": [serialize_core_contract(entry) for entry in ordered_entries],

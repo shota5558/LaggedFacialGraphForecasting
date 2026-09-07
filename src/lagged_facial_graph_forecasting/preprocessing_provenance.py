@@ -8,8 +8,9 @@ This module keeps that provenance separate from the frozen core-contract ABI.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any, Mapping
 
-from .regions import RegionDefinition
+from .regions import RegionDefinition, RegionDefinitionError
 
 
 PREPROCESSING_PROVENANCE_SCHEMA_VERSION = 1
@@ -28,6 +29,21 @@ def _text(value: str, field_name: str) -> str:
             f"{field_name} must not contain surrounding whitespace"
         )
     return normalized
+
+
+def _strict_mapping(
+    value: Any, required_keys: set[str], context: str
+) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping):
+        raise PreprocessingProvenanceError(f"{context} must be a mapping")
+    actual_keys = set(value)
+    if actual_keys != required_keys:
+        missing = sorted(required_keys - actual_keys)
+        extra = sorted(actual_keys - required_keys)
+        raise PreprocessingProvenanceError(
+            f"{context} fields are incompatible; missing={missing}, extra={extra}"
+        )
+    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +95,28 @@ class FeatureSemantics:
             "units": self.units,
             "timestamp_basis": self.timestamp_basis,
         }
+
+    @classmethod
+    def from_payload(cls, value: Any) -> FeatureSemantics:
+        """Reconstruct and validate feature semantics from manifest JSON."""
+
+        payload = _strict_mapping(
+            value,
+            {"feature_name", "dimensions", "method", "units", "timestamp_basis"},
+            "feature_semantics",
+        )
+        dimensions = payload["dimensions"]
+        if not isinstance(dimensions, list):
+            raise PreprocessingProvenanceError(
+                "feature_semantics.dimensions must be a list"
+            )
+        return cls(
+            feature_name=payload["feature_name"],
+            dimensions=tuple(dimensions),
+            method=payload["method"],
+            units=payload["units"],
+            timestamp_basis=payload["timestamp_basis"],
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,3 +198,86 @@ class PreprocessingProvenance:
             },
             "acceleration_primary": self.acceleration_primary,
         }
+
+    @classmethod
+    def from_payload(cls, value: Any) -> PreprocessingProvenance:
+        """Strictly reconstruct preprocessing provenance from manifest JSON."""
+
+        payload = _strict_mapping(
+            value,
+            {
+                "schema_version",
+                "region_definition",
+                "feature_semantics",
+                "region_aggregation_method",
+                "normalization",
+                "missingness",
+                "acceleration_primary",
+            },
+            "preprocessing_provenance",
+        )
+        if payload["schema_version"] != PREPROCESSING_PROVENANCE_SCHEMA_VERSION:
+            raise PreprocessingProvenanceError(
+                "preprocessing_provenance schema_version is incompatible"
+            )
+
+        region_payload = _strict_mapping(
+            payload["region_definition"],
+            {"ordered_regions", "allow_overlap"},
+            "region_definition",
+        )
+        ordered_regions = region_payload["ordered_regions"]
+        if not isinstance(ordered_regions, list) or not ordered_regions:
+            raise PreprocessingProvenanceError(
+                "region_definition.ordered_regions must be a non-empty list"
+            )
+        region_ids: list[str] = []
+        landmark_indices: list[tuple[int, ...]] = []
+        for index, raw_region in enumerate(ordered_regions):
+            region = _strict_mapping(
+                raw_region,
+                {"region_id", "landmark_indices"},
+                f"region_definition.ordered_regions[{index}]",
+            )
+            raw_indices = region["landmark_indices"]
+            if not isinstance(raw_indices, list):
+                raise PreprocessingProvenanceError(
+                    "region landmark_indices must be a list"
+                )
+            region_ids.append(region["region_id"])
+            landmark_indices.append(tuple(raw_indices))
+        try:
+            region_definition = RegionDefinition(
+                region_ids=tuple(region_ids),
+                landmark_indices=tuple(landmark_indices),
+                allow_overlap=region_payload["allow_overlap"],
+            )
+        except RegionDefinitionError as exc:
+            raise PreprocessingProvenanceError(
+                f"region_definition is invalid: {exc}"
+            ) from exc
+
+        normalization = _strict_mapping(
+            payload["normalization"],
+            {"translation", "scale", "rotation"},
+            "normalization",
+        )
+        missingness = _strict_mapping(
+            payload["missingness"],
+            {"missing_frame_handling", "interpolation_policy"},
+            "missingness",
+        )
+        return cls(
+            region_definition=region_definition,
+            feature_semantics=FeatureSemantics.from_payload(
+                payload["feature_semantics"]
+            ),
+            region_aggregation_method=payload["region_aggregation_method"],
+            translation_normalization=normalization["translation"],
+            scale_normalization=normalization["scale"],
+            rotation_normalization=normalization["rotation"],
+            missing_frame_handling=missingness["missing_frame_handling"],
+            interpolation_policy=missingness["interpolation_policy"],
+            acceleration_primary=payload["acceleration_primary"],
+            schema_version=payload["schema_version"],
+        )
