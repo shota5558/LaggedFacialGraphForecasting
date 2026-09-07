@@ -1,0 +1,38 @@
+task_id: A-02
+task_name: Landmark shape validation
+status: PASS
+
+implemented:
+  - added extractor-neutral raw landmark tensor validation for axis order (frames, landmarks, coordinates)
+  - requires all three axes to be non-empty and landmark values to be numeric
+  - supports optional explicit expected frame count, landmark count, and coordinate dimension
+  - does not hard-code MediaPipe, a 478-point topology, or a 2D/3D coordinate convention
+  - preserves NaN values for the later missingness/interpolation tasks
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/preprocessing.py
+  - tests/test_landmark_shape_validation.py
+  - artifacts/setup/A-02/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34151461213
+  job_id: 101834458290
+  head_sha: 188a65d16720b11e7cd3a29c9e6e898a590b475b
+  python: 3.11.16
+  result: success
+  suite_result: 289 passed in 1.85s
+
+scientific_checks:
+  - extractor-specific landmark count is not invented
+  - coordinate dimensionality is checked only when explicitly supplied
+  - NaN is not silently repaired or discarded before A-12/A-13
+  - no data-dependent fitting or outer-test-based decision is introduced
+  - no region or normalization semantics are introduced before their tasks
+  - no PCMCI+, Null, Sensitivity, or h>1 path is introduced
+
+artifacts:
+  - artifacts/setup/A-02/task_result.yaml
+
+remaining_issue: none
+next_task: A-03
