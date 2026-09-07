@@ -1,0 +1,26 @@
+task_id: G-13
+task_name: Peak timing error
+status: BLOCKED
+
+implemented:
+  - no peak-timing implementation added because peak extraction is not operationally frozen and Issue #15 explicitly marks advanced peak/onset processing as non-blocking
+
+scientific_checks:
+  research_plan_metric_semantics_present: PASS
+  exact_operational_definition_frozen: FAIL
+  peak_signal_definition_frozen: FAIL
+  multiple_peak_and_tie_policy_frozen: FAIL
+  outer_test_accessed: false
+
+root_cause:
+  - the research plan defines Peak timing error as the timing error of the main motion peak but does not specify component-vs-vector magnitude, smoothing, peak prominence, multiple-peak selection, ties, or no-peak handling
+
+minimal_fix_required_before_retry:
+  - freeze the peak signal and any smoothing
+  - freeze the peak selection/prominence rule, tie handling, and no-peak policy
+  - freeze whether timing is reported in frames or physical time
+  - add deterministic edge-case tests before enabling G-13
+
+scientific_specification_changed: false
+outer_test_accessed: false
+primary_results_generated: false
