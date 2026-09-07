@@ -16,6 +16,7 @@ def _matrix(valid_mask: np.ndarray | None = None) -> DesignMatrix:
         y=np.array([[0.0], [100.0], [2.0]]),
         subject_id=("s01", "s01", "s01"),
         region_id=("mouth", "mouth", "mouth"),
+        target_dimensions=("vx",),
         forecast_origin=np.array([1.0, 2.0, 3.0]),
         target_time=np.array([2.0, 3.0, 4.0]),
         feature_names=("mouth.vx", "mouth.vy"),
@@ -41,6 +42,7 @@ def test_scaler_is_fit_on_valid_rows_only() -> None:
     assert np.allclose(scaler.mean_, np.array([1.0, 2.0]))
     assert fitted.feature_names == ("mouth.vx", "mouth.vy")
     assert fitted.feature_lags == (1, 1)
+    assert fitted.target_dimensions == ("vx",)
 
 
 def test_fit_is_deterministic_for_same_matrix_and_alpha() -> None:
