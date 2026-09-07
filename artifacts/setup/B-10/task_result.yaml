@@ -1,0 +1,36 @@
+task_id: B-10
+task_name: Discovery leakage guard
+status: PASS
+
+implemented:
+  - added discovery-specific outer-train-only scope guard
+  - reused the shared subject-scope validation primitive from B-09
+  - rejects any outer-test subject before discovery can execute
+  - exported discovery guard through the package API
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/leakage_guard.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_leakage_guard.py
+  - artifacts/setup/B-10/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34147267493
+  head_sha: 7bc1b9298f2e448e8d28d76a23648f1b09ad457d
+  result: success
+  targeted_checks:
+    - outer-train subject subset accepted for discovery
+    - outer-test subject rejected before discovery fit
+
+scientific_checks:
+  - PCMCI+ discovery access is structurally restricted to outer-train subjects
+  - guard is independent of Tigramite implementation and does not implement PCMCI+
+  - canonical SplitManifest remains the only subject split authority
+  - no tuning, Null construction, or Sensitivity logic is introduced
+
+artifacts:
+  - artifacts/setup/B-10/task_result.yaml
+
+remaining_issue: none
+next_task: B-11
