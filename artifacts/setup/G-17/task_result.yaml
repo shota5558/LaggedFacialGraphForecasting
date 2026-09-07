@@ -1,0 +1,40 @@
+task_id: G-17
+task_name: Lag-response aggregation
+status: PASS
+
+implemented:
+  - adds src/lagged_facial_graph_forecasting/lag_response_statistics.py as the downstream cross-fold aggregation layer for the frozen Primary lag-response estimand
+  - requires exactly the complete symmetric delta grid [-2, -1, 0, 1, 2]
+  - requires identical outer_fold x subject x region x metric support at every delta
+  - rejects any metric row from target folds marked unevaluable_no_parents or unevaluable_incomplete_grid
+  - aggregates held-out metric values by unweighted subject-level median for each region/metric/delta
+  - carries subject_ids and outer_folds into every aggregate
+  - reports evaluable, no-parent, and incomplete-grid target-fold counts explicitly
+  - exports the G-17 API from the package root
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/lag_response_statistics.py
+  - tests/test_lag_response_statistics.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - artifacts/setup/G-17/task_result.yaml
+
+execution_evidence:
+  workflow_run_id: 34168715809
+  head_sha: 95ebe9a2a2e15566060b323b57df8213bcd67a77
+  result: success
+  scope: full pytest workflow including new G-17 tests before package-root export/artifact-only commits
+
+scientific_checks:
+  complete_symmetric_grid_required: PASS
+  complete_grid_target_folds_only: PASS
+  same_units_across_all_deltas: PASS
+  subject_level_median_aggregation: PASS
+  unevaluable_counts_reported: PASS
+  clipping_forbidden: PASS
+  one_sided_support_forbidden: PASS
+  outer_test_used_only_as_frozen_evaluation_metrics: PASS
+  no_discovery_or_null_mapping_mutation: PASS
+
+remaining_issue: none
+scientific_specification_changed: false
+primary_results_generated: false
