@@ -8,6 +8,7 @@ from typing import Mapping, Sequence
 
 from .core_contract_io import serialize_core_contract
 from .core_contracts import ExperimentArtifact, ExperimentConfig
+from .preprocessing_provenance import PreprocessingProvenance
 
 
 class ExperimentManifestError(ValueError):
@@ -25,18 +26,38 @@ def build_experiment_manifest(
     config: ExperimentConfig,
     artifacts: Sequence[ExperimentArtifact],
     software_versions: Mapping[str, str],
+    preprocessing_provenance: PreprocessingProvenance | None = None,
 ) -> dict[str, object]:
-    """Build a stable manifest from frozen config and registered artifact entries."""
+    """Build a stable manifest from frozen config and registered artifact entries.
+
+    Lane A scientific provenance is mandatory: every experiment manifest records
+    the ordered region-to-landmark definition and the exact feature semantics.
+    This prevents a run from being reproducible at the file/hash level while
+    remaining ambiguous about what each facial node and feature dimension meant.
+    """
 
     if not software_versions:
         raise ExperimentManifestError("software_versions must not be empty")
     normalized_versions: dict[str, str] = {}
     for name, version in software_versions.items():
         if not isinstance(name, str) or not name.strip():
-            raise ExperimentManifestError("software version names must be non-empty strings")
+            raise ExperimentManifestError(
+                "software version names must be non-empty strings"
+            )
         if not isinstance(version, str) or not version.strip():
-            raise ExperimentManifestError("software version values must be non-empty strings")
+            raise ExperimentManifestError(
+                "software version values must be non-empty strings"
+            )
         normalized_versions[name.strip()] = version.strip()
+
+    if preprocessing_provenance is None:
+        raise ExperimentManifestError(
+            "preprocessing_provenance is required for every experiment manifest"
+        )
+    if not isinstance(preprocessing_provenance, PreprocessingProvenance):
+        raise ExperimentManifestError(
+            "preprocessing_provenance must be PreprocessingProvenance"
+        )
 
     entries = tuple(artifacts)
     paths = [entry.relative_path for entry in entries]
@@ -56,6 +77,7 @@ def build_experiment_manifest(
     return {
         "schema_version": 1,
         "experiment_config": serialize_core_contract(config),
+        "preprocessing_provenance": preprocessing_provenance.to_payload(),
         "artifacts": [serialize_core_contract(entry) for entry in ordered_entries],
         "software_versions": {
             name: normalized_versions[name] for name in sorted(normalized_versions)
@@ -69,6 +91,7 @@ def write_experiment_manifest(
     config: ExperimentConfig,
     artifacts: Sequence[ExperimentArtifact],
     software_versions: Mapping[str, str],
+    preprocessing_provenance: PreprocessingProvenance | None = None,
 ) -> Path:
     """Write a deterministic UTF-8 JSON manifest."""
 
@@ -78,6 +101,7 @@ def write_experiment_manifest(
         config=config,
         artifacts=artifacts,
         software_versions=software_versions,
+        preprocessing_provenance=preprocessing_provenance,
     )
     output_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
