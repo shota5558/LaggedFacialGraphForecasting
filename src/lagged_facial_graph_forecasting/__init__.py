@@ -25,7 +25,11 @@ from .forecaster import (
     fit_ridge_forecaster,
     predict_ridge_forecaster,
 )
-from .leakage_guard import LeakageGuardError, assert_preprocessing_fit_scope
+from .leakage_guard import (
+    LeakageGuardError,
+    assert_discovery_fit_scope,
+    assert_preprocessing_fit_scope,
+)
 from .metrics import velocity_rmse
 from .runner import FoldRunResult, MinimalFoldRunner, OuterTestLockedError
 from .scientific_config import ScientificConfigError, load_scientific_config
@@ -75,6 +79,7 @@ __all__ = [
     "SubjectMetadataLoadError",
     "SubjectMetadataValidationError",
     "aligned_indices",
+    "assert_discovery_fit_scope",
     "assert_preprocessing_fit_scope",
     "build_grouped_kfold_split_manifests",
     "build_loso_split_manifests",
