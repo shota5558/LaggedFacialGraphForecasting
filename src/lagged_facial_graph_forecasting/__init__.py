@@ -27,6 +27,7 @@ from .core_contracts import (
     ParentSet,
 )
 from .design_matrix import (
+    build_full_history_design_matrix,
     build_persistence_design_matrix,
     build_self_history_design_matrix,
 )
@@ -96,6 +97,7 @@ __all__ = [
     "assert_null_construction_scope",
     "assert_preprocessing_fit_scope",
     "assert_ridge_tuning_scope",
+    "build_full_history_design_matrix",
     "build_grouped_kfold_split_manifests",
     "build_loso_split_manifests",
     "build_persistence_design_matrix",
