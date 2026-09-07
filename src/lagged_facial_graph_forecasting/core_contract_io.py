@@ -1,6 +1,6 @@
 """Strict JSON serialization for the frozen core contract registry.
 
-Every canonical contract is serialized through a versioned envelope.  The
+Every canonical contract is serialized through a versioned envelope. The
 reader rejects unknown versions, contract types, missing fields, and additional
 fields so backward/forward incompatibility is explicit instead of silently
 accepted.
@@ -8,6 +8,7 @@ accepted.
 
 from __future__ import annotations
 
+from copy import deepcopy
 import json
 from typing import Any, Mapping
 
@@ -100,19 +101,30 @@ def _decode_array(value: Any, context: str) -> np.ndarray:
 
 
 def _encode_parent(parent: ParentLink) -> dict[str, Any]:
-    return {"source_region": parent.source_region, "lag": parent.lag}
+    return {
+        "source_region": parent.source_region,
+        "lag": parent.lag,
+        "source_dimension": parent.source_dimension,
+        "target_dimension": parent.target_dimension,
+    }
 
 
 def _decode_parent(value: Any, context: str) -> ParentLink:
-    payload = _strict_mapping(value, {"source_region", "lag"}, context)
+    payload = _strict_mapping(
+        value,
+        {"source_region", "lag", "source_dimension", "target_dimension"},
+        context,
+    )
     return ParentLink(
         source_region=payload["source_region"],
         lag=payload["lag"],
+        source_dimension=payload["source_dimension"],
+        target_dimension=payload["target_dimension"],
     )
 
 
 def serialize_core_contract(value: Any) -> dict[str, Any]:
-    """Serialize one canonical contract into the frozen v1 envelope."""
+    """Serialize one canonical contract into the frozen v2 envelope."""
 
     contract_type = type(value).__name__
     if contract_type not in _CANONICAL_TYPES:
@@ -216,7 +228,7 @@ def serialize_core_contract(value: Any) -> dict[str, Any]:
             "artifact_root": value.artifact_root,
             "seed": value.seed,
         }
-    else:  # pragma: no cover - guarded by the canonical type-name check above.
+    else:  # pragma: no cover
         raise CoreContractIOError(f"unsupported core contract type: {contract_type}")
 
     return {
@@ -224,6 +236,89 @@ def serialize_core_contract(value: Any) -> dict[str, Any]:
         "contract_type": contract_type,
         "payload": payload,
     }
+
+
+def migrate_core_contract_v1_to_v2(
+    envelope: Any,
+    *,
+    certified_scalar_dimension: str | None = None,
+) -> dict[str, Any]:
+    """Explicitly migrate a v1 envelope to v2 without inventing component identity.
+
+    v1 ``ParentSet``/``NullMapping`` payloads contain only region and lag. They are
+    therefore migratable only when the caller can certify that the originating
+    representation had exactly one scalar dimension and supplies its real label.
+    Multicomponent v1 discovery artifacts are scientifically lossy and must be
+    regenerated from discovery rather than guessed during migration.
+
+    Other canonical payloads did not change structurally between v1 and v2, so
+    their envelope version can be migrated directly after strict v1 validation is
+    performed by the current decoder shape checks where applicable.
+    """
+
+    root = _strict_mapping(
+        envelope, {"schema_version", "contract_type", "payload"}, "envelope"
+    )
+    if root["schema_version"] != 1:
+        raise CoreContractIOError(
+            "v1 migration requires schema_version 1; "
+            f"actual={root['schema_version']!r}"
+        )
+    contract_type = root["contract_type"]
+    if contract_type not in _CANONICAL_TYPES:
+        raise CoreContractIOError(f"unknown core contract type: {contract_type!r}")
+
+    migrated = deepcopy(dict(root))
+    payload = migrated["payload"]
+
+    if contract_type in {"ParentSet", "NullMapping"}:
+        if not isinstance(certified_scalar_dimension, str) or not certified_scalar_dimension.strip():
+            raise CoreContractIOError(
+                "v1 ParentSet/NullMapping migration requires "
+                "certified_scalar_dimension; multicomponent provenance cannot be inferred"
+            )
+        dimension = certified_scalar_dimension.strip()
+
+        if contract_type == "ParentSet":
+            values = _strict_mapping(
+                payload,
+                {"outer_fold", "target_region", "parents", "discovery_method"},
+                "ParentSet.v1.payload",
+            )
+            parent_groups = (("parents", values["parents"]),)
+        else:
+            values = _strict_mapping(
+                payload,
+                {
+                    "outer_fold",
+                    "target_region",
+                    "condition",
+                    "seed",
+                    "source_parents",
+                    "mapped_parents",
+                    "permutation",
+                },
+                "NullMapping.v1.payload",
+            )
+            parent_groups = (
+                ("source_parents", values["source_parents"]),
+                ("mapped_parents", values["mapped_parents"]),
+            )
+
+        for group_name, parents in parent_groups:
+            if not isinstance(parents, list):
+                raise CoreContractIOError(f"{contract_type}.{group_name} must be a list")
+            for index, parent in enumerate(parents):
+                parent_payload = _strict_mapping(
+                    parent,
+                    {"source_region", "lag"},
+                    f"{contract_type}.{group_name}[{index}]",
+                )
+                parent_payload["source_dimension"] = dimension
+                parent_payload["target_dimension"] = dimension
+
+    migrated["schema_version"] = CORE_CONTRACT_SCHEMA_VERSION
+    return migrated
 
 
 def deserialize_core_contract(envelope: Any) -> Any:
@@ -486,7 +581,7 @@ def dumps_core_contract(value: Any) -> str:
 
 
 def loads_core_contract(text: str) -> Any:
-    """Load deterministic JSON and strictly validate the frozen v1 envelope."""
+    """Load deterministic JSON and strictly validate the frozen v2 envelope."""
 
     if not isinstance(text, str):
         raise CoreContractIOError("serialized core contract must be JSON text")
