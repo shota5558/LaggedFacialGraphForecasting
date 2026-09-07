@@ -11,6 +11,58 @@ from .contracts import DesignMatrix, FaceTimeSeries
 from .core_contracts import ParentSet
 
 
+def _escape_feature_component(value: str) -> str:
+    return value.replace("\\", "\\\\").replace(".", "\\.")
+
+
+def encode_feature_name(source_region: str, dimension: str) -> str:
+    """Encode source-region and dimension provenance into one reversible name.
+
+    Simple identifiers retain the historical ``region.dimension`` representation.
+    Dots and backslashes inside either component are escaped so every valid
+    FaceTimeSeries identifier remains losslessly recoverable.
+    """
+
+    if not isinstance(source_region, str) or not source_region.strip():
+        raise ValueError("source_region must be a non-empty string")
+    if not isinstance(dimension, str) or not dimension.strip():
+        raise ValueError("dimension must be a non-empty string")
+    return f"{_escape_feature_component(source_region)}.{_escape_feature_component(dimension)}"
+
+
+def decode_feature_name(feature_name: str) -> tuple[str, str]:
+    """Recover ``(source_region, dimension)`` from ``encode_feature_name`` output."""
+
+    if not isinstance(feature_name, str) or not feature_name:
+        raise ValueError("feature_name must be a non-empty string")
+
+    components: list[str] = []
+    current: list[str] = []
+    escaped = False
+    for character in feature_name:
+        if escaped:
+            if character not in (".", "\\"):
+                raise ValueError("feature_name contains an unsupported escape sequence")
+            current.append(character)
+            escaped = False
+            continue
+        if character == "\\":
+            escaped = True
+            continue
+        if character == ".":
+            components.append("".join(current))
+            current = []
+            continue
+        current.append(character)
+
+    if escaped:
+        raise ValueError("feature_name contains a dangling escape")
+    components.append("".join(current))
+    if len(components) != 2 or any(not component for component in components):
+        raise ValueError("feature_name must encode exactly source_region and dimension")
+    return components[0], components[1]
+
+
 def _normalize_lags(lags: Iterable[int]) -> tuple[int, ...]:
     normalized: list[int] = []
     for lag in lags:
@@ -64,7 +116,7 @@ def build_self_history_design_matrix(
             feature_valid_columns.append(
                 series.valid_mask[source_indices, region_index, dimension_index]
             )
-            feature_names.append(f"{target_region}.{dimension_name}")
+            feature_names.append(encode_feature_name(target_region, dimension_name))
             feature_lags.append(lag)
 
     X = np.column_stack(feature_columns)
@@ -156,7 +208,7 @@ def build_full_history_design_matrix(
                 feature_valid_columns.append(
                     series.valid_mask[source_indices, region_index, dimension_index]
                 )
-                feature_names.append(f"{region_name}.{dimension_name}")
+                feature_names.append(encode_feature_name(region_name, dimension_name))
                 feature_lags.append(lag)
 
     X = np.column_stack(feature_columns)
@@ -228,7 +280,9 @@ def build_pcmci_parent_design_matrix(
             feature_valid_columns.append(
                 series.valid_mask[source_indices, source_region_index, dimension_index]
             )
-            feature_names.append(f"{parent.source_region}.{dimension_name}")
+            feature_names.append(
+                encode_feature_name(parent.source_region, dimension_name)
+            )
             feature_lags.append(parent.lag)
 
     X = np.column_stack(feature_columns)
