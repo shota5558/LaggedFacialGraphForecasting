@@ -1,6 +1,7 @@
 task_id: B
 task_name: Lane B Completion Gate — Split / Leakage Guard
 status: PASS
+audit_type: existing_implementation_revalidation
 
 validated_tasks:
   - B-00 subject metadata loader
@@ -34,13 +35,20 @@ implementation_evidence:
   - artifacts/setup/B-12/task_result.yaml
   - artifacts/setup/B-13/task_result.yaml
 
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/splits.py
+  - src/lagged_facial_graph_forecasting/split_manifest_io.py
+  - src/lagged_facial_graph_forecasting/leakage_guard.py
+  - tests/test_leakage_guard.py
+
 tests:
   workflow: tests
-  baseline_run_id: 34147762191
-  baseline_head_sha: 1c6796deed5fc469dd71308c2582c1f444e0696b
+  run_id: 34159355496
+  job_id: 101857730862
+  head_sha: 0e01a970f3634c6a201d8e084d79214f4239a5d5
   python: 3.11.16
-  baseline_result: 153 passed in 1.74s
-  gate_commit_ci_required: true
+  result: 415 passed, 1 warning in 2.29s
+  warning: Tigramite single-dataset multiple-mode warning; unrelated to Lane B
 
 scientific_checks:
   - split unit is subject
@@ -48,7 +56,7 @@ scientific_checks:
   - outer train/test subjects are disjoint
   - inner folds contain outer-train subjects only
   - preprocessing fitting is restricted to outer-train or inner-train subsets
-  - PCMCI+ discovery is restricted to outer-train subjects
+  - PCMCI+ discovery is restricted to outer-train subjects and outer-test subjects are rejected before discovery
   - Ridge hyperparameter tuning is restricted to outer-train subjects
   - Primary Null mapping construction is restricted to outer-train subjects
   - deterministic split construction depends only on validated subject IDs, configured fold semantics, and seed
