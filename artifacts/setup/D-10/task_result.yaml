@@ -1,0 +1,60 @@
+task_id: D-10
+task_name: PCMCI+ ParentSet conversion
+status: PASS
+
+implemented:
+  - converts D-09 validated Tigramite lagged-link records into Tigramite-independent ParentSet contracts
+  - preserves exact source_region, source_dimension, target_dimension, and lag provenance
+  - scopes each ParentSet to one target region
+  - excludes same-region discovery links from selected forecasting parents because the PCMCI condition already contains the fixed target-region Self-history block
+  - preserves upstream discovery evidence; same-region links are not deleted from D-07/D-08 diagnostics
+  - supports an empty selected ParentSet for a target region
+  - canonicalizes ParentLink ordering for deterministic ParentSet equality
+  - fails closed if raw links bypass the D-09 Primary lag/mark domain
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/pcmci_parent_set.py
+  - tests/test_pcmci_parent_set_conversion.py
+  - artifacts/setup/D-10/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/pcmci_lagged_filter.py
+  - src/lagged_facial_graph_forecasting/pcmci_link_extraction.py
+  - src/lagged_facial_graph_forecasting/pcmci_tau_max.py
+
+tests:
+  workflow: tests
+  run_id: 34162093744
+  job_id: 101865830065
+  head_sha: e2d23ec2e0b0ac7343bf8f2b64fe6d78ce35db9d
+  conclusion: success
+  regression_scope: prior 491-test suite plus 10 D-10 test cases
+  targeted_checks:
+    - cross-region ParentLink conversion preserves component and lag provenance
+    - same-region links are not duplicated beyond fixed Self history
+    - target-region scoping
+    - empty ParentSet handling
+    - canonical order independent of raw input order
+    - tau=0 and tau>10 fail closed
+    - unexpected lagged marks fail closed
+    - noncanonical raw input rejection
+
+scientific_checks:
+  - Primary remains PCMCI+ plus ParCorr plus Ridge with h=1
+  - ParentSet is the canonical Tigramite-independent discovery-to-forecast boundary
+  - only 1 <= tau <= 10 directed lagged links can cross the D-10 boundary
+  - exact region-dimension provenance is preserved with no scalarization or region-level union
+  - selected PCMCI features remain incremental to the identical fixed Self-history block
+  - no outer-test data, prediction outcome, or Sensitivity result is accepted by the conversion API
+  - pc_alpha=0.01 and tau_max=10 remain unchanged
+  - D-11 serialization is not implemented prematurely
+
+artifacts:
+  - artifacts/setup/D-10/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: D-11
