@@ -9,26 +9,50 @@ completed_tasks:
   - C-03 Persistence matrix
   - C-04 Self-history matrix
   - C-05 Full-history matrix
-  - C-06 incremental PCMCI ParentSet matrix
+  - C-06 component-aware PCMCI ParentSet matrix
   - C-07 feature provenance
   - C-08 tau >= h availability guard
   - C-09 missing-value alignment
   - C-10 train/test feature consistency
   - C-11 unit tests
 
-contract_corrections:
-  - fail_type: contract mismatch
-    corrected_semantics: PCMCI condition is the exact fixed Self-history block plus frozen selected inter-regional ParentSet links
-    empty_parent_behavior: deterministically reduce PCMCI to Self
-    rationale: preserve a nested Self-vs-PCMCI comparison so the measured gain is attributable to additional inter-regional information
-  - fail_type: scientific specification risk
-    corrected_semantics: all Primary conditions support a common frozen alignment_lag used only to choose identical forecast-origin/target rows
-    rationale: prevent condition-specific maximum lags from changing the evaluation time support
+implemented:
+  - retained the frozen Self predictor block as the target region full past vector
+  - added scalar target_dimension support so Primary conditions can share the exact target component selected by PCMCI discovery
+  - filtered PCMCI ParentLinks by target_dimension
+  - added exactly the selected source_dimension for each inter-regional ParentLink instead of expanding a selected region to every dimension
+  - rejected ambiguous legacy ParentLink dimension value on multicomponent FaceTimeSeries
+  - rejected unknown source and target component labels
+  - preserved source region, source component, target component, lag, forecast origin, target time, subject, region, and validity provenance
+  - retained same-region PCMCI links inside ParentSet provenance but did not duplicate them in the incremental predictor block because the fixed Self block already contains self history
+  - migrated stale region-level C regression fixtures to explicit component-aware ParentLinks and matching scalar targets
 
-canonical_implementation:
-  alignment: src/lagged_facial_graph_forecasting/alignment.py
-  builders: src/lagged_facial_graph_forecasting/design_matrix.py
-  prediction_feature_contract: src/lagged_facial_graph_forecasting/forecaster.py
+files_changed:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - tests/test_pcmci_parent_design_matrix.py
+  - tests/test_design_matrix_feature_provenance.py
+  - tests/test_primary_condition_alignment.py
+  - tests/test_ridge_empty_parent.py
+  - artifacts/setup/C/task_result.yaml
+
+fail_history:
+  initial_status: FAIL
+  fail_types:
+    - contract mismatch
+    - scientific specification conflict
+  root_cause: >-
+    The pre-v2 PCMCI DesignMatrix expanded every selected source region into all
+    dimensions, while Scientific Freeze v2 defines discovery nodes as
+    region_dimension and forecasting_feature_rule as exact_selected_component.
+    This discarded component-specific selection semantics.
+  minimal_fix: >-
+    Construct one scalar target component at a time, retain only ParentLinks for
+    that target component, and add only each retained source component at its
+    selected lag while preserving the same fixed Self-history block.
+  regression_fix: >-
+    Four old tests still instantiated ambiguous region-only ParentLinks or compared
+    scalar PCMCI targets with vector Self targets. Those fixtures were migrated to
+    explicit components without weakening the fail-closed implementation.
 
 scientific_contract:
   primary_horizon: 1
@@ -37,21 +61,26 @@ scientific_contract:
   common_primary_row_support_available: true
   alignment_lag_is_not_a_predictor: true
   source_region_dimension_lag_provenance: lossless
+  target_component_provenance: lossless
+  pcmci_exact_selected_component: true
+  pcmci_target_component_filtering: true
   pcmci_fixed_self_block: true
   pcmci_incremental_features_from_frozen_interregional_parentset_only: true
-  empty_interregional_parentset_reduces_to_self: true
+  empty_interregional_parentset_reduces_to_matching_scalar_self: true
   train_test_feature_identity: enforced
-  missingness_alignment: enforced
+  missingness_alignment: enforced_on_selected_source_and_target_components
   outer_test_dependent_selection: false
   sensitivity_methods_introduced: false
 
 validation:
   workflow: tests
-  run_id: 34149264770
-  job_id: 101827881757
-  validated_head_sha: e046d297a77236836121c56e3b24e67ed5989377
+  run_id: 34158214701
+  job_id: 101854348812
+  validated_head_sha: 263c7fe6b74216aa677a4a9bf06ff68e647cabb0
   python: 3.11.16
-  result: 204 passed in 1.71s
+  result: 408 passed, 1 warning in 1.67s
+  warning:
+    - Tigramite single-dataset analysis_mode multiple warning in dataframe converter test; non-failing and unrelated to DesignMatrix correctness
 
 evidence:
   - artifacts/setup/C-00/task_result.yaml
@@ -66,6 +95,7 @@ evidence:
   - artifacts/setup/C-09/task_result.yaml
   - artifacts/setup/C-10/task_result.yaml
   - artifacts/setup/C-11/task_result.yaml
+  - tests/test_pcmci_parent_design_matrix.py
 
 remaining_issue: none
 next_task: E-00
