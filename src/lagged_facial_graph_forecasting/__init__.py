@@ -10,7 +10,11 @@ from .contracts import (
     SplitManifest,
 )
 from .design_matrix import build_self_history_design_matrix
-from .forecaster import FittedRidgeForecaster, fit_ridge_forecaster
+from .forecaster import (
+    FittedRidgeForecaster,
+    fit_ridge_forecaster,
+    predict_ridge_forecaster,
+)
 from .scientific_config import ScientificConfigError, load_scientific_config
 from .splits import build_subject_split_manifest
 from .synthetic import generate_synthetic_face_time_series
@@ -31,4 +35,5 @@ __all__ = [
     "fit_ridge_forecaster",
     "generate_synthetic_face_time_series",
     "load_scientific_config",
+    "predict_ridge_forecaster",
 ]
