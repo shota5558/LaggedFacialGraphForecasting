@@ -16,11 +16,14 @@ completed_tasks:
   - C-10 train/test feature consistency
   - C-11 unit tests
 
-contract_correction:
-  fail_type: contract mismatch
-  corrected_semantics: PCMCI condition is the exact fixed Self-history block plus frozen selected inter-regional ParentSet links
-  empty_parent_behavior: deterministically reduce PCMCI to Self
-  rationale: preserve a nested Self-vs-PCMCI comparison so the measured gain is attributable to additional inter-regional information
+contract_corrections:
+  - fail_type: contract mismatch
+    corrected_semantics: PCMCI condition is the exact fixed Self-history block plus frozen selected inter-regional ParentSet links
+    empty_parent_behavior: deterministically reduce PCMCI to Self
+    rationale: preserve a nested Self-vs-PCMCI comparison so the measured gain is attributable to additional inter-regional information
+  - fail_type: scientific specification risk
+    corrected_semantics: all Primary conditions support a common frozen alignment_lag used only to choose identical forecast-origin/target rows
+    rationale: prevent condition-specific maximum lags from changing the evaluation time support
 
 canonical_implementation:
   alignment: src/lagged_facial_graph_forecasting/alignment.py
@@ -31,6 +34,8 @@ scientific_contract:
   primary_horizon: 1
   target_relative_lags: true
   future_parent_after_forecast_origin: rejected
+  common_primary_row_support_available: true
+  alignment_lag_is_not_a_predictor: true
   source_region_dimension_lag_provenance: lossless
   pcmci_fixed_self_block: true
   pcmci_incremental_features_from_frozen_interregional_parentset_only: true
@@ -42,11 +47,11 @@ scientific_contract:
 
 validation:
   workflow: tests
-  run_id: 34149026741
-  job_id: 101827151606
-  validated_head_sha: c436c5510015c4a6b902e09050ca1ae666db773b
+  run_id: 34149264770
+  job_id: 101827881757
+  validated_head_sha: e046d297a77236836121c56e3b24e67ed5989377
   python: 3.11.16
-  result: 196 passed in 1.75s
+  result: 204 passed in 1.71s
 
 evidence:
   - artifacts/setup/C-00/task_result.yaml
