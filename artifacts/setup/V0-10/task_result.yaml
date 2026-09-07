@@ -1,23 +1,40 @@
 task_id: V0-10
 task_name: End-to-end test
 status: PASS
+audit_type: current_contract_revalidation
 
 implemented:
-  - added one end-to-end acceptance test for the complete V0 self-only vertical slice
+  - one end-to-end acceptance test covers the complete V0 self-only vertical slice
   - synthetic FaceTimeSeries -> SplitManifest -> outer-test lock -> Self-history DesignMatrix -> StandardScaler + Ridge -> fold freeze -> PredictionArtifact -> Velocity RMSE -> deterministic result artifact
   - repeated the same run and asserted byte-identical artifacts, identical predictions, masks, and metric
-  - asserted Gate V0 provenance survives end-to-end
+  - Gate V0 provenance includes target_dimensions after the contract migration
 
 files_changed:
   - tests/test_v0_end_to_end.py
+  - artifacts/setup/V0-10/task_result.yaml
 
-tests:
-  workflow: tests
-  run_id: 34145754730
-  job_id: 101817329912
-  head_sha: fa00485b5009f2e74e79e27709671ec34c2f5f61
+failure_history:
+  fail_type: contract mismatch
+  failed_workflow: v0-vertical-slice-audit
+  failed_run_id: 34159270688
+  failed_job_id: 101857492278
+  root_cause: >-
+    The end-to-end test still expected V0 artifact schema_version 1 after the
+    artifact contract had migrated to version 2 with explicit target provenance.
+  minimal_fix: >-
+    Update the end-to-end artifact expectation to schema_version 2 and assert
+    target_provenance.target_dimensions. No execution behavior or scientific
+    constraint was changed.
+  fix_commit: ef865e80474e712cdd62d8c5e203e00e4128c7d0
+
+revalidation:
+  workflow: v0-vertical-slice-audit
+  run_id: 34159344096
+  job_id: 101857698650
+  head_sha: f5dc91210d50f33af46c70fa2e6c0cc83829287d
   python: 3.11.16
-  result: 104 passed in 1.33s
+  result: 62 passed in 1.37s
+  relevant_result: tests/test_v0_end_to_end.py PASS
 
 scientific_checks:
   - SplitManifest remains the only subject-split source
@@ -25,8 +42,9 @@ scientific_checks:
   - outer-test remains locked through fitting and is used only after explicit fold freeze
   - V0 remains Self-history only and Primary horizon h=1
   - no PCMCI, Null, real-data preprocessing, or Sensitivity path was introduced
-  - subject_id, outer_fold, region_id, forecast_origin, target_time, feature_name, lag, valid_mask, prediction, and ground_truth are all traceable in the final artifact
+  - subject_id, outer_fold, region_id, forecast_origin, target_time, target dimensions, feature_name, lag, valid_mask, prediction, and ground_truth are traceable in the final artifact
   - same deterministic fixture and split produce identical artifact bytes, predictions, masks, and metric
+  - Primary scientific freeze remains unchanged
 
 artifacts:
   - artifacts/setup/V0-10/task_result.yaml
