@@ -30,7 +30,7 @@ def _series() -> FaceTimeSeries:
     )
 
 
-def test_empty_pcmci_parent_set_reduces_exactly_to_self_and_ridge_runs() -> None:
+def test_empty_pcmci_parent_set_reduces_exactly_to_scalar_self_and_ridge_runs() -> None:
     series = _series()
     parent_set = ParentSet(
         outer_fold=0,
@@ -41,6 +41,7 @@ def test_empty_pcmci_parent_set_reduces_exactly_to_self_and_ridge_runs() -> None
     self_matrix = build_self_history_design_matrix(
         series,
         target_region="mouth",
+        target_dimension="vx",
         lags=(1,),
         horizon=1,
         alignment_lag=3,
@@ -48,6 +49,7 @@ def test_empty_pcmci_parent_set_reduces_exactly_to_self_and_ridge_runs() -> None
     pcmci_matrix = build_pcmci_parent_design_matrix(
         series,
         parent_set=parent_set,
+        target_dimension="vx",
         self_lags=(1,),
         horizon=1,
         alignment_lag=3,
@@ -55,6 +57,7 @@ def test_empty_pcmci_parent_set_reduces_exactly_to_self_and_ridge_runs() -> None
 
     assert np.array_equal(pcmci_matrix.X, self_matrix.X)
     assert np.array_equal(pcmci_matrix.y, self_matrix.y)
+    assert pcmci_matrix.y.ndim == 1
     assert np.array_equal(pcmci_matrix.forecast_origin, self_matrix.forecast_origin)
     assert np.array_equal(pcmci_matrix.target_time, self_matrix.target_time)
     assert np.array_equal(pcmci_matrix.valid_mask, self_matrix.valid_mask)
