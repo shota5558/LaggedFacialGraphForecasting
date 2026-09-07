@@ -8,6 +8,7 @@ implemented:
   - rejects outer-test and otherwise out-of-scope subject IDs at the discovery-facing conversion boundary
   - preserves subjects as separate datasets in analysis_mode='multiple' rather than concatenating subject boundaries
   - flattens only region/dimension axes and records deterministic variable/component provenance
+  - preserves each subject's original time_index as Tigramite datatime and carries the common sampling_rate for later frame-to-time lag provenance
   - converts canonical valid_mask semantics into Tigramite invalid-mask semantics
   - replaces invalid non-finite entries with a fixed finite placeholder only under the corresponding Tigramite mask because Tigramite rejects NaN before masking
   - rejects duplicate subject IDs and incompatible region/dimension/sampling-rate schemas
@@ -22,16 +23,20 @@ source_commits:
   initial_tests: fe640be1268815b319109062354554ac7b82bc33
   leakage_guard_integration: bc954fa327783923f5a22c64f2eb9d8b38600506
   leakage_regression_test: d5310256f44adef39932a2c93ea3ac0573551365
+  temporal_provenance: 9ef983ac89be23b8ec7248af419a4d3c25858b32
+  temporal_provenance_test: 24cc04c07704180a28ab66e41705042ecf907747
 
 tests:
   workflow: tests
-  run_id: 34154372210
-  job_id: 101843018223
-  head_sha: d5310256f44adef39932a2c93ea3ac0573551365
+  run_id: 34154468700
+  job_id: 101843306120
+  head_sha: 24cc04c07704180a28ab66e41705042ecf907747
   result: success
+  suite_result: 383 passed in 2.15s
   cases:
     - independent subjects remain separate Tigramite datasets with different lengths
     - variable names and region/dimension component provenance are deterministic
+    - subject time_index arrays and common sampling_rate provenance are preserved
     - invalid NaN is replaced only at a masked location and all Tigramite data are finite
     - duplicate subjects and incompatible schemas are rejected
     - outer-test subject input raises LeakageGuardError before Tigramite DataFrame construction
@@ -39,6 +44,7 @@ tests:
 scientific_checks:
   - discovery-facing conversion is structurally limited to outer-train subjects by the frozen SplitManifest
   - no cross-subject concatenation or boundary transition is introduced
+  - observed temporal labels and sampling-rate provenance are retained without interpolation or resampling
   - invalid observations are represented by the Tigramite mask; D-02 must freeze a ParCorr mask_type that consumes this mask
   - conversion performs no preprocessing fit, discovery, tuning, feature/lag selection, or Null construction
   - Primary remains PCMCI+ + ParCorr + Ridge with h=1
