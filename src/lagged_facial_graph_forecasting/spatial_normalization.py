@@ -27,11 +27,11 @@ def _validate_coordinate_tensor(values: np.ndarray) -> np.ndarray:
 
 
 def _validate_reference_indices(
-    reference_indices: tuple[int, ...] | None,
+    reference_indices: tuple[int, ...],
     *,
     item_count: int,
 ) -> tuple[int, ...]:
-    indices = tuple(range(item_count)) if reference_indices is None else tuple(reference_indices)
+    indices = tuple(reference_indices)
     if not indices:
         raise SpatialNormalizationError("reference_indices must not be empty")
 
@@ -75,15 +75,16 @@ class TranslationNormalization:
 def normalize_translation(
     values: np.ndarray,
     *,
-    reference_indices: tuple[int, ...] | None = None,
+    reference_indices: tuple[int, ...],
 ) -> TranslationNormalization:
     """Remove frame-wise common translation using an explicitly frozen centroid.
 
-    The transform contains no learned population statistic: each frame is centered
-    by the arithmetic centroid of its configured reference points/regions.  When
-    ``reference_indices`` is omitted, all points/regions are used.  Ordinary mean
-    semantics intentionally propagate NaN in a reference so missingness remains a
-    downstream A-12/A-13 concern rather than being silently imputed here.
+    The reference set is intentionally mandatory: the scientific choice of which
+    points/regions define head translation must come from frozen experiment
+    configuration rather than an API default. The transform contains no learned
+    population statistic; each frame is centered by the arithmetic centroid of
+    those declared references. Ordinary mean semantics intentionally propagate
+    NaN in a reference so missingness remains an A-12/A-13 responsibility.
     """
 
     array = _validate_coordinate_tensor(values)

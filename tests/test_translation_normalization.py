@@ -17,13 +17,20 @@ def test_frame_centroid_translation_is_removed() -> None:
         ]
     )
 
-    normalized = normalize_translation(values)
+    normalized = normalize_translation(values, reference_indices=(0, 1, 2))
 
     assert normalized.reference_indices == (0, 1, 2)
     assert np.allclose(np.mean(normalized.values, axis=1), 0.0)
     assert normalized.offsets.shape == (2, 1, 2)
     assert not normalized.values.flags.writeable
     assert not normalized.offsets.flags.writeable
+
+
+def test_reference_indices_are_mandatory_to_avoid_hidden_scientific_default() -> None:
+    values = np.zeros((2, 3, 2), dtype=float)
+
+    with pytest.raises(TypeError):
+        normalize_translation(values)  # type: ignore[call-arg]
 
 
 def test_global_translation_does_not_change_normalized_coordinates() -> None:
@@ -82,6 +89,6 @@ def test_normalization_does_not_modify_input() -> None:
     values = np.arange(2 * 3 * 3, dtype=float).reshape(2, 3, 3)
     before = values.copy()
 
-    normalize_translation(values)
+    normalize_translation(values, reference_indices=(0, 1, 2))
 
     assert np.array_equal(values, before)
