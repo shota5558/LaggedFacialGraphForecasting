@@ -5,6 +5,15 @@ primary:
   ci_test: parcorr
   forecaster: ridge
   horizon: 1
+  conditions:
+    - persistence
+    - self
+    - full
+    - pcmci
+    - lag_shift
+    - random_region
+    - matched_sparsity
+    - time_shuffle
 
 evaluation:
   split_unit: subject
@@ -20,6 +29,13 @@ selection_scope:
 
 sensitivity:
   execute_after_primary_freeze: true
+  methods:
+    - gpdc
+    - lpcmci
+    - phase_shuffled_surrogate
+    - circular_shift_surrogate
+    - horizon_gt_1
+    - gru
 
 artifacts:
   primary_root: artifacts/primary
