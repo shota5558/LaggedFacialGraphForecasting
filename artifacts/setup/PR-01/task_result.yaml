@@ -1,0 +1,78 @@
+task_id: PR-01
+task_name: All outer folds execute
+status: FAIL
+
+fail_type:
+  - scientific specification conflict
+  - data issue
+
+implemented:
+  - performed fail-closed preflight before any Primary outer-test execution
+  - reused the PASSed I4 Scientific Audit gate and existing Primary contracts; no duplicate runner or estimator implementation was added
+  - verified that no Primary Full Run has been started with unfrozen settings
+  - verified that Sensitivity remains unexecuted and separated from the Primary artifact root
+
+files_changed:
+  - artifacts/setup/PR-01/task_result.yaml
+
+tests:
+  upstream_i4_workflow_run_id: 34167363858
+  upstream_i4_head_sha: b216ab72e7a752418981a1831394653955029de8
+  upstream_i4_result: success
+  latest_verified_suite_before_pr_preflight: 676 passed, 1 warning
+  execution_test: not_run
+  reason: fail-closed before scientific state or outer-test evaluation because required Primary inputs/settings are not fully frozen
+
+scientific_checks:
+  primary_pcmci_plus_parcorr_ridge_h1: PASS
+  tau_max_10: PASS
+  pc_alpha_0_01: PASS
+  subject_split_unit: PASS
+  outer_test_frozen_final_evaluation_only: PASS
+  selection_scopes_outer_train_only: PASS
+  lag_response_rule_frozen: PASS
+  ridge_lambda_candidate_grid_frozen: PASS
+  interpolation_none_policy: PASS
+  exact_outer_split_strategy_frozen: FAIL
+  exact_region_landmark_mapping_frozen: FAIL
+  translation_reference_indices_frozen: FAIL
+  scale_reference_pair_frozen: FAIL
+  rotation_reference_pair_and_axes_frozen: FAIL
+  primary_motion_feature_displacement_or_velocity_frozen: FAIL
+  matched_sparsity_repeat_count_frozen: FAIL
+  bootstrap_n_resamples_and_interval_method_frozen_before_results: FAIL
+  primary_dataset_available_to_runner: FAIL
+  sensitivity_contamination: PASS
+
+root_cause:
+  - configs/primary_run.yaml currently records experiment identity, scientific config path, artifact root, and seed only; it does not bind the concrete preprocessing/split/Null/statistical choices required for an immutable real-data Primary protocol
+  - both LOSO and grouped K-fold implementations exist, but no single Primary outer-split strategy/fold count is selected in the current machine-readable configs
+  - RegionDefinition is intentionally generic and requires an explicit landmark-index mapping; no concrete Primary mapping is present in the current configs
+  - translation/scale/rotation normalization APIs intentionally require explicit anatomical reference indices/pairs/axes and no Primary values are present in the current configs
+  - displacement and velocity are both implemented, but no machine-readable Primary feature choice is present
+  - F-33 intentionally has no scientific default for matched-sparsity repeat_count
+  - G-04 intentionally has no scientific defaults for bootstrap n_resamples or interval method
+  - the repository root contains no Primary dataset/data manifest, so all outer folds cannot currently be materialized for execution
+
+minimal_fix_required_before_retry:
+  - extend the machine-readable Primary freeze/run configuration with explicitly predeclared outer split strategy/fold count
+  - add the exact landmark-to-region mapping and normalization reference indices/pairs/axes
+  - select one Primary motion feature representation and encode it in config
+  - freeze matched-sparsity repeat_count
+  - freeze bootstrap n_resamples and interval method before observing Primary results
+  - provide or reference the immutable Primary subject/data manifest without placing outcome-driven choices in the config
+  - add schema/loader validation and tests that reject omission or drift of these values
+
+scientific_specification_changed: false
+outer_test_accessed: false
+primary_results_generated: false
+sensitivity_executed: false
+
+artifacts:
+  - artifacts/setup/PR-01/task_result.yaml
+  - artifacts/setup/I4/task_result.yaml
+
+remaining_issue:
+  - Primary Full Run is blocked until all values above are explicitly frozen and the Primary data manifest is available
+
+next_task: null
