@@ -1,0 +1,43 @@
+task_id: D-01
+task_name: Tigramite dataframe converter
+status: PASS
+
+implemented:
+  - added a converter from canonical FaceTimeSeries sequences to Tigramite DataFrame
+  - preserves subjects as separate datasets in analysis_mode='multiple' rather than concatenating subject boundaries
+  - flattens only region/dimension axes and records deterministic variable/component provenance
+  - converts canonical valid_mask semantics into Tigramite invalid-mask semantics
+  - replaces invalid non-finite entries with a fixed finite placeholder only under the corresponding Tigramite mask because Tigramite rejects NaN before masking
+  - rejects duplicate subject IDs and incompatible region/dimension/sampling-rate schemas
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/tigramite_adapter.py
+  - tests/test_tigramite_dataframe_converter.py
+  - artifacts/setup/D-01/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34154279406
+  job_id: 101842733327
+  head_sha: fe640be1268815b319109062354554ac7b82bc33
+  result: success
+  suite_result: 380 passed in 2.23s
+  cases:
+    - independent subjects remain separate Tigramite datasets with different lengths
+    - variable names and region/dimension component provenance are deterministic
+    - invalid NaN is replaced only at a masked location and all Tigramite data are finite
+    - duplicate subjects and incompatible schemas are rejected
+
+scientific_checks:
+  - no cross-subject concatenation or boundary transition is introduced
+  - invalid observations cannot enter conditional-independence samples as valid evidence
+  - conversion performs no preprocessing fit, discovery, tuning, feature/lag selection, or Null construction
+  - outer-test is not accessed or used
+  - Primary remains PCMCI+ + ParCorr + Ridge with h=1
+  - no Sensitivity execution path is introduced
+
+artifacts:
+  - artifacts/setup/D-01/task_result.yaml
+
+remaining_issue: none
+next_task: D-02
