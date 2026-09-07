@@ -45,12 +45,15 @@ def test_result_serialization_preserves_provenance_and_uses_json_null(tmp_path) 
     )
     payload = json.loads(path.read_text(encoding="utf-8"))
 
-    assert payload["schema_version"] == 1
+    assert payload["schema_version"] == 2
     assert payload["outer_fold"] == 3
     assert payload["condition"] == "self"
     assert payload["feature_provenance"] == {
         "feature_names": ["mouth.vx", "mouth.vy"],
         "feature_lags": [1, 1],
+    }
+    assert payload["target_provenance"] == {
+        "target_dimensions": ["vx", "vy"],
     }
     assert payload["model"]["forecaster"] == "ridge"
     assert payload["model"]["alpha"] == 1.0
