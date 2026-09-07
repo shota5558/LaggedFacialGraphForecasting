@@ -28,7 +28,11 @@ from .forecaster import (
 from .metrics import velocity_rmse
 from .runner import FoldRunResult, MinimalFoldRunner, OuterTestLockedError
 from .scientific_config import ScientificConfigError, load_scientific_config
-from .splits import build_loso_split_manifests, build_subject_split_manifest
+from .splits import (
+    build_grouped_kfold_split_manifests,
+    build_loso_split_manifests,
+    build_subject_split_manifest,
+)
 from .subject_metadata import (
     SubjectMetadataLoadError,
     SubjectMetadataValidationError,
@@ -60,6 +64,7 @@ __all__ = [
     "SubjectMetadataLoadError",
     "SubjectMetadataValidationError",
     "aligned_indices",
+    "build_grouped_kfold_split_manifests",
     "build_loso_split_manifests",
     "build_self_history_design_matrix",
     "build_subject_split_manifest",
