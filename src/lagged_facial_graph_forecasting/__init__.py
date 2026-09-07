@@ -28,6 +28,11 @@ from .forecaster import (
 from .metrics import velocity_rmse
 from .runner import FoldRunResult, MinimalFoldRunner, OuterTestLockedError
 from .scientific_config import ScientificConfigError, load_scientific_config
+from .split_manifest_io import (
+    SPLIT_MANIFEST_SCHEMA_VERSION,
+    build_split_manifest_payload,
+    write_split_manifest_json,
+)
 from .splits import (
     build_grouped_kfold_split_manifests,
     build_loso_split_manifests,
@@ -59,6 +64,7 @@ __all__ = [
     "ParentLink",
     "ParentSet",
     "PredictionArtifact",
+    "SPLIT_MANIFEST_SCHEMA_VERSION",
     "SplitManifest",
     "ScientificConfigError",
     "SubjectMetadataLoadError",
@@ -67,6 +73,7 @@ __all__ = [
     "build_grouped_kfold_split_manifests",
     "build_loso_split_manifests",
     "build_self_history_design_matrix",
+    "build_split_manifest_payload",
     "build_subject_split_manifest",
     "build_v0_result_payload",
     "fit_ridge_forecaster",
@@ -76,5 +83,6 @@ __all__ = [
     "predict_ridge_forecaster",
     "validate_subject_ids",
     "velocity_rmse",
+    "write_split_manifest_json",
     "write_v0_result_json",
 ]
