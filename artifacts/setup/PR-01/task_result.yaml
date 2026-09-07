@@ -7,23 +7,25 @@ fail_type:
   - data issue
 
 implemented:
-  - performed fail-closed preflight before any Primary outer-test execution
+  - reran fail-closed Primary preflight after Scientific Freeze schema v6 and I4 revalidation
   - reused the PASSed I4 Scientific Audit gate and existing Primary contracts; no duplicate runner or estimator implementation was added
-  - verified that no Primary Full Run has been started with unfrozen settings
+  - confirmed matched-sparsity repeat_count and Primary bootstrap settings are now pre-frozen and deterministic
+  - verified that no Primary Full Run has been started with the remaining unfrozen data/topology-dependent settings
   - verified that Sensitivity remains unexecuted and separated from the Primary artifact root
 
 files_changed:
   - artifacts/setup/PR-01/task_result.yaml
 
 tests:
-  upstream_i4_workflow_run_id: 34167363858
-  upstream_i4_head_sha: b216ab72e7a752418981a1831394653955029de8
-  upstream_i4_result: success
-  latest_verified_suite_before_pr_preflight: 676 passed, 1 warning
+  upstream_i4_revalidation_workflow_run_id: 34167875376
+  upstream_i4_revalidation_job_id: 101882418201
+  upstream_i4_revalidation_head_sha: f306c965b3209fe55adb9fbee079aa91a58f027a
+  upstream_i4_revalidation_result: 681 passed, 1 warning in 6.32s
   execution_test: not_run
-  reason: fail-closed before scientific state or outer-test evaluation because required Primary inputs/settings are not fully frozen
+  reason: fail-closed before scientific state or outer-test evaluation because required real-data Primary protocol inputs remain unfrozen/unavailable
 
 scientific_checks:
+  scientific_freeze_schema_v6: PASS
   primary_pcmci_plus_parcorr_ridge_h1: PASS
   tau_max_10: PASS
   pc_alpha_0_01: PASS
@@ -33,37 +35,50 @@ scientific_checks:
   lag_response_rule_frozen: PASS
   ridge_lambda_candidate_grid_frozen: PASS
   interpolation_none_policy: PASS
+  matched_sparsity_repeat_count_frozen: PASS
+  matched_sparsity_repeat_count: 100
+  matched_sparsity_seed_source: split_manifest_seed
+  bootstrap_n_resamples_and_interval_method_frozen_before_results: PASS
+  bootstrap_n_resamples: 10000
+  bootstrap_interval_method: percentile
+  bootstrap_confidence_level: 0.95
+  bootstrap_seed_source: experiment_seed
   exact_outer_split_strategy_frozen: FAIL
   exact_region_landmark_mapping_frozen: FAIL
   translation_reference_indices_frozen: FAIL
   scale_reference_pair_frozen: FAIL
   rotation_reference_pair_and_axes_frozen: FAIL
   primary_motion_feature_displacement_or_velocity_frozen: FAIL
-  matched_sparsity_repeat_count_frozen: FAIL
-  bootstrap_n_resamples_and_interval_method_frozen_before_results: FAIL
   primary_dataset_available_to_runner: FAIL
   sensitivity_contamination: PASS
 
 root_cause:
-  - configs/primary_run.yaml currently records experiment identity, scientific config path, artifact root, and seed only; it does not bind the concrete preprocessing/split/Null/statistical choices required for an immutable real-data Primary protocol
   - both LOSO and grouped K-fold implementations exist, but no single Primary outer-split strategy/fold count is selected in the current machine-readable configs
   - RegionDefinition is intentionally generic and requires an explicit landmark-index mapping; no concrete Primary mapping is present in the current configs
   - translation/scale/rotation normalization APIs intentionally require explicit anatomical reference indices/pairs/axes and no Primary values are present in the current configs
   - displacement and velocity are both implemented, but no machine-readable Primary feature choice is present
-  - F-33 intentionally has no scientific default for matched-sparsity repeat_count
-  - G-04 intentionally has no scientific defaults for bootstrap n_resamples or interval method
-  - the repository root contains no Primary dataset/data manifest, so all outer folds cannot currently be materialized for execution
+  - the repository contains no immutable Primary subject/data manifest from which all outer folds can be materialized
+  - these remaining values are data/topology-dependent scientific protocol choices and cannot be inferred safely from generic implementation code
+
+resolved_since_initial_preflight:
+  - matched-sparsity repeat_count fixed at 100 before Primary evaluation
+  - matched-sparsity seed source fixed to SplitManifest.seed
+  - matched-sparsity repeat aggregation fixed to median error across repeats per subject-region
+  - Primary paired statistics fixed to subject-level median aggregation
+  - 95% percentile bootstrap fixed at n_resamples=10000 using experiment seed
+  - I4 revalidated under Scientific Freeze schema v6
 
 minimal_fix_required_before_retry:
-  - extend the machine-readable Primary freeze/run configuration with explicitly predeclared outer split strategy/fold count
-  - add the exact landmark-to-region mapping and normalization reference indices/pairs/axes
-  - select one Primary motion feature representation and encode it in config
-  - freeze matched-sparsity repeat_count
-  - freeze bootstrap n_resamples and interval method before observing Primary results
-  - provide or reference the immutable Primary subject/data manifest without placing outcome-driven choices in the config
-  - add schema/loader validation and tests that reject omission or drift of these values
+  - select and encode the exact Primary outer split strategy and any fold-count/inner-split parameters that are not implied by LOSO
+  - add the exact landmark-to-region mapping
+  - add translation reference indices, scale reference pair, and rotation reference pair/coordinate axes
+  - select one Primary motion feature representation: displacement or velocity
+  - provide or reference an immutable Primary subject/data manifest without outcome-driven choices
+  - add schema/loader validation and tests that reject omission or drift of these data/topology-dependent values
 
-scientific_specification_changed: false
+scientific_specification_changed: true
+scientific_specification_change_scope:
+  - schema v5 -> v6 added only pre-result matched-sparsity/statistical freeze values; Primary discovery/forecast/split-unit/leakage/lag-response definitions are unchanged
 outer_test_accessed: false
 primary_results_generated: false
 sensitivity_executed: false
@@ -71,8 +86,9 @@ sensitivity_executed: false
 artifacts:
   - artifacts/setup/PR-01/task_result.yaml
   - artifacts/setup/I4/task_result.yaml
+  - artifacts/setup/P0A-M06/task_result.yaml
 
 remaining_issue:
-  - Primary Full Run is blocked until all values above are explicitly frozen and the Primary data manifest is available
+  - Primary Full Run is blocked until the remaining real-data protocol values above are explicitly frozen and the immutable Primary data manifest is available
 
 next_task: null
