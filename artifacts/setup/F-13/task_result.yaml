@@ -1,51 +1,66 @@
 task_id: F-13
 task_name: Lag-response grid
-status: PASS
+status: FAIL
+fail_type: scientific specification conflict
+audit_type: post_implementation_scientific_audit
 
-implemented:
-  - derives the exhaustive common integer lag-shift grid from the frozen ParentSet and Primary lag domain 1..10
-  - preserves delta=0 as the unmodified PCMCI center rather than encoding it as a NullMapping
-  - constructs every non-zero feasible point through the validated F-10/F-11 lag-shift path
-  - does not introduce an arbitrary hand-picked delta list absent from the research freeze
-  - empty ParentSet yields only the unmodified center because no lag-specific falsification exists
-
-files_changed:
-  - src/lagged_facial_graph_forecasting/null_lag_response.py
-  - tests/test_null_lag_response.py
-  - artifacts/setup/F-13/task_result.yaml
-
-files_reused:
-  - src/lagged_facial_graph_forecasting/null_lag_shift.py
-  - src/lagged_facial_graph_forecasting/pcmci_lagged_filter.py
-  - src/lagged_facial_graph_forecasting/pcmci_tau_max.py
-  - src/lagged_facial_graph_forecasting/leakage_guard.py
-
-tests:
+implementation_status:
+  code: PASS
+  tests: PASS
   workflow: tests
   run_id: 34163013027
   job_id: 101868505374
   head_sha: 88bc26206f0b8685306706b7a526fcc6a344b367
-  conclusion: success
-  targeted_checks:
-    - exhaustive feasible common-shift interval
-    - delta=0 PCMCI center retained
-    - every non-zero grid point preserves feature count and region/component identity
-    - every mapped lag remains in 1..10
-    - boundary-limited grid is deterministic rather than clipped or performance-selected
-    - empty ParentSet handling
-    - outer-test construction scope fails closed
+  result: 544 passed, 1 warning in 5.12s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-13
+
+implemented:
+  - derives an exhaustive common integer lag-shift interval from the frozen ParentSet and Primary lag domain 1..10
+  - preserves delta=0 as the unmodified PCMCI center
+  - constructs non-zero feasible points through the validated F-10/F-11 lag-shift path
+  - rejects outer-test construction scope
+
+scientific_failure:
+  - the current machine-readable Scientific Freeze does not define the Primary lag-response delta set or an explicit boundary/evaluability rule for lag-response curves
+  - the implementation therefore introduces a new scientific Null-generation policy, exhaustive feasible common shift, in code rather than in the Scientific Freeze
+  - the research plan requires a lag-response curve with multiple positive and negative shifts around delta=0, but the implementation explicitly permits one-sided grids such as delta=(0,+1) when ParentSet lags are {1,9}
+  - a ParentSet spanning both frozen boundaries can yield delta=(0) only, so the implemented rule can eliminate lag falsification entirely for a target while still reporting F-13 as complete
+  - fold/target-specific feasible intervals also change the evaluated delta support as a function of discovered ParentSet extrema; this may be scientifically valid only if explicitly predeclared as the Primary estimand and aggregation/evaluability rule
+
+root_cause:
+  - Primary lag-response grid semantics were not fully frozen before F-13 implementation
+
+minimal_fix_required:
+  - freeze a machine-readable Primary lag-response rule before outer-test use
+  - the rule must state the delta support or deterministic derivation rule, boundary behavior, bilateral-shift requirement or explicit unevaluable-case policy, and cross-fold/target aggregation semantics
+  - preserve source region, component identity, feature count, and h=1/tau_max=10 constraints
+  - forbid outer-test/result-driven choice of deltas or boundary handling
+  - migrate scientific_freeze config/schema/loader/tests with reason, impact scope, migration rule, and regression tests
+  - re-run F-13 targeted and full regression tests after the scientific rule is frozen
+
+files_reviewed:
+  - configs/scientific_freeze.yaml
+  - configs/primary_run.yaml
+  - src/lagged_facial_graph_forecasting/null_lag_response.py
+  - tests/test_null_lag_response.py
+  - artifacts/setup/F-13/task_result.yaml
 
 scientific_checks:
-  - grid depends only on outer-train-frozen ParentSet plus already-frozen h=1/tau_max=10 constraints
-  - no outer-test prediction or metric can influence grid membership
-  - no arbitrary new Primary delta list is introduced
-  - lag-response remains a curve around the original PCMCI setting whenever both directions are feasible
-  - no Sensitivity surrogate is introduced
+  outer_test_leakage: PASS
+  deterministic_given_parent_set: PASS
+  region_component_feature_count_preservation: PASS
+  sensitivity_contamination: PASS
+  primary_null_rule_pre_frozen: FAIL
+  required_bilateral_multiple_shift_semantics: FAIL
 
 artifacts:
   - artifacts/setup/F-13/task_result.yaml
 
 remaining_issue:
-  - none
+  - Primary lag-response delta/boundary/evaluability semantics require Scientific Freeze resolution
 
-next_task: F-20
+downstream_status:
+  - F-20 and later commits may exist in dev due to concurrent execution, but they are not sequentially accepted while F-13 is FAIL
+  - do not proceed to F-20, I3, or later phases until F-13 is scientifically resolved and re-PASSed
+
+next_task: none
