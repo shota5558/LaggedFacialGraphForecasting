@@ -1,0 +1,71 @@
+task_id: E
+task_name: Ridge Forecaster lane gate
+status: PASS
+
+implemented:
+  - E-00 estimator wrapper uses scikit-learn Ridge
+  - E-01 StandardScaler and Ridge are fitted as one pipeline
+  - E-02 deterministic positive alpha grid is frozen
+  - E-03 inner CV fits scaler and Ridge on inner-train only and evaluates inner-val without refitting
+  - E-04 inner-fold RMSE is aggregated with an equal-weight fold mean
+  - E-05 alpha selection minimizes aggregated RMSE with deterministic smallest-alpha tie breaking
+  - E-06 selected alpha is frozen before one scaler plus Ridge refit on complete outer-train
+  - E-07 prediction preserves DesignMatrix provenance and rejects feature-name or lag drift
+  - E-08 coefficient export records alpha, feature names, lags, coefficients, intercepts, and standardized feature-space semantics
+  - E-09 deterministic regression covers tuning through prediction and coefficient export
+  - E-10 empty inter-regional ParentSet falls back exactly to the Self-history DesignMatrix without data-dependent substitution
+
+files_changed:
+  - artifacts/setup/E/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/forecaster.py
+  - src/lagged_facial_graph_forecasting/ridge_tuning.py
+  - src/lagged_facial_graph_forecasting/ridge_refit.py
+  - src/lagged_facial_graph_forecasting/ridge_coefficients.py
+  - tests/test_ridge_alpha_grid.py
+  - tests/test_ridge_inner_cv.py
+  - tests/test_ridge_score_aggregation.py
+  - tests/test_ridge_alpha_selection.py
+  - tests/test_ridge_frozen_refit.py
+  - tests/test_ridge_forecaster_prediction.py
+  - tests/test_ridge_coefficient_export.py
+  - tests/test_ridge_determinism.py
+  - tests/test_ridge_empty_parent.py
+
+tests:
+  workflow: tests
+  final_lane_run_id: 34149857891
+  final_lane_head_sha: 355721042b1bfd01ce51354978d0d9c574521576
+  final_lane_result: success
+  regression_audit:
+    - later commits through the pre-gate dev audit did not modify Ridge source or Ridge tests
+    - dedicated task evidence exists for E-00 through E-10
+
+scientific_checks:
+  - no outer-test subject may enter Ridge tuning or frozen refit
+  - forbidden outer-train-wide scaler fit before inner CV is not used
+  - scaler and Ridge share the same inner-train fit scope within each inner fold
+  - lambda is selected from outer-train inner-validation scores only
+  - selected lambda is frozen before complete outer-train refit
+  - estimator family is scikit-learn Ridge for all Primary conditions
+  - feature and lag provenance remain frozen across fit and prediction
+  - no GPDC, LPCMCI, h>1, GRU, or other Sensitivity path is introduced
+  - no Ridge optimizer is reimplemented
+
+artifacts:
+  - artifacts/setup/E-00/task_result.yaml
+  - artifacts/setup/E-01/task_result.yaml
+  - artifacts/setup/E-02/task_result.yaml
+  - artifacts/setup/E-03/task_result.yaml
+  - artifacts/setup/E-04/task_result.yaml
+  - artifacts/setup/E-05/task_result.yaml
+  - artifacts/setup/E-06/task_result.yaml
+  - artifacts/setup/E-07/task_result.yaml
+  - artifacts/setup/E-08/task_result.yaml
+  - artifacts/setup/E-09/task_result.yaml
+  - artifacts/setup/E-10/task_result.yaml
+  - artifacts/setup/E/task_result.yaml
+
+remaining_issue: none
+next_task: H-00
