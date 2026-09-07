@@ -1,6 +1,7 @@
 task_id: P0B
 task_name: Minimal Contracts Gate
 status: PASS
+audit_type: existing_implementation_revalidation
 
 contracts:
   P0B-01: FaceTimeSeries
@@ -15,22 +16,38 @@ contract_artifacts:
   - artifacts/setup/P0B-04/task_result.yaml
 
 tests:
-  workflow: tests
-  run_id: 34144591208
-  job_id: 101813742370
-  head_sha: 08360cdb2598ae7ba262371d02f9845aa73f118a
+  workflow: p0b-contract-audit
+  run_id: 34158938838
+  job_id: 101856505968
+  head_sha: b6beb23a5acec52a874faad02d960781dbd5cc7e
   python: 3.11.16
-  result: 59 passed in 0.27s
+  result: 43 passed in 1.38s
+  scope:
+    - tests/test_face_time_series.py
+    - tests/test_split_manifest.py
+    - tests/test_design_matrix.py
+    - tests/test_prediction_artifact.py
+  note: temporary audit workflow removed after successful targeted execution
 
 scientific_checks:
+  - FaceTimeSeries preserves the canonical T x K x D representation and dimension labels
   - subject identity is explicit from raw time series through design/prediction artifacts
   - outer train/test separation is structurally represented by SplitManifest
   - inner folds cannot contain outer-test subjects
   - feature identity and lag provenance are explicit
+  - target-dimension provenance is explicit for DesignMatrix and PredictionArtifact
   - forecast origin and target time are explicit and ordered
   - missingness is represented by validated masks
   - no PCMCI+, Ridge tuning, Null construction, or Sensitivity execution was introduced by the contracts
   - Primary scientific freeze remains unchanged
+
+migration_revalidation:
+  issue: DesignMatrix and PredictionArtifact gained required target_dimensions after the original P0B gate
+  classification: contract mismatch in stale P0B test fixtures
+  minimal_fix:
+    - tests/test_design_matrix.py updated for target_dimensions
+    - tests/test_prediction_artifact.py updated for target_dimensions
+  result: PASS
 
 remaining_issue: none
 next_task: V0-01
