@@ -52,12 +52,16 @@ class ArtifactRegistry:
         outer_fold: int | None = None,
         condition: str | None = None,
     ) -> ExperimentArtifact:
-        """Hash and register an existing file under the configured artifact root."""
+        """Hash and register an existing completed file under the artifact root."""
 
         candidate = Path(path)
         if not candidate.is_absolute():
             candidate = self.repository_root / candidate
         candidate = _resolve_inside(candidate, self._artifact_root, "artifact path")
+        if candidate.name.endswith(".partial"):
+            raise ArtifactRegistryError(
+                "incomplete staging artifacts must not be registered"
+            )
         if not candidate.is_file():
             raise ArtifactRegistryError(f"artifact file not found: {candidate}")
 
