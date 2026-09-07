@@ -1,0 +1,51 @@
+task_id: F-13
+task_name: Lag-response grid
+status: PASS
+
+implemented:
+  - derives the exhaustive common integer lag-shift grid from the frozen ParentSet and Primary lag domain 1..10
+  - preserves delta=0 as the unmodified PCMCI center rather than encoding it as a NullMapping
+  - constructs every non-zero feasible point through the validated F-10/F-11 lag-shift path
+  - does not introduce an arbitrary hand-picked delta list absent from the research freeze
+  - empty ParentSet yields only the unmodified center because no lag-specific falsification exists
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/null_lag_response.py
+  - tests/test_null_lag_response.py
+  - artifacts/setup/F-13/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/null_lag_shift.py
+  - src/lagged_facial_graph_forecasting/pcmci_lagged_filter.py
+  - src/lagged_facial_graph_forecasting/pcmci_tau_max.py
+  - src/lagged_facial_graph_forecasting/leakage_guard.py
+
+tests:
+  workflow: tests
+  run_id: 34163013027
+  job_id: 101868505374
+  head_sha: 88bc26206f0b8685306706b7a526fcc6a344b367
+  conclusion: success
+  targeted_checks:
+    - exhaustive feasible common-shift interval
+    - delta=0 PCMCI center retained
+    - every non-zero grid point preserves feature count and region/component identity
+    - every mapped lag remains in 1..10
+    - boundary-limited grid is deterministic rather than clipped or performance-selected
+    - empty ParentSet handling
+    - outer-test construction scope fails closed
+
+scientific_checks:
+  - grid depends only on outer-train-frozen ParentSet plus already-frozen h=1/tau_max=10 constraints
+  - no outer-test prediction or metric can influence grid membership
+  - no arbitrary new Primary delta list is introduced
+  - lag-response remains a curve around the original PCMCI setting whenever both directions are feasible
+  - no Sensitivity surrogate is introduced
+
+artifacts:
+  - artifacts/setup/F-13/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-20
