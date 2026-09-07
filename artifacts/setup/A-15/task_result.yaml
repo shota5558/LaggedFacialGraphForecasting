@@ -8,11 +8,13 @@ implemented:
   - confirmed serialization preserves X, subject_id, time_index, region_id, dimension, valid_mask, sampling_rate, dtype, and shape
   - confirmed A-14 assembled sequences round-trip with invalid/missing observations preserved under valid_mask
   - confirmed deserialization reconstructs the canonical FaceTimeSeries contract with strict field/version validation
-  - removed the parallel duplicate A-15 regression test; one canonical FaceTimeSeries serialization test remains
+  - removed both parallel duplicate A-15 regression paths so tests/test_face_time_series_serialization.py is the single task-specific canonical regression test
   - no new serialization algorithm or parallel wire format was introduced
 
 files_changed:
   - tests/test_face_time_series_serialization.py
+  - tests/test_subject_sequence_serialization.py (removed duplicate)
+  - tests/test_preprocessed_sequence_serialization.py (removed duplicate)
   - artifacts/setup/A-15/task_result.yaml
 
 reused_files:
@@ -22,15 +24,16 @@ reused_files:
 
 source_commits:
   specific_round_trip_test: 6119f46be056e1b336416fd85db8feed85002e4f
-  preprocessed_sequence_validation: a5026a52ed0fcf1852132a6aac9d14672efb14d7
-  duplicate_test_removal: 70c5e12634d7e4a022bbe2946db229a83f799338
+  first_duplicate_test_removal: 70c5e12634d7e4a022bbe2946db229a83f799338
+  remaining_duplicate_test_removal: 7cb90089945d1ca31927a6b7085edd1cf55e7165
 
 tests:
   workflow: tests
-  run_id: 34153804344
-  job_id: 101841325896
-  head_sha: 70c5e12634d7e4a022bbe2946db229a83f799338
+  run_id: 34154049803
+  job_id: 101842057232
+  head_sha: 7cb90089945d1ca31927a6b7085edd1cf55e7165
   result: success
+  suite_result: 377 passed in 2.29s
   cases:
     - A-14 FaceTimeSeries round-trip preserves missingness and provenance
     - serialization is deterministic for the same canonical contract
