@@ -28,6 +28,7 @@ from .forecaster import (
 from .leakage_guard import (
     LeakageGuardError,
     assert_discovery_fit_scope,
+    assert_null_construction_scope,
     assert_preprocessing_fit_scope,
     assert_ridge_tuning_scope,
 )
@@ -81,6 +82,7 @@ __all__ = [
     "SubjectMetadataValidationError",
     "aligned_indices",
     "assert_discovery_fit_scope",
+    "assert_null_construction_scope",
     "assert_preprocessing_fit_scope",
     "assert_ridge_tuning_scope",
     "build_grouped_kfold_split_manifests",
