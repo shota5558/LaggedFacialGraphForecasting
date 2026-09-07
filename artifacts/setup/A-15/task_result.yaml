@@ -1,0 +1,46 @@
+task_id: A-15
+task_name: Serialization
+status: PASS
+
+implemented:
+  - reused the existing schema-versioned core_contract_io serialization path instead of adding a second FaceTimeSeries serializer
+  - confirmed FaceTimeSeries is a canonical core contract in the v1 registry
+  - confirmed serialization preserves X, subject_id, time_index, region_id, dimension, valid_mask, sampling_rate, dtype, and shape
+  - confirmed deserialization reconstructs the canonical FaceTimeSeries contract with strict field/version validation
+  - no new serialization algorithm or parallel wire format was introduced
+
+files_changed:
+  - artifacts/setup/A-15/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/core_contract_io.py
+  - tests/test_core_contract_io.py
+  - schemas/core_contracts_v1.yaml
+
+tests:
+  workflow: tests
+  run_id: 34153654983
+  job_id: 101840878860
+  head_sha: 6245d58ad218d67edd99afe7847b04a84d1f4251
+  result: success
+  python: 3.11.16
+  suite_result: 371 passed in 2.24s
+  cases:
+    - FaceTimeSeries participates in deterministic JSON round-trip for all canonical core contracts
+    - round-trip preserves contract type and serialized payload deterministically
+    - backward and forward schema-version drift is rejected
+    - unknown contract types and payload extensions/missing fields are rejected
+
+scientific_checks:
+  - serialization is metadata-preserving only and performs no preprocessing fit, discovery, tuning, feature selection, lag selection, or Null construction
+  - no subject mixing or outer-test-dependent transformation is introduced
+  - valid_mask and temporal/region/dimension provenance are serialized explicitly
+  - schema_version=1 remains the frozen core-contract version
+  - Primary scientific freeze remains PCMCI+ + ParCorr + Ridge, h=1
+  - no Sensitivity execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-15/task_result.yaml
+
+remaining_issue: none
+next_task: A-16
