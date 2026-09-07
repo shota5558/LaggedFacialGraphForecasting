@@ -1,66 +1,98 @@
 task_id: F-13
 task_name: Lag-response grid
-status: FAIL
-fail_type: scientific specification conflict
-audit_type: post_implementation_scientific_audit
+status: PASS
 
 implementation_status:
   code: PASS
   tests: PASS
   workflow: tests
-  run_id: 34163013027
-  job_id: 101868505374
-  head_sha: 88bc26206f0b8685306706b7a526fcc6a344b367
-  result: 544 passed, 1 warning in 5.12s
+  run_id: 34163878158
+  job_id: 101870981293
+  head_sha: d5dee1534eac31a4cf2bc7993b9a09e92395e83a
+  result: 555 passed, 1 warning in 4.57s
   warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-13
 
+scientific_freeze_migration:
+  from_schema_version: 4
+  to_schema_version: 5
+  reason: Primary lag-response delta, boundary, evaluability, and aggregation-support semantics were previously unspecified, which allowed target/fold-dependent one-sided or center-only grids.
+  impact_scope:
+    - configs/scientific_freeze.yaml
+    - schemas/scientific_freeze.schema.json
+    - src/lagged_facial_graph_forecasting/scientific_config.py
+    - src/lagged_facial_graph_forecasting/null_lag_response.py
+    - tests/test_scientific_config.py
+    - tests/test_null_lag_response.py
+  migration_rule: All Primary lag-response construction must use the frozen symmetric grid and mark a target-fold unevaluable rather than clip, wrap, drop features, or emit a one-sided grid.
+
 implemented:
-  - derives an exhaustive common integer lag-shift interval from the frozen ParentSet and Primary lag domain 1..10
-  - preserves delta=0 as the unmodified PCMCI center
-  - constructs non-zero feasible points through the validated F-10/F-11 lag-shift path
-  - rejects outer-test construction scope
+  - freezes delta_frames to [-2, -1, 0, 1, 2] with reference_delta=0
+  - freezes shift_mode=common_shift_all_selected_parents
+  - freezes valid lag domain to 1..10, consistent with h=1 and tau_max=10
+  - forbids clipping, wrapping, feature dropping, and one-sided grids
+  - marks the entire target-fold unevaluable when any required delta would leave lag domain 1..10
+  - marks an empty ParentSet as unevaluable_no_parents
+  - emits no partial grid for unevaluable target-folds
+  - preserves source region, source component, target component, feature count, and common delta for every evaluable non-zero grid point
+  - freezes aggregation support to complete_grid_target_folds_only, same units across all deltas, with unevaluable counts reported
+  - keeps cross-fold lag-response aggregation implementation deferred to G-17; no downstream statistics code was implemented early
+  - retains outer-train-only Null construction guard; no predictions, metrics, or outer-test outcomes enter grid construction
 
-scientific_failure:
-  - the current machine-readable Scientific Freeze does not define the Primary lag-response delta set or an explicit boundary/evaluability rule for lag-response curves
-  - the implementation therefore introduces a new scientific Null-generation policy, exhaustive feasible common shift, in code rather than in the Scientific Freeze
-  - the research plan requires a lag-response curve with multiple positive and negative shifts around delta=0, but the implementation explicitly permits one-sided grids such as delta=(0,+1) when ParentSet lags are {1,9}
-  - a ParentSet spanning both frozen boundaries can yield delta=(0) only, so the implemented rule can eliminate lag falsification entirely for a target while still reporting F-13 as complete
-  - fold/target-specific feasible intervals also change the evaluated delta support as a function of discovered ParentSet extrema; this may be scientifically valid only if explicitly predeclared as the Primary estimand and aggregation/evaluability rule
-
-root_cause:
-  - Primary lag-response grid semantics were not fully frozen before F-13 implementation
-
-minimal_fix_required:
-  - freeze a machine-readable Primary lag-response rule before outer-test use
-  - the rule must state the delta support or deterministic derivation rule, boundary behavior, bilateral-shift requirement or explicit unevaluable-case policy, and cross-fold/target aggregation semantics
-  - preserve source region, component identity, feature count, and h=1/tau_max=10 constraints
-  - forbid outer-test/result-driven choice of deltas or boundary handling
-  - migrate scientific_freeze config/schema/loader/tests with reason, impact scope, migration rule, and regression tests
-  - re-run F-13 targeted and full regression tests after the scientific rule is frozen
-
-files_reviewed:
+files_changed:
   - configs/scientific_freeze.yaml
-  - configs/primary_run.yaml
+  - schemas/scientific_freeze.schema.json
+  - src/lagged_facial_graph_forecasting/scientific_config.py
   - src/lagged_facial_graph_forecasting/null_lag_response.py
+  - tests/test_scientific_config.py
   - tests/test_null_lag_response.py
   - artifacts/setup/F-13/task_result.yaml
 
+tests:
+  targeted_contracts:
+    - complete fixed symmetric grid [-2, -1, 0, 1, 2]
+    - common shift preserves region/component/feature count
+    - boundary violation marks whole target-fold unevaluable
+    - one-sided and feature-dropped partial grids are not emitted
+    - empty ParentSet becomes unevaluable_no_parents
+    - outer-test construction scope is rejected
+    - scientific config and JSON schema freeze lag-response semantics
+    - lag-response scientific drift is rejected by strict loader
+  full_regression:
+    result: 555 passed, 1 warning in 4.57s
+    workflow_run_id: 34163878158
+    job_id: 101870981293
+
 scientific_checks:
+  primary_discovery_pcmci_plus: PASS
+  primary_ci_test_parcorr: PASS
+  primary_forecaster_ridge: PASS
+  primary_horizon_h1: PASS
+  tau_max_10_preserved: PASS
+  pc_alpha_0_01_preserved: PASS
   outer_test_leakage: PASS
   deterministic_given_parent_set: PASS
+  common_shift_all_selected_parents: PASS
   region_component_feature_count_preservation: PASS
+  complete_symmetric_grid_required: PASS
+  boundary_policy_mark_target_fold_unevaluable: PASS
+  clipping_forbidden: PASS
+  wrapping_forbidden: PASS
+  feature_dropping_forbidden: PASS
+  one_sided_grid_forbidden: PASS
+  empty_parent_set_unevaluable_no_parents: PASS
+  complete_grid_target_fold_aggregation_support_frozen: PASS
+  same_units_across_all_deltas_frozen: PASS
+  report_unevaluable_counts_frozen: PASS
   sensitivity_contamination: PASS
-  primary_null_rule_pre_frozen: FAIL
-  required_bilateral_multiple_shift_semantics: FAIL
 
 artifacts:
   - artifacts/setup/F-13/task_result.yaml
 
 remaining_issue:
-  - Primary lag-response delta/boundary/evaluability semantics require Scientific Freeze resolution
+  - none
 
 downstream_status:
-  - F-20 and later commits may exist in dev due to concurrent execution, but they are not sequentially accepted while F-13 is FAIL
-  - do not proceed to F-20, I3, or later phases until F-13 is scientifically resolved and re-PASSed
+  - F-20 and F-21 implementations already exist in dev, but they were not sequentially accepted while F-13 was FAIL.
+  - after this F-13 PASS, F-20 is the next task and must be revalidated against the current frozen contract before F-21 or later tasks are accepted.
 
-next_task: none
+next_task: F-20
