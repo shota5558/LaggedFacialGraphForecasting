@@ -26,7 +26,10 @@ from .core_contracts import (
     ParentLink,
     ParentSet,
 )
-from .design_matrix import build_self_history_design_matrix
+from .design_matrix import (
+    build_persistence_design_matrix,
+    build_self_history_design_matrix,
+)
 from .forecaster import (
     FittedRidgeForecaster,
     fit_ridge_forecaster,
@@ -95,6 +98,7 @@ __all__ = [
     "assert_ridge_tuning_scope",
     "build_grouped_kfold_split_manifests",
     "build_loso_split_manifests",
+    "build_persistence_design_matrix",
     "build_self_history_design_matrix",
     "build_split_manifest_payload",
     "build_subject_split_manifest",
