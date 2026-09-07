@@ -1,0 +1,32 @@
+task_id: D-03
+task_name: PCMCI+ config
+status: PASS
+
+implemented:
+  - added a minimal Tigramite PCMCI object factory that binds the D-01 guarded DataFrame to the D-02 frozen ParCorr instance without running discovery
+  - added a versioned static run_pcmciplus configuration that explicitly records non-D-04/D-05 options while leaving tau_max and pc_alpha absent
+  - kept the factory free of tau_max/pc_alpha selection and free of any custom PCMCI+ algorithm
+  - fixed a concurrent factory-test contract mismatch by using the already-frozen D-01 scalar fixture rather than bypassing D-01 with a two-component state
+
+tests:
+  workflow: tests
+  run_id: 34154837074
+  job_id: 101844398532
+  head_sha: 0f7bc2855f70b0dd0fe12f29f0770a81f9f33f1f
+  result: success
+  suite_result: 390 passed in 2.54s
+
+scientific_checks:
+  - PCMCI+ is provided by Tigramite and is not reimplemented
+  - Primary CI remains ParCorr with analytic significance and xyz masking
+  - discovery construction consumes only the D-01 guarded outer-train bundle
+  - tau_max and pc_alpha remain unresolved and are not silently selected in D-03
+  - no discovery run, Ridge tuning, Null construction, outer-test evaluation, or Sensitivity execution occurs
+  - real-data D>1 region-state to scalar-discovery mapping remains explicitly unresolved and fail-closed upstream
+
+artifacts:
+  - artifacts/setup/D-03/task_result.yaml
+
+remaining_issue:
+  - real-data Primary discovery still requires an explicitly frozen one-scalar-per-region motion representation upstream; D-01 rejects D>1 until that mapping is scientifically specified
+next_task: D-04
