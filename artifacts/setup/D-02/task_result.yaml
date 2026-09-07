@@ -1,0 +1,44 @@
+task_id: D-02
+task_name: ParCorr factory
+status: PASS
+
+implemented:
+  - added a minimal factory that returns Tigramite's official ParCorr implementation
+  - explicitly froze Primary significance to analytic rather than relying on an upstream default
+  - explicitly froze mask_type='xyz' so D-01 invalid-observation masks apply when variables appear as X, Y, or conditioning Z
+  - disabled residual recycling and confidence estimation in the Primary factory
+  - factory returns a fresh CI-test instance for each consumer
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/parcorr_factory.py
+  - tests/test_parcorr_factory.py
+  - artifacts/setup/D-02/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34154453345
+  job_id: 101843259815
+  head_sha: 7d67dacd3ffbe602a9acafdc013cec9115b1b396
+  result: success
+  suite_result: 383 passed in 2.30s
+  cases:
+    - factory returns an actual Tigramite ParCorr object
+    - measure is par_corr
+    - significance is analytic
+    - mask_type is xyz
+    - residual recycling is disabled under masking
+    - confidence is disabled
+    - separate calls return fresh unbound instances
+
+scientific_checks:
+  - PCMCI+/ParCorr algorithms are not reimplemented
+  - D-01 masked invalid values cannot silently enter X, Y, or Z samples
+  - no shuffle significance, bootstrap confidence, GPDC, LPCMCI, or other Sensitivity path is introduced
+  - no data, outer-test observations, feature/lag selection, Ridge tuning, or Null mapping is accessed
+  - Primary remains PCMCI+ + ParCorr + Ridge with h=1
+
+artifacts:
+  - artifacts/setup/D-02/task_result.yaml
+
+remaining_issue: none
+next_task: D-03
