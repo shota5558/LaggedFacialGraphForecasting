@@ -1,0 +1,61 @@
+task_id: F-42
+task_name: Deterministic time-shuffle application
+status: PASS
+
+implemented:
+  - applies one common permutation only to PCMCI-added cross-region feature columns
+  - leaves the fixed Self-history feature block unchanged
+  - leaves y, forecast_origin, target_time, subject/region labels, target dimensions, feature provenance, and valid_mask unchanged
+  - permutes only within valid_mask=True rows so missingness support and compared sample count are invariant
+  - leaves invalid rows untouched as neither donors nor recipients
+  - validates cross-region DesignMatrix provenance against mapped ParentLinks for the scalar target component
+  - rejects cross-subject application and requires one scalar target-component matrix
+  - rejects identity, malformed, or valid-support-length-mismatched permutations
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/null_time_shuffle.py
+  - tests/test_null_time_shuffle_application.py
+  - artifacts/setup/F-42/task_result.yaml
+
+implementation_commits:
+  - sha: b9c304f5bdc1cbac6ef4febbc62b74ce0e00cbed
+    message: F-42: apply time shuffle to PCMCI added features
+  - sha: b1d3fcbc4c3e5a985d3dba1fc9d42971960e7475
+    message: F-42: test deterministic time-shuffle application
+
+tests:
+  workflow: tests
+  run_id: 34165293128
+  job_id: 101875028087
+  head_sha: b1d3fcbc4c3e5a985d3dba1fc9d42971960e7475
+  result: 619 passed, 1 warning in 5.72s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-42
+  targeted_checks:
+    - only cross-region PCMCI-added columns are permuted
+    - Self-history columns remain exactly unchanged
+    - y and all row provenance remain exactly unchanged
+    - invalid rows remain untouched and valid_mask is invariant
+    - deterministic same-input/same-permutation application
+    - ParentSet/DesignMatrix provenance mismatch fails closed
+    - cross-subject permutation fails closed
+    - target-region mismatch fails closed
+    - invalid permutation length/content/identity fails closed
+    - fewer than two valid rows fails closed
+    - multioutput target matrix fails closed
+
+scientific_checks:
+  self_baseline_block_preserved: PASS
+  target_and_row_alignment_preserved: PASS
+  valid_sample_support_preserved: PASS
+  within_subject_only: PASS
+  pcmci_region_lag_component_provenance_preserved: PASS
+  temporal_alignment_destroyed_only_for_added_cross_region_information: PASS
+  sensitivity_surrogate_contamination: PASS
+
+artifacts:
+  - artifacts/setup/F-42/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-50
