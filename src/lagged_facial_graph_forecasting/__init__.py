@@ -28,6 +28,7 @@ from .core_contracts import (
 )
 from .design_matrix import (
     build_full_history_design_matrix,
+    build_pcmci_parent_design_matrix,
     build_persistence_design_matrix,
     build_self_history_design_matrix,
 )
@@ -100,6 +101,7 @@ __all__ = [
     "build_full_history_design_matrix",
     "build_grouped_kfold_split_manifests",
     "build_loso_split_manifests",
+    "build_pcmci_parent_design_matrix",
     "build_persistence_design_matrix",
     "build_self_history_design_matrix",
     "build_split_manifest_payload",
