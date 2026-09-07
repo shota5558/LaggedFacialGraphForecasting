@@ -3,39 +3,45 @@ task_name: Config loader
 status: PASS
 
 implemented:
-  - reused the strict P0A scientific configuration loader; no duplicate runtime parser was added
-  - MinimalFoldRunner loads and validates the scientific freeze during construction before any fold work can start
-  - missing scientific config prevents runner construction
-  - scientific drift such as Primary horizon changes prevents runner construction
+  - added one canonical Primary runtime config loader in runner_config.py
+  - runtime config is materialized as the frozen ExperimentConfig contract
+  - runner config delegates scientific validation to the strict P0A scientific loader instead of redefining Primary settings
+  - canonical configs/primary_run.yaml records experiment identity, scientific config path, self path, Primary artifact root, and seed
+  - removed the duplicate run_config.py implementation before PASS
 
 files_changed:
+  - src/lagged_facial_graph_forecasting/runner_config.py
+  - configs/primary_run.yaml
+  - tests/test_runner_config.py
   - artifacts/setup/H-00/task_result.yaml
 
 reused_files:
   - src/lagged_facial_graph_forecasting/scientific_config.py
-  - src/lagged_facial_graph_forecasting/runner.py
-  - tests/test_minimal_fold_runner.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
 
 tests:
   workflow: tests
-  run_id: 34149857891
-  job_id: 101829669707
-  head_sha: 355721042b1bfd01ce51354978d0d9c574521576
+  run_id: 34150131853
+  job_id: 101830488594
+  head_sha: c39f89d74359cb7b1789ceaacd35b6004fdc7fb0
   result: success
-  suite_result: 229 passed
+  suite_result: 233 passed
   cases:
-    - runner starts with the canonical frozen scientific config
-    - missing scientific config is rejected before fold execution
-    - altered Primary horizon is rejected before fold execution
+    - canonical Primary run descriptor loads as ExperimentConfig
+    - sensitivity artifact root is rejected
+    - modified scientific freeze is rejected
+    - run_config_path must identify the loaded descriptor exactly
 
 scientific_checks:
+  - P0A scientific freeze remains authoritative
   - Primary remains pcmci_plus + parcorr + ridge with h=1
-  - subject-level outer-test final-evaluation-only policy remains machine-readable and strictly validated
-  - preprocessing/discovery/ridge tuning/null mapping/feature and lag selection remain outer-train only
-  - Primary and Sensitivity artifact roots remain separate
+  - runtime config cannot redirect Primary output to the Sensitivity artifact root
+  - seed and config provenance are explicit and machine-readable
+  - duplicate runtime loader was removed before PASS
   - no Sensitivity execution path is introduced
 
 artifacts:
+  - configs/primary_run.yaml
   - artifacts/setup/H-00/task_result.yaml
 
 remaining_issue: none
