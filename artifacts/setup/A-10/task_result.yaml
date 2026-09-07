@@ -1,0 +1,30 @@
+task_id: A-10
+task_name: Optional acceleration
+status: PASS
+
+disposition: intentionally_deferred_non_blocking
+
+implemented:
+  - no acceleration feature was added to the Primary preprocessing path
+  - recorded the research-plan decision that acceleration is optional and is not a Primary execution blocker
+  - preserved A-09 velocity as the highest-order required Primary motion feature at this stage
+
+files_changed:
+  - artifacts/setup/A-10/task_result.yaml
+
+tests:
+  regression_suite_source: A-09 evidence commit 70481339bf1e7710067dea533e35871579616833
+  regression_result: success
+  note: no new executable acceleration behavior was introduced, so no acceleration unit test is applicable at this stage
+
+scientific_checks:
+  - consistent with the frozen plan: acceleration is optional and advanced acceleration metrics are not Primary blockers
+  - avoids expanding the Primary estimand or feature semantics without a pre-frozen need
+  - no preprocessing fit, outer-test-dependent selection, PCMCI+, Null, Sensitivity, or h>1 path is introduced
+  - future acceleration support, if scientifically required, must be additive and must not retroactively change frozen Primary results
+
+artifacts:
+  - artifacts/setup/A-10/task_result.yaml
+
+remaining_issue: none
+next_task: A-11
