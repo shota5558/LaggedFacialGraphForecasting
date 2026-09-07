@@ -1,4 +1,4 @@
-"""Design-matrix builders for the V0 vertical slice."""
+"""Design-matrix builders for frozen Primary forecasting conditions."""
 
 from __future__ import annotations
 
@@ -86,4 +86,27 @@ def build_self_history_design_matrix(
         feature_names=tuple(feature_names),
         feature_lags=tuple(feature_lags),
         valid_mask=valid_mask.astype(bool, copy=False),
+    )
+
+
+def build_persistence_design_matrix(
+    series: FaceTimeSeries,
+    *,
+    target_region: str,
+    horizon: int = 1,
+) -> DesignMatrix:
+    """Build the frozen Persistence condition: current target-region value only.
+
+    With Primary ``h=1``, the value available at forecast origin ``t`` is the
+    target-relative lag-1 value for target ``t+1``.  Persistence therefore uses
+    exactly the target region's dimensions at lag 1 and no other region/history.
+    The returned matrix remains compatible with the common Ridge pipeline so that
+    conditions differ by input information rather than estimator implementation.
+    """
+
+    return build_self_history_design_matrix(
+        series,
+        target_region=target_region,
+        lags=(1,),
+        horizon=horizon,
     )
