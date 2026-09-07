@@ -1,62 +1,55 @@
 task_id: D-01
 task_name: Tigramite dataframe converter
-status: PASS
+status: FAIL
+
+fail_type:
+  - scientific specification conflict
+  - contract mismatch
 
 implemented:
-  - added a converter from canonical FaceTimeSeries sequences to Tigramite DataFrame
-  - requires the canonical SplitManifest and reuses assert_discovery_fit_scope before DataFrame construction
-  - rejects outer-test and otherwise out-of-scope subject IDs at the discovery-facing conversion boundary
-  - preserves subjects as separate datasets in analysis_mode='multiple' rather than concatenating subject boundaries
-  - preserves each subject's original time_index as Tigramite datatime and carries the common sampling_rate for later frame-to-time lag provenance
-  - exposes exactly one scalar discovery variable per facial region, matching Primary ParCorr and the frozen region-only ParentSet boundary
-  - rejects multi-component region states such as (vx, vy) instead of silently creating component-level discovery nodes whose identity cannot be represented by ParentSet
-  - records deterministic region/component provenance for the accepted scalar representation
-  - converts canonical valid_mask semantics into Tigramite invalid-mask semantics
-  - replaces invalid non-finite entries with a fixed finite placeholder only under the corresponding Tigramite mask because Tigramite rejects NaN before masking
-  - rejects duplicate subject IDs and incompatible region/dimension/sampling-rate schemas
+  - discovery-facing conversion is restricted to SplitManifest outer-train subjects
+  - subjects remain separate Tigramite datasets in analysis_mode='multiple'
+  - time_index and sampling_rate provenance are preserved
+  - canonical valid_mask is converted to Tigramite invalid-mask semantics
+  - invalid non-finite values are replaced only under the corresponding mask
+  - current implementation fails closed for multi-component region states rather than silently losing component identity
 
 files_changed:
   - src/lagged_facial_graph_forecasting/tigramite_adapter.py
   - tests/test_tigramite_dataframe_converter.py
   - artifacts/setup/D-01/task_result.yaml
 
-source_commits:
-  initial_converter: bf5c52d9da02c73ea888fc361afcca336586cc13
-  leakage_guard_integration: bc954fa327783923f5a22c64f2eb9d8b38600506
-  temporal_provenance_test: 24cc04c07704180a28ab66e41705042ecf907747
-  scalar_contract_guard: 9685f5863070a76f820cca1507643a446c8002c2
-  scalar_contract_test: ac3b6bdf5a64d8724390b24f187e7725f0914fc4
-
-tests:
+existing_test_evidence:
   workflow: tests
   run_id: 34154590485
   job_id: 101843669592
   head_sha: ac3b6bdf5a64d8724390b24f187e7725f0914fc4
   result: success
-  cases:
-    - independent subjects remain separate Tigramite datasets with different lengths
-    - region names and accepted scalar component provenance are deterministic
-    - subject time_index arrays and common sampling_rate provenance are preserved
-    - invalid NaN is replaced only at a masked location and all Tigramite data are finite
-    - duplicate subjects and incompatible schemas are rejected
-    - outer-test subject input raises LeakageGuardError before Tigramite DataFrame construction
-    - multi-component region state is rejected until a scientifically frozen mapping exists
+  note: passing implementation tests do not satisfy the scientific Definition of Done while the Primary representation contract remains unresolved
+
+root_cause:
+  - the frozen FaceTimeSeries contract supports X with shape (T, K, D), and the research plan explicitly permits region motion states such as [vx, vy] or [dx, dy]
+  - the frozen ParentSet boundary stores only (source_region, lag), and the PCMCI DesignMatrix interprets one selected region-lag as all dimensions of that region
+  - Tigramite Primary ParCorr is a scalar partial-correlation test; flattening D>1 into component-level discovery nodes and then collapsing them to a region-only ParentSet would require a new, scientifically unfrozen component-to-region selection rule
+  - the current fail-closed D-01 implementation therefore accepts only D=1, leaving the intended D=2 Primary real-data path unavailable
+
+minimal_fix_attempted:
+  - rejected silent component flattening because it would make ParentSet provenance lossy
+  - rejected implicit scalarization such as speed magnitude, one coordinate, PCA, or learned projection because no such Primary rule is scientifically frozen
+  - rejected replacing ParCorr with a multivariate CI test because Primary is fixed to ParCorr
+  - retained fail-closed behavior so no invalid scientific result can be produced
 
 scientific_checks:
-  - discovery-facing conversion is structurally limited to outer-train subjects by the frozen SplitManifest
-  - no cross-subject concatenation or boundary transition is introduced
-  - observed temporal labels and sampling-rate provenance are retained without interpolation or resampling
-  - invalid observations are represented by the Tigramite mask; D-02 must freeze a ParCorr mask_type that consumes this mask
-  - Primary ParCorr is not silently replaced by ParCorrMult or another multivariate CI test
-  - frozen ParentSet region identity is not made lossy by component-level discovery nodes
-  - no component aggregation rule is invented from outer-test or any outcome data
-  - conversion performs no preprocessing fit, discovery, tuning, feature/lag selection, or Null construction
-  - Primary remains PCMCI+ + ParCorr + Ridge with h=1
-  - no Sensitivity execution path is introduced
+  - no outer-test leakage is introduced
+  - no Primary/Sensitivity contamination is introduced
+  - no unfrozen component aggregation or feature-selection rule is invented
+  - PCMCI+ and ParCorr are not reimplemented
+  - subject boundaries and temporal provenance remain preserved
 
 artifacts:
   - artifacts/setup/D-01/task_result.yaml
 
 remaining_issue:
-  - real-data Primary discovery still requires an explicitly frozen one-scalar-per-region motion representation upstream; D-01 intentionally fails closed for D>1 rather than choosing that scientific mapping implicitly
-next_task: D-02
+  - Primary must have an explicitly frozen, scientifically justified mapping between multi-component region motion state and scalar ParCorr discovery variables, or an approved contract/scientific-design migration that preserves the intended region-lag estimand
+
+next_task: D-01
