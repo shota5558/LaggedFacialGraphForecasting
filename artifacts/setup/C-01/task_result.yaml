@@ -1,0 +1,35 @@
+task_id: C-01
+task_name: Target alignment
+status: PASS
+
+implemented:
+  - reused aligned_indices target alignment contract
+  - target index is explicitly aligned to forecast_origin + h
+  - Primary h=1 therefore aligns each forecast origin to the immediately following target sample
+  - source, forecast-origin, and target arrays share a common row alignment
+
+files_changed:
+  - artifacts/setup/C-01/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/alignment.py
+  - tests/test_alignment.py
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+
+ tests:
+  workflow: tests
+  run_id: 34147524791
+  head_sha: d1dfa4e76dfc76136e049fae752b69f5899d6596
+  result: success
+  direct_tests:
+    - test_lag_one_horizon_one_alignment
+    - test_lag_two_horizon_one_alignment
+    - test_source_never_occurs_after_forecast_origin
+
+scientific_checks:
+  - target alignment is independent of model fitting and discovery
+  - target samples are never used as lagged predictors for the same row
+  - Primary horizon remains h=1
+
+remaining_issue: none
+next_task: C-02
