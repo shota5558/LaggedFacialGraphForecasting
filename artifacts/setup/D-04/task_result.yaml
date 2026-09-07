@@ -1,25 +1,38 @@
 task_id: D-04
-task_name: PCMCI+ tau_max freeze
+task_name: PCMCI+ tau_max handling and freeze
 status: FAIL
 
 implemented:
-  - no scientific parameter value was invented or inferred
-  - audited the existing Primary PCMCI+ configuration, Primary run descriptor, research plan, and Issue #11 for an explicit tau_max freeze
+  - added an immutable PrimaryTauMax handling contract
+  - requires an explicitly supplied tau_max and provides no default
+  - validates integer type and rejects bool, float, string, null, zero, and negative values
+  - enforces tau_max >= the frozen Primary forecast horizon h=1
+  - exposes only an immutable {'tau_max': value} contribution for later Tigramite execution
+  - exposes no data, score, prediction, outer-test, or automatic-selection input
+  - did not invent, infer, or silently default the study-specific Primary tau_max value
 
 files_changed:
+  - src/lagged_facial_graph_forecasting/pcmci_tau_max.py
+  - tests/test_pcmci_tau_max.py
   - artifacts/setup/D-04/task_result.yaml
 
 tests:
-  existing_full_regression:
+  implementation_regression:
     workflow: tests
-    run_id: 34159376469
-    job_id: 101857791324
-    head_sha: b5eb683d478d44e733d65e008f38fb3c6926ca0a
-    result: 415 passed, 1 warning in 2.85s
-  targeted_test: not_applicable_until_scientific_value_is_frozen
-  note: >-
-    Current regression is green, but it cannot establish a tau_max value that is
-    absent from the frozen scientific specification.
+    run_id: 34159742971
+    job_id: 101858858302
+    head_sha: a156876996f9807253f2ed4b67c2828467e3fc6d
+    python: 3.11.16
+    result: 427 passed, 1 warning in 2.32s
+    warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; unrelated to tau_max handling
+  targeted_cases:
+    - explicit positive integer is preserved exactly
+    - minimum tau_max=1 is accepted for Primary h=1
+    - values below h=1 are rejected
+    - non-integer and bool values are rejected
+    - schema drift is rejected
+    - Tigramite kwargs mapping is immutable
+    - contract exposes no data or result-dependent selection inputs
 
 scientific_checks:
   - Primary remains PCMCI+ plus ParCorr plus Ridge with horizon 1
@@ -28,21 +41,22 @@ scientific_checks:
   - no data-dependent lag selection is introduced
   - no Sensitivity result is used to define Primary tau_max
   - tau_max is not guessed from prior pilots, current data, Tigramite defaults, or implementation convenience
+  - research plan requires maximum lag to be frozen before Primary execution
 
 fail_type: scientific specification conflict
 root_cause: >-
-  The systematic research plan requires maximum lag to be frozen before the
-  Primary experiment, but does not specify its numeric value. The repository's
-  PrimaryPCMCIPlusConfig intentionally excludes tau_max for D-04, and
-  configs/primary_run.yaml also contains no tau_max. Issue #11 names D-04 but
-  provides no numeric freeze or selection rule. Selecting a value here would
-  change the scientific specification rather than implement it.
+  The implementation can validate and carry an explicitly frozen tau_max, but the
+  current systematic research plan, configs/scientific_freeze.yaml,
+  configs/primary_run.yaml, and Issue #11 do not specify the study-specific numeric
+  Primary tau_max or a pre-registered deterministic outer-train-only rule that
+  yields it. Passing D-04 without that scientific decision would convert an
+  implementation default into a Primary research parameter.
 
 minimal_fix_required: >-
-  Add an explicit Primary tau_max value, or a fully pre-specified train-only rule
-  that deterministically yields it without consulting outer-test or Sensitivity,
-  to the Scientific Freeze / Primary run configuration. Then implement strict
-  validation and pass that frozen value unchanged to Tigramite run_pcmciplus.
+  Freeze an explicit Primary tau_max value, or a fully pre-specified deterministic
+  outer-train-only selection rule, in the scientific/Primary configuration before
+  discovery execution. The existing PrimaryTauMax contract can then validate that
+  decision and pass it unchanged to D-06.
 
 artifacts:
   - artifacts/setup/D-04/task_result.yaml
@@ -60,5 +74,14 @@ blocked_tasks:
   - D-11
   - D-14
   - I2
+  - F
+  - I3
+  - G
+  - DRY
+  - I4
+  - PR
+  - STAT
+  - FREEZE
+  - S
 
 next_task: none_until_D-04_PASS
