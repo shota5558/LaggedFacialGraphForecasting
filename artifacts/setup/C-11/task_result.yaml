@@ -4,6 +4,8 @@ status: PASS
 
 verified_components:
   - lag/target/horizon alignment
+  - common frozen row support across Persistence / Self / Full / PCMCI
+  - alignment_lag affects row support only and is never a predictor
   - Persistence DesignMatrix
   - Self-history DesignMatrix
   - Full-history DesignMatrix
@@ -16,6 +18,7 @@ verified_components:
 
 relevant_tests:
   - tests/test_alignment.py
+  - tests/test_primary_condition_alignment.py
   - tests/test_persistence_design_matrix.py
   - tests/test_self_history_design_matrix.py
   - tests/test_full_history_design_matrix.py
@@ -25,15 +28,18 @@ relevant_tests:
 
 full_suite:
   workflow: tests
-  run_id: 34149026741
-  job_id: 101827151606
-  head_sha: c436c5510015c4a6b902e09050ca1ae666db773b
+  run_id: 34149264770
+  job_id: 101827881757
+  head_sha: e046d297a77236836121c56e3b24e67ed5989377
   python: 3.11.16
-  result: 196 passed in 1.75s
+  result: 204 passed in 1.71s
 
 acceptance_checks:
   primary_horizon_h1: PASS
   future_parent_after_forecast_origin: REJECTED
+  common_primary_forecast_origin_target_support: PASS
+  alignment_lag_is_support_only: PASS
+  alignment_lag_smaller_than_used_feature_lag: REJECTED
   fixed_self_subset_of_pcmci: PASS
   pcmci_subset_of_full_for_common_lag_space: PASS
   empty_interregional_parentset_reduces_to_self: PASS
@@ -43,6 +49,8 @@ acceptance_checks:
   pcmci_parentset_boundary_no_tigramite_dependency: PASS
 
 scientific_checks:
+  - all Primary conditions can be evaluated on identical frozen target rows, preventing condition-specific lag support from confounding error comparisons
+  - common row support can be fixed from the predeclared lag range independently of outer-test outcomes
   - Self and PCMCI share the identical Self-history block, making their error difference an incremental inter-regional comparison
   - no outer-test-dependent fallback, fitting, discovery, feature selection, or lag selection is introduced
   - no h>1 Primary path or Sensitivity implementation is introduced
