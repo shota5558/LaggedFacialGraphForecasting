@@ -132,8 +132,10 @@ def test_equal_size_sampling_rejects_f31_bypass_with_target_self_feature() -> No
 
 
 def test_equal_size_sampling_rejects_f31_bypass_with_out_of_domain_lag() -> None:
+    # ParentLink itself rejects non-positive lags, so use lag=11 to exercise the
+    # sampler's stricter frozen Primary upper-bound guard (tau_max=10).
     candidates = (
-        ParentLink("eye", 0, "vx", "vx"),
+        ParentLink("eye", 11, "vx", "vx"),
         ParentLink("jaw", 2, "vx", "vx"),
         ParentLink("eye", 3, "vy", "vy"),
     )
