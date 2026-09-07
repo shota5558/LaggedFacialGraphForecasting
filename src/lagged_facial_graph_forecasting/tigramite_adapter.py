@@ -27,26 +27,31 @@ class TigramiteDataFrameBundle:
     sampling_rate: float
 
 
-def _scalar_region_metadata(
+def _component_node_metadata(
     series: FaceTimeSeries,
 ) -> tuple[tuple[str, ...], tuple[tuple[str, str], ...]]:
-    """Return one discovery variable per facial region.
+    """Return one scalar discovery node for each ``region × dimension`` component.
 
-    Primary discovery is frozen to Tigramite ``ParCorr`` and the frozen ``ParentSet``
-    identifies parents by ``source_region`` only. A multi-component state such as
-    ``(vx, vy)`` therefore has no scientifically frozen mapping to one region node.
-    Rather than silently treating components as separate nodes and later dropping
-    component identity, fail closed until such a mapping is explicitly frozen.
+    Primary remains PCMCI+ + ParCorr. ParCorr is scalar, while the frozen
+    ``FaceTimeSeries`` representation is ``(T, K, D)`` and the research plan permits
+    vector region states such as ``(vx, vy)``. The scientific freeze therefore defines
+    discovery nodes as the identity decomposition of the region state: no magnitude,
+    PCA, coordinate dropping, learned projection, or component aggregation is applied.
+
+    ``variable_components`` is canonical provenance. Human-readable Tigramite
+    ``var_names`` mirror the same identity but are never parsed to reconstruct it.
     """
 
-    if len(series.dimension) != 1:
+    components = tuple(
+        (region, dimension)
+        for region in series.region_id
+        for dimension in series.dimension
+    )
+    names = tuple(f"{region}::{dimension}" for region, dimension in components)
+    if len(set(names)) != len(names):
         raise TigramiteAdapterError(
-            "Primary ParCorr discovery requires exactly one scalar dimension per region; "
-            "multi-component region states require a separately frozen mapping"
+            "region/dimension labels produce duplicate discovery variable names"
         )
-    dimension = series.dimension[0]
-    names = tuple(series.region_id)
-    components = tuple((region, dimension) for region in series.region_id)
     return names, components
 
 
@@ -54,15 +59,15 @@ def face_time_series_to_tigramite_dataframe(
     manifest: SplitManifest,
     series_by_subject: Sequence[FaceTimeSeries],
 ) -> TigramiteDataFrameBundle:
-    """Convert outer-train scalar region sequences without concatenating boundaries.
+    """Convert outer-train region-component sequences without concatenating boundaries.
 
     The converter is a discovery-facing API and therefore requires the canonical
     ``SplitManifest``. Every supplied subject is checked with the existing discovery
     leakage guard before any Tigramite object is constructed; outer-test or otherwise
     out-of-scope subjects fail closed.
 
-    Primary discovery exposes exactly one scalar variable per facial region. Each
-    allowed subject is supplied to Tigramite as a separate dataset in
+    Primary discovery exposes each ``region × dimension`` component as one scalar
+    Tigramite variable. Each allowed subject is supplied as a separate dataset in
     ``analysis_mode='multiple'``. Elementwise invalid observations are replaced by a
     constant finite placeholder only because Tigramite rejects NaN in ``data``; the
     same positions are marked ``True`` in Tigramite's mask for exclusion by the CI-test
@@ -70,8 +75,8 @@ def face_time_series_to_tigramite_dataframe(
     labels and the common sampling rate is carried explicitly for frame-to-time lag
     provenance.
 
-    No interpolation, resampling, fitting, feature selection, component aggregation, or
-    subject concatenation occurs here.
+    No interpolation, resampling, fitting, feature selection, component aggregation,
+    scalarization, or subject concatenation occurs here.
     """
 
     sequences = tuple(series_by_subject)
@@ -88,7 +93,7 @@ def face_time_series_to_tigramite_dataframe(
     assert_discovery_fit_scope(manifest, subject_ids)
 
     reference = sequences[0]
-    variable_names, variable_components = _scalar_region_metadata(reference)
+    variable_names, variable_components = _component_node_metadata(reference)
 
     data: dict[str, np.ndarray] = {}
     mask: dict[str, np.ndarray] = {}
@@ -103,19 +108,19 @@ def face_time_series_to_tigramite_dataframe(
 
         values = np.asarray(series.X)
         valid = np.asarray(series.valid_mask, dtype=bool)
-        scalar_values = np.asarray(values[:, :, 0], dtype=float)
-        scalar_valid = valid[:, :, 0]
+        component_values = np.asarray(values, dtype=float).reshape(values.shape[0], -1)
+        component_valid = valid.reshape(valid.shape[0], -1)
 
-        if np.any(scalar_valid & ~np.isfinite(scalar_values)):
+        if np.any(component_valid & ~np.isfinite(component_values)):
             raise TigramiteAdapterError("non-finite observations cannot be marked valid")
 
         # Tigramite DataFrame rejects NaN in data before applying its mask. A fixed
         # placeholder is safe only together with the corresponding True mask entries;
         # D-02 freezes the ParCorr mask_type used by discovery.
-        safe_values = np.array(scalar_values, copy=True)
-        safe_values[~scalar_valid] = 0.0
+        safe_values = np.array(component_values, copy=True)
+        safe_values[~component_valid] = 0.0
         data[series.subject_id] = safe_values
-        mask[series.subject_id] = ~scalar_valid
+        mask[series.subject_id] = ~component_valid
         datatime[series.subject_id] = np.array(series.time_index, copy=True)
 
     dataframe = pp.DataFrame(

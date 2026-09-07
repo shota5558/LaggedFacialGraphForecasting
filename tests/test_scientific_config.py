@@ -29,6 +29,13 @@ def test_scientific_freeze_loads() -> None:
     assert config["primary"]["ci_test"] == "parcorr"
     assert config["primary"]["forecaster"] == "ridge"
     assert config["primary"]["horizon"] == 1
+    assert config["discovery_representation"]["node_unit"] == "region_dimension"
+    assert config["discovery_representation"]["component_mapping"] == "identity"
+    assert (
+        config["discovery_representation"]["forecasting_feature_rule"]
+        == "exact_selected_component"
+    )
+    assert config["discovery_representation"]["reporting_projection"] == "region_lag"
     assert config["evaluation"]["split_unit"] == "subject"
     assert config["evaluation"]["outer_test_usage"] == "frozen_final_evaluation_only"
     assert config["sensitivity"]["execute_after_primary_freeze"] is True
@@ -39,6 +46,25 @@ def test_rejects_primary_drift(tmp_path: Path) -> None:
     config["primary"]["ci_test"] = "gpdc"
 
     with pytest.raises(ScientificConfigError, match="primary.ci_test"):
+        load_scientific_config(_write_config(tmp_path, config))
+
+
+def test_rejects_discovery_node_scalarization_drift(tmp_path: Path) -> None:
+    config = deepcopy(_load_raw())
+    config["discovery_representation"]["node_unit"] = "region"
+
+    with pytest.raises(ScientificConfigError, match="discovery_representation.node_unit"):
+        load_scientific_config(_write_config(tmp_path, config))
+
+
+def test_rejects_component_feature_rule_drift(tmp_path: Path) -> None:
+    config = deepcopy(_load_raw())
+    config["discovery_representation"]["forecasting_feature_rule"] = "all_region_dimensions"
+
+    with pytest.raises(
+        ScientificConfigError,
+        match="discovery_representation.forecasting_feature_rule",
+    ):
         load_scientific_config(_write_config(tmp_path, config))
 
 

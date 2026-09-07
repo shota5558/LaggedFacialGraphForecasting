@@ -35,6 +35,12 @@ _EXPECTED: dict[str, Any] = {
             "time_shuffle",
         ],
     },
+    "discovery_representation": {
+        "node_unit": "region_dimension",
+        "component_mapping": "identity",
+        "forecasting_feature_rule": "exact_selected_component",
+        "reporting_projection": "region_lag",
+    },
     "evaluation": {
         "split_unit": "subject",
         "outer_test_usage": "frozen_final_evaluation_only",

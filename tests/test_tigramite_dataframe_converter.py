@@ -66,7 +66,7 @@ def test_converter_keeps_subjects_separate_and_preserves_time_provenance() -> No
     assert frame.T == {"s1": 4, "s2": 5}
     assert frame.N == 2
     assert bundle.subject_ids == ("s1", "s2")
-    assert bundle.variable_names == ("left_eye", "mouth")
+    assert bundle.variable_names == ("left_eye::velocity", "mouth::velocity")
     assert bundle.variable_components == (
         ("left_eye", "velocity"),
         ("mouth", "velocity"),
@@ -74,6 +74,28 @@ def test_converter_keeps_subjects_separate_and_preserves_time_provenance() -> No
     assert bundle.sampling_rate == 25.0
     np.testing.assert_array_equal(frame.datatime["s1"], s1.time_index)
     np.testing.assert_array_equal(frame.datatime["s2"], s2.time_index)
+
+
+def test_multicomponent_region_state_becomes_component_nodes_without_scalarization() -> None:
+    series = _series("s1", length=4, dimensions=("vx", "vy"))
+    bundle = face_time_series_to_tigramite_dataframe(_manifest(), (series,))
+
+    frame = bundle.dataframe
+    assert frame.N == 4
+    assert bundle.variable_names == (
+        "left_eye::vx",
+        "left_eye::vy",
+        "mouth::vx",
+        "mouth::vy",
+    )
+    assert bundle.variable_components == (
+        ("left_eye", "vx"),
+        ("left_eye", "vy"),
+        ("mouth", "vx"),
+        ("mouth", "vy"),
+    )
+    np.testing.assert_array_equal(frame.values["s1"], series.X.reshape(4, 4))
+    np.testing.assert_array_equal(frame.mask["s1"], ~series.valid_mask.reshape(4, 4))
 
 
 def test_invalid_values_are_finite_placeholders_under_tigramite_mask() -> None:
@@ -94,14 +116,6 @@ def test_converter_rejects_outer_test_before_dataframe_construction() -> None:
         face_time_series_to_tigramite_dataframe(
             _manifest(),
             (_series("outer_test", length=4),),
-        )
-
-
-def test_converter_rejects_multicomponent_region_state_without_frozen_mapping() -> None:
-    with pytest.raises(TigramiteAdapterError, match="exactly one scalar dimension per region"):
-        face_time_series_to_tigramite_dataframe(
-            _manifest(),
-            (_series("s1", length=4, dimensions=("vx", "vy")),),
         )
 
 
@@ -126,3 +140,11 @@ def test_converter_rejects_subject_or_schema_mixing() -> None:
     )
     with pytest.raises(TigramiteAdapterError, match="region_id order"):
         face_time_series_to_tigramite_dataframe(manifest, (s1, incompatible_region))
+
+    incompatible_dimension = _series(
+        "s2",
+        length=4,
+        dimensions=("vx", "vy"),
+    )
+    with pytest.raises(TigramiteAdapterError, match="dimension order"):
+        face_time_series_to_tigramite_dataframe(manifest, (s1, incompatible_dimension))

@@ -7,6 +7,7 @@
   "required": [
     "schema_version",
     "primary",
+    "discovery_representation",
     "evaluation",
     "selection_scope",
     "sensitivity",
@@ -49,6 +50,17 @@
             {"contains": {"const": "time_shuffle"}}
           ]
         }
+      }
+    },
+    "discovery_representation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node_unit", "component_mapping", "forecasting_feature_rule", "reporting_projection"],
+      "properties": {
+        "node_unit": {"const": "region_dimension"},
+        "component_mapping": {"const": "identity"},
+        "forecasting_feature_rule": {"const": "exact_selected_component"},
+        "reporting_projection": {"const": "region_lag"}
       }
     },
     "evaluation": {
