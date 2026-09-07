@@ -1,0 +1,41 @@
+task_id: E-06
+task_name: Frozen refit
+status: PASS
+
+implemented:
+  - added refit_frozen_ridge as the post-selection outer-train refit entry point
+  - selected E-05 alpha is used verbatim with no further tuning
+  - StandardScaler and scikit-learn Ridge are refit together on the complete outer-train DesignMatrix
+  - outer-test subjects and subjects outside the SplitManifest outer-train set are rejected before fitting
+  - incomplete outer-train subject coverage is rejected
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/ridge_refit.py
+  - tests/test_ridge_frozen_refit.py
+  - artifacts/setup/E-06/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34149502412
+  job_id: 101828580759
+  head_sha: 63aba5d772b2c104972af37b65252d05247c5329
+  result: success
+  direct_cases:
+    - selected alpha is preserved in the refitted Ridge estimator
+    - scaler statistics use the complete outer-train rows after selection
+    - outer-test subject contamination is rejected
+    - incomplete outer-train subject coverage is rejected
+
+scientific_checks:
+  - refit occurs only after lambda selection
+  - no outer-test data enters scaler or Ridge fitting
+  - no lambda reselection occurs during refit
+  - estimator family remains scikit-learn Ridge
+  - feature/lag provenance remains frozen in FittedRidgeForecaster
+  - no Sensitivity path is introduced
+
+artifacts:
+  - artifacts/setup/E-06/task_result.yaml
+
+remaining_issue: none
+next_task: E-07
