@@ -1,0 +1,48 @@
+task_id: C-11
+task_name: DesignMatrix unit tests
+status: PASS
+
+verified_components:
+  - lag/target/horizon alignment
+  - Persistence DesignMatrix
+  - Self-history DesignMatrix
+  - Full-history DesignMatrix
+  - PCMCI ParentSet DesignMatrix
+  - reversible feature provenance
+  - tau >= h availability guard
+  - missing-value alignment
+  - train/test feature identity and lag consistency
+
+relevant_tests:
+  - tests/test_alignment.py
+  - tests/test_persistence_design_matrix.py
+  - tests/test_self_history_design_matrix.py
+  - tests/test_full_history_design_matrix.py
+  - tests/test_pcmci_parent_design_matrix.py
+  - tests/test_design_matrix_feature_provenance.py
+  - tests/test_ridge_forecaster_prediction.py
+
+full_suite:
+  workflow: tests
+  run_id: 34148712365
+  job_id: 101826210417
+  head_sha: 78bade3f4274b732931323ca8221bf5282fc91af
+  python: 3.11.16
+  result: 185 passed in 1.16s
+
+acceptance_checks:
+  primary_horizon_h1: PASS
+  future_parent_after_forecast_origin: REJECTED
+  source_region_dimension_lag_provenance: PASS
+  train_test_feature_order_contract: PASS
+  missingness_alignment: PASS
+  pcmci_parentset_boundary_no_tigramite_dependency: PASS
+
+scientific_checks:
+  - no outer-test-dependent fitting, discovery, feature selection, or lag selection introduced
+  - no h>1 Primary path introduced
+  - no Sensitivity implementation introduced
+  - target-relative lag semantics remain frozen
+
+remaining_issue: none
+next_task: C_GATE
