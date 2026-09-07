@@ -61,7 +61,7 @@ def test_bootstrap_ci_uses_scipy_bootstrap_for_subject_level_median() -> None:
         n_resamples=1000,
         method="percentile",
         vectorized=False,
-        rng=np.random.default_rng(1234),
+        random_state=np.random.default_rng(1234),
     )
 
     assert isinstance(result, BootstrapMedianCI)
