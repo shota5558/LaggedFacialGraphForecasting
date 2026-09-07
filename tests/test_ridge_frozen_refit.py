@@ -4,8 +4,7 @@ import numpy as np
 import pytest
 
 from lagged_facial_graph_forecasting.contracts import DesignMatrix, InnerFold, SplitManifest
-from lagged_facial_graph_forecasting.ridge_refit import refit_frozen_ridge
-from lagged_facial_graph_forecasting.ridge_tuning import RidgeAlphaScore
+from lagged_facial_graph_forecasting.ridge_tuning import RidgeAlphaScore, refit_selected_ridge
 
 
 def _manifest() -> SplitManifest:
@@ -47,10 +46,10 @@ def _selected(alpha: float = 0.1) -> RidgeAlphaScore:
 
 
 def test_frozen_refit_uses_selected_alpha_and_all_outer_train_rows() -> None:
-    fitted = refit_frozen_ridge(
+    fitted = refit_selected_ridge(
         _matrix(("s01", "s02", "s03", "s04")),
         split_manifest=_manifest(),
-        selected=_selected(0.1),
+        selection=_selected(0.1),
     )
 
     assert fitted.alpha == 0.1
@@ -61,17 +60,31 @@ def test_frozen_refit_uses_selected_alpha_and_all_outer_train_rows() -> None:
 
 def test_frozen_refit_rejects_outer_test_subject() -> None:
     with pytest.raises(ValueError, match="outer-test"):
-        refit_frozen_ridge(
+        refit_selected_ridge(
             _matrix(("s01", "s02", "s03", "s04", "s05")),
             split_manifest=_manifest(),
-            selected=_selected(),
+            selection=_selected(),
         )
 
 
 def test_frozen_refit_requires_complete_outer_train_subject_set() -> None:
     with pytest.raises(ValueError, match="missing outer-train"):
-        refit_frozen_ridge(
+        refit_selected_ridge(
             _matrix(("s01", "s02", "s03")),
             split_manifest=_manifest(),
-            selected=_selected(),
+            selection=_selected(),
+        )
+
+
+def test_frozen_refit_revalidates_selected_alpha_metadata() -> None:
+    with pytest.raises(ValueError, match="mean_rmse"):
+        refit_selected_ridge(
+            _matrix(("s01", "s02", "s03", "s04")),
+            split_manifest=_manifest(),
+            selection=RidgeAlphaScore(
+                alpha=0.1,
+                mean_rmse=float("nan"),
+                fold_count=2,
+                total_val_valid=4,
+            ),
         )
