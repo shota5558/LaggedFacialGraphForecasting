@@ -90,6 +90,7 @@ def _slice_design_matrix(matrix: DesignMatrix, row_mask: np.ndarray) -> DesignMa
         y=matrix.y[indices],
         subject_id=tuple(matrix.subject_id[index] for index in indices),
         region_id=tuple(matrix.region_id[index] for index in indices),
+        target_dimensions=matrix.target_dimensions,
         forecast_origin=matrix.forecast_origin[indices],
         target_time=matrix.target_time[indices],
         feature_names=matrix.feature_names,
