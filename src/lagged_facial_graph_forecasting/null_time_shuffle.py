@@ -143,15 +143,21 @@ def apply_time_shuffle_to_design_matrix(
     matrix: DesignMatrix,
     mapping: NullMapping,
     *,
-    permutation: Sequence[int],
+    permutation: Sequence[int] | None = None,
 ) -> DesignMatrix:
-    """Permute only PCMCI-added cross-region features on valid rows.
+    """Apply the frozen-seed time shuffle to PCMCI-added cross-region features.
 
-    The same row permutation is applied jointly to every selected cross-region column.
-    This preserves the selected feature vector's internal configuration while breaking
-    its temporal correspondence with the target and fixed Self-history block. Invalid
-    rows are not used as permutation donors or recipients, so missingness support and
-    the compared sample set remain identical across Self/PCMCI/time-shuffle conditions.
+    The same F-41 permutation is applied jointly to every selected cross-region
+    column. This preserves the selected feature vector's internal configuration while
+    breaking its temporal correspondence with the target and fixed Self-history block.
+    Invalid rows are not used as permutation donors or recipients, so missingness
+    support and the compared sample set remain identical across Self/PCMCI/time-shuffle
+    conditions.
+
+    ``permutation`` is optional and exists only for explicit replay/audit. When given,
+    it must exactly equal the deterministic F-41 permutation derived from the frozen
+    ``mapping.seed`` and current valid-row count. This prevents callers from bypassing
+    the frozen stochastic rule with an arbitrary non-identity permutation.
 
     This function is intentionally single-subject and scalar-target. Canonical PCMCI
     design matrices are built that way, and permitting cross-subject shuffling would
@@ -178,9 +184,19 @@ def apply_time_shuffle_to_design_matrix(
         )
 
     valid_rows = np.flatnonzero(matrix.valid_mask)
-    normalized_permutation = _normalize_permutation(
-        permutation, expected_length=len(valid_rows)
+    expected_permutation = generate_time_shuffle_permutation(
+        mapping, row_count=len(valid_rows)
     )
+    if permutation is None:
+        normalized_permutation = expected_permutation
+    else:
+        normalized_permutation = _normalize_permutation(
+            permutation, expected_length=len(valid_rows)
+        )
+        if normalized_permutation != expected_permutation:
+            raise TimeShuffleMappingError(
+                "explicit permutation must equal the frozen-seed F-41 permutation"
+            )
 
     target_dimension = matrix.target_dimensions[0]
     expected_cross_keys = {
@@ -192,6 +208,11 @@ def apply_time_shuffle_to_design_matrix(
         if parent.source_region != mapping.target_region
         and parent.target_dimension == target_dimension
     }
+    if not expected_cross_keys:
+        raise TimeShuffleMappingError(
+            "time-shuffle is unevaluable without cross-region ParentLinks for the "
+            f"target_dimension={target_dimension!r}"
+        )
 
     cross_columns: list[int] = []
     actual_cross_keys: set[tuple[str, int]] = set()
@@ -214,14 +235,13 @@ def apply_time_shuffle_to_design_matrix(
         )
 
     shuffled_X = np.array(matrix.X, copy=True)
-    if cross_columns:
-        valid_cross_block = np.array(
-            shuffled_X[np.ix_(valid_rows, np.asarray(cross_columns, dtype=int))],
-            copy=True,
-        )
-        shuffled_X[np.ix_(valid_rows, np.asarray(cross_columns, dtype=int))] = (
-            valid_cross_block[np.asarray(normalized_permutation, dtype=int), :]
-        )
+    valid_cross_block = np.array(
+        shuffled_X[np.ix_(valid_rows, np.asarray(cross_columns, dtype=int))],
+        copy=True,
+    )
+    shuffled_X[np.ix_(valid_rows, np.asarray(cross_columns, dtype=int))] = (
+        valid_cross_block[np.asarray(normalized_permutation, dtype=int), :]
+    )
 
     return DesignMatrix(
         X=shuffled_X,
