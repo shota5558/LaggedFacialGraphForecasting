@@ -64,8 +64,8 @@ def test_self_history_uses_only_target_region_and_correct_target_relative_lags()
 def test_self_history_mask_combines_source_and_target_validity() -> None:
     series = _series()
     mask = series.valid_mask.copy()
-    mask[1, 0, 0] = False  # invalid lag-1 source for target index 2
-    mask[4, 0, 1] = False  # invalid target for target index 4
+    mask[0, 0, 0] = False  # invalid lag-2 source for target index 2 only
+    mask[4, 0, 1] = False  # invalid target at index 4 and lag-1 source for target 5
     series = FaceTimeSeries(
         X=series.X,
         subject_id=series.subject_id,
