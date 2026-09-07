@@ -3,12 +3,14 @@ task_name: Scientific Audit
 status: PASS
 
 implemented:
-  - retains the previously audited DRY mechanical evidence and adds an explicit fail-closed ScientificAuditSnapshot contract for Gate 4 evidence
+  - retains the previously audited DRY mechanical evidence and explicit fail-closed ScientificAuditSnapshot contract for Gate 4 evidence
   - rejects any outer-test subject in preprocessing fitting, PCMCI+ discovery, Ridge tuning, or Null construction scope
   - rejects subjects outside the frozen outer-train set in every selection scope
   - requires fold freeze before outer-test access and exactly one dry-run outer-test evaluation
   - compares two same-config/same-seed executions at the scientific artifact boundary
   - fails closed on any mismatch in scientific config digest, seed, SplitManifest digest, ParentSet digest, Ridge selection digest, NullMapping digests, prediction digests, or metric digests
+  - revalidated Gate I4 after Scientific Freeze migration v5 -> v6
+  - confirms the v6 additions freeze matched-sparsity repeat count and bootstrap settings without changing leakage boundaries or Primary/Sensitivity separation
   - does not rerun or alter discovery/forecasting logic and does not introduce any Sensitivity method
 
 files_changed:
@@ -21,13 +23,19 @@ implementation_commits:
     message: I4: add fail-closed scientific audit contract
   - sha: 7c91dc153f546a5f4191bfc27fb8b91842b512d1
     message: I4: test leakage and reproducibility audit gate
+  - sha: 117331fde69a86bd36981d0660ed65749e0c261c
+    message: P0A-M06: freeze Primary null and bootstrap settings
+    disposition: scientific-config migration requiring Gate I4 revalidation
 
 tests:
-  workflow: tests
-  run_id: 34167289543
-  job_id: 101880739269
-  head_sha: 7c91dc153f546a5f4191bfc27fb8b91842b512d1
-  result: 676 passed, 1 warning in 8.66s
+  original_workflow_run_id: 34167289543
+  original_job_id: 101880739269
+  original_head_sha: 7c91dc153f546a5f4191bfc27fb8b91842b512d1
+  original_result: 676 passed, 1 warning in 8.66s
+  revalidation_workflow_run_id: 34167771170
+  revalidation_job_id: 101882124026
+  revalidation_head_sha: a9f211cb35edee0e6350869a700dc907bab32eb0
+  revalidation_result: 681 passed, 1 warning in 9.02s
   warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to I4
   direct_gate_checks:
     - outer-test subject in preprocessing fit => rejected
@@ -50,6 +58,7 @@ tests:
     - same config/seed yields same SplitManifest, ParentSet, selected alphas, serialized NullMappings, predictions, metrics, and artifact bytes
 
 scientific_checks:
+  scientific_freeze_schema_v6: PASS
   outer_test_not_in_preprocessing_fit: PASS
   outer_test_not_in_pcmci_discovery: PASS
   outer_test_not_in_ridge_tuning: PASS
@@ -65,14 +74,17 @@ scientific_checks:
   fold_freeze_before_outer_test: PASS
   subject_independence: PASS
   lag_horizon_semantics: PASS
+  matched_sparsity_repeat_count_pre_frozen: PASS
+  bootstrap_settings_pre_frozen: PASS
   primary_sensitivity_separation: PASS
 
 artifacts:
   - artifacts/setup/I4/task_result.yaml
   - artifacts/setup/DRY/task_result.yaml
+  - artifacts/setup/P0A-M06/task_result.yaml
 
 remaining_issue:
-  - Gate I4 itself has no remaining leakage or reproducibility failure
-  - Primary execution must not start until still-unfrozen downstream scientific settings are resolved: G-04 bootstrap n_resamples/method and matched-sparsity repeat_count identified by the DRY/I3 audit records
+  - none for Gate I4
+  - PR-01 remains separately blocked by data/topology-dependent Primary protocol values and the immutable Primary data manifest identified by its preflight artifact
 
-next_task: PR
+next_task: PR-01
