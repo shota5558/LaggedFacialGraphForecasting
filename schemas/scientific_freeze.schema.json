@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/lagged-facial-graph-forecasting/scientific-freeze.schema.json",
+  "title": "PCMCI+ Facial Motion Scientific Freeze",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "primary",
+    "evaluation",
+    "selection_scope",
+    "sensitivity",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "primary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discovery", "ci_test", "forecaster", "horizon", "conditions"],
+      "properties": {
+        "discovery": {"const": "pcmci_plus"},
+        "ci_test": {"const": "parcorr"},
+        "forecaster": {"const": "ridge"},
+        "horizon": {"const": 1},
+        "conditions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "persistence",
+              "self",
+              "full",
+              "pcmci",
+              "lag_shift",
+              "random_region",
+              "matched_sparsity",
+              "time_shuffle"
+            ]
+          },
+          "allOf": [
+            {"contains": {"const": "persistence"}},
+            {"contains": {"const": "self"}},
+            {"contains": {"const": "full"}},
+            {"contains": {"const": "pcmci"}},
+            {"contains": {"const": "lag_shift"}},
+            {"contains": {"const": "random_region"}},
+            {"contains": {"const": "matched_sparsity"}},
+            {"contains": {"const": "time_shuffle"}}
+          ]
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["split_unit", "outer_test_usage"],
+      "properties": {
+        "split_unit": {"const": "subject"},
+        "outer_test_usage": {"const": "frozen_final_evaluation_only"}
+      }
+    },
+    "selection_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preprocessing_fit",
+        "discovery",
+        "ridge_tuning",
+        "null_mapping",
+        "feature_selection",
+        "lag_selection"
+      ],
+      "properties": {
+        "preprocessing_fit": {"const": "outer_train_only"},
+        "discovery": {"const": "outer_train_only"},
+        "ridge_tuning": {"const": "outer_train_only"},
+        "null_mapping": {"const": "outer_train_only"},
+        "feature_selection": {"const": "outer_train_only"},
+        "lag_selection": {"const": "outer_train_only"}
+      }
+    },
+    "sensitivity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["execute_after_primary_freeze", "methods"],
+      "properties": {
+        "execute_after_primary_freeze": {"const": true},
+        "methods": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "gpdc",
+              "lpcmci",
+              "phase_shuffled_surrogate",
+              "circular_shift_surrogate",
+              "horizon_gt_1",
+              "gru"
+            ]
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary_root", "sensitivity_root"],
+      "properties": {
+        "primary_root": {"const": "artifacts/primary"},
+        "sensitivity_root": {"const": "artifacts/sensitivity"}
+      }
+    }
+  }
+}
