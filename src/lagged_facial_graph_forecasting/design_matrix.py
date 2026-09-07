@@ -235,42 +235,66 @@ def build_pcmci_parent_design_matrix(
     series: FaceTimeSeries,
     *,
     parent_set: ParentSet,
+    self_lags: Iterable[int] = (1,),
     horizon: int = 1,
 ) -> DesignMatrix:
-    """Build the PCMCI condition from the canonical discovery ``ParentSet``.
+    """Build the PCMCI condition as fixed Self history plus selected other regions.
 
-    Forecasting code consumes only the frozen ``ParentSet`` boundary and therefore
-    has no dependency on Tigramite. Each region-level parent contributes every
-    dimension of that source region at the selected target-relative lag. Parent
-    order is preserved exactly as stored in ``ParentSet``; dimensions follow the
-    frozen ``FaceTimeSeries.dimension`` order.
+    The scientific comparison is incremental: PCMCI must contain the exact same
+    Self-history block as the Self condition and may add only PCMCI-selected
+    inter-regional ``ParentSet`` links. Self-region links present in ``ParentSet``
+    are therefore not added a second time. If no inter-regional parent survives,
+    PCMCI deterministically reduces to Self rather than changing estimator family
+    or selecting a fallback from evaluation results.
+
+    Column order is deterministic: sorted Self lags first (dimension order), then
+    inter-regional ParentSet order (dimension order). All lags are target-relative.
     """
 
-    if parent_set.target_region not in series.region_id:
-        raise ValueError(
-            f"unknown target_region from ParentSet: {parent_set.target_region!r}"
-        )
-    if not parent_set.parents:
-        raise ValueError("ParentSet must contain at least one parent")
+    normalized_self_lags = _normalize_lags(self_lags)
+    target_region = parent_set.target_region
+    if target_region not in series.region_id:
+        raise ValueError(f"unknown target_region from ParentSet: {target_region!r}")
 
-    for parent in parent_set.parents:
+    interregional_parents = tuple(
+        parent for parent in parent_set.parents if parent.source_region != target_region
+    )
+    for parent in interregional_parents:
         if parent.source_region not in series.region_id:
             raise ValueError(
                 f"unknown source_region from ParentSet: {parent.source_region!r}"
             )
 
-    max_lag = max(parent.lag for parent in parent_set.parents)
-    common = aligned_indices(len(series.time_index), lag=max_lag, horizon=horizon)
+    all_lags = normalized_self_lags + tuple(
+        parent.lag for parent in interregional_parents
+    )
+    common = aligned_indices(
+        len(series.time_index), lag=max(all_lags), horizon=horizon
+    )
     target_indices = common.target_index
     origin_indices = common.forecast_origin
-    target_region_index = series.region_id.index(parent_set.target_region)
+    target_region_index = series.region_id.index(target_region)
 
     feature_columns: list[np.ndarray] = []
     feature_valid_columns: list[np.ndarray] = []
     feature_names: list[str] = []
     feature_lags: list[int] = []
 
-    for parent in parent_set.parents:
+    # Fixed Self-history block: identical semantic features across Self/PCMCI.
+    for lag in normalized_self_lags:
+        source_indices = target_indices - lag
+        for dimension_index, dimension_name in enumerate(series.dimension):
+            feature_columns.append(
+                series.X[source_indices, target_region_index, dimension_index]
+            )
+            feature_valid_columns.append(
+                series.valid_mask[source_indices, target_region_index, dimension_index]
+            )
+            feature_names.append(encode_feature_name(target_region, dimension_name))
+            feature_lags.append(lag)
+
+    # Incremental information: only selected parents from other regions.
+    for parent in interregional_parents:
         source_indices = target_indices - parent.lag
         source_region_index = series.region_id.index(parent.source_region)
         for dimension_index, dimension_name in enumerate(series.dimension):
@@ -296,7 +320,7 @@ def build_pcmci_parent_design_matrix(
         X=X,
         y=y,
         subject_id=(series.subject_id,) * row_count,
-        region_id=(parent_set.target_region,) * row_count,
+        region_id=(target_region,) * row_count,
         forecast_origin=series.time_index[origin_indices],
         target_time=series.time_index[target_indices],
         feature_names=tuple(feature_names),
