@@ -1,5 +1,6 @@
 """Lagged Facial Graph Forecasting research package."""
 
+from .alignment import AlignedIndices, aligned_indices
 from .contracts import (
     ContractError,
     DesignMatrix,
@@ -13,6 +14,7 @@ from .splits import build_subject_split_manifest
 from .synthetic import generate_synthetic_face_time_series
 
 __all__ = [
+    "AlignedIndices",
     "ContractError",
     "DesignMatrix",
     "FaceTimeSeries",
@@ -20,6 +22,7 @@ __all__ = [
     "PredictionArtifact",
     "SplitManifest",
     "ScientificConfigError",
+    "aligned_indices",
     "build_subject_split_manifest",
     "generate_synthetic_face_time_series",
     "load_scientific_config",
