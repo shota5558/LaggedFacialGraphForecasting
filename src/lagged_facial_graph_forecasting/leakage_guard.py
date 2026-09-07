@@ -84,3 +84,16 @@ def assert_ridge_tuning_scope(
         subject_ids,
         operation="ridge tuning",
     )
+
+
+def assert_null_construction_scope(
+    manifest: SplitManifest,
+    subject_ids: Iterable[str],
+) -> tuple[str, ...]:
+    """Assert that Primary Null mapping construction uses outer-train subjects only."""
+
+    return _assert_outer_train_only_subjects(
+        manifest,
+        subject_ids,
+        operation="null construction",
+    )
