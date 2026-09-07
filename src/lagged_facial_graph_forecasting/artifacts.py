@@ -43,24 +43,31 @@ def build_v0_result_payload(
         raise ValueError("prediction subject provenance does not match DesignMatrix")
     if prediction.region_id != matrix.region_id:
         raise ValueError("prediction region provenance does not match DesignMatrix")
+    if prediction.target_dimensions != matrix.target_dimensions:
+        raise ValueError("prediction target_dimensions do not match DesignMatrix")
     if not np.array_equal(prediction.forecast_origin, matrix.forecast_origin):
         raise ValueError("prediction forecast_origin does not match DesignMatrix")
     if not np.array_equal(prediction.target_time, matrix.target_time):
         raise ValueError("prediction target_time does not match DesignMatrix")
     if matrix.feature_names != fitted.feature_names or matrix.feature_lags != fitted.feature_lags:
         raise ValueError("fitted feature provenance does not match DesignMatrix")
+    if matrix.target_dimensions != fitted.target_dimensions:
+        raise ValueError("fitted target provenance does not match DesignMatrix")
 
     velocity_rmse_value = float(velocity_rmse_value)
     if not np.isfinite(velocity_rmse_value) or velocity_rmse_value < 0:
         raise ValueError("velocity_rmse_value must be finite and >= 0")
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "outer_fold": prediction.outer_fold,
         "condition": prediction.condition,
         "feature_provenance": {
             "feature_names": list(matrix.feature_names),
             "feature_lags": list(matrix.feature_lags),
+        },
+        "target_provenance": {
+            "target_dimensions": list(matrix.target_dimensions),
         },
         "model": {
             "forecaster": "ridge",
