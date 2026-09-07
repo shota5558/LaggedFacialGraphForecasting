@@ -34,6 +34,7 @@ def _matrix(subjects: tuple[str, ...]) -> DesignMatrix:
         y=(2.0 * values + 1.0).reshape(-1, 1),
         subject_id=subjects,
         region_id=("mouth",) * len(subjects),
+        target_dimensions=("vx",),
         forecast_origin=np.arange(len(subjects), dtype=float),
         target_time=np.arange(1, len(subjects) + 1, dtype=float),
         feature_names=("mouth.vx",),
