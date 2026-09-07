@@ -7,26 +7,24 @@ implemented:
   - non-finite elements are flagged invalid without repair or sample dropping
   - optional external frame-quality scores require an explicit fixed threshold; this module never estimates a threshold from data or predictive outcomes
   - immutable finite-mask, frame pass flag, final valid_mask, threshold, and method provenance are retained
-  - removed the duplicate quality_flags.py implementation and the duplicate quality-flag test file before final PASS
+  - removed the duplicate quality_flags.py implementation
+  - retained exactly one canonical regression test file after parallel cleanup
 
 files_changed:
   - src/lagged_facial_graph_forecasting/quality.py
-  - tests/test_quality_flag.py
+  - tests/test_quality_flags.py
   - artifacts/setup/A-11/task_result.yaml
 
 source_commits:
   quality_flag_implementation: 20ca318393e2c7ad106e1809c56381c71adad78f
   duplicate_source_removal: b8d238f88dcadf887d6e8471a5a630dfadd4cbdf
-  canonical_test: ef3a8a8fbdd4e94d5eb2f180fa40c102972a5ee1
-  duplicate_test_removal: d6f51044bab8bd17b9e9c750a263241c6d63397a
+  canonical_test_restoration: e52f071033046b6cc10765cd8babdabd4d3ccf81
 
 tests:
   workflow: tests
-  run_id: 34153156746
-  job_id: 101839413014
-  head_sha: d6f51044bab8bd17b9e9c750a263241c6d63397a
+  run_id: 34153218059
+  head_sha: e52f071033046b6cc10765cd8babdabd4d3ccf81
   result: success
-  suite_result: 355 passed in 2.05s
   cases:
     - finite values produce elementwise validity flags
     - explicit frame-quality threshold invalidates the whole low-quality frame
@@ -42,8 +40,8 @@ scientific_checks:
   - any threshold must be externally frozen/outer-train-safe; no threshold fitting occurs in this API
   - no population-level preprocessing statistic is fitted
   - valid_mask semantics match the frozen FaceTimeSeries elementwise mask contract
-  - duplicate implementation and duplicate tests are removed
-  - no PCMCI+, Null, Sensitivity, or h>1 path is introduced
+  - duplicate implementation and duplicate test variants are removed; one canonical test remains
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
 
 artifacts:
   - artifacts/setup/A-11/task_result.yaml
