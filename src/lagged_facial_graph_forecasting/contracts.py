@@ -22,6 +22,19 @@ def _normalize_subject_ids(values: tuple[str, ...], field_name: str) -> tuple[st
     return normalized
 
 
+def _normalize_row_labels(
+    values: tuple[str, ...], expected_length: int, field_name: str
+) -> tuple[str, ...]:
+    normalized = tuple(values)
+    if len(normalized) != expected_length:
+        raise ContractError(
+            f"{field_name} must contain {expected_length} entries; got {len(normalized)}"
+        )
+    if any(not isinstance(value, str) or not value.strip() for value in normalized):
+        raise ContractError(f"{field_name} entries must be non-empty strings")
+    return normalized
+
+
 @dataclass(frozen=True, slots=True)
 class FaceTimeSeries:
     """Subject-level facial motion time series.
@@ -191,3 +204,106 @@ class SplitManifest:
         object.__setattr__(self, "train_subject_ids", train_ids)
         object.__setattr__(self, "test_subject_ids", test_ids)
         object.__setattr__(self, "inner_folds", inner_folds)
+
+
+@dataclass(frozen=True, slots=True)
+class DesignMatrix:
+    """Forecast design matrix with row-level and feature-level provenance."""
+
+    X: np.ndarray
+    y: np.ndarray
+    subject_id: tuple[str, ...]
+    region_id: tuple[str, ...]
+    forecast_origin: np.ndarray
+    target_time: np.ndarray
+    feature_names: tuple[str, ...]
+    feature_lags: tuple[int, ...]
+    valid_mask: np.ndarray
+
+    def __post_init__(self) -> None:
+        X = np.asarray(self.X)
+        y = np.asarray(self.y)
+        forecast_origin = np.asarray(self.forecast_origin)
+        target_time = np.asarray(self.target_time)
+        valid_mask = np.asarray(self.valid_mask)
+
+        if X.ndim != 2:
+            raise ContractError(f"DesignMatrix.X must be 2D; got ndim={X.ndim}")
+        if not np.issubdtype(X.dtype, np.number):
+            raise ContractError("DesignMatrix.X must be numeric")
+        N, F = X.shape
+        if N < 1 or F < 1:
+            raise ContractError(f"DesignMatrix.X must be non-empty; got shape={X.shape}")
+
+        if y.ndim not in (1, 2) or y.shape[0] != N:
+            raise ContractError(
+                f"y must have shape ({N},) or ({N}, D); got {y.shape}"
+            )
+        if y.ndim == 2 and y.shape[1] < 1:
+            raise ContractError("y output dimension must be non-empty")
+        if not np.issubdtype(y.dtype, np.number):
+            raise ContractError("y must be numeric")
+
+        subject_id = _normalize_row_labels(self.subject_id, N, "subject_id")
+        region_id = _normalize_row_labels(self.region_id, N, "region_id")
+
+        for values, name in (
+            (forecast_origin, "forecast_origin"),
+            (target_time, "target_time"),
+        ):
+            if values.ndim != 1 or values.shape[0] != N:
+                raise ContractError(f"{name} must have shape ({N},); got {values.shape}")
+            if not np.issubdtype(values.dtype, np.number) or not np.all(np.isfinite(values)):
+                raise ContractError(f"{name} must contain finite numeric values")
+
+        if not np.all(target_time > forecast_origin):
+            raise ContractError("target_time must be strictly after forecast_origin")
+
+        feature_names = tuple(self.feature_names)
+        if len(feature_names) != F:
+            raise ContractError(
+                f"feature_names must contain {F} entries; got {len(feature_names)}"
+            )
+        if any(not isinstance(value, str) or not value.strip() for value in feature_names):
+            raise ContractError("feature_names entries must be non-empty strings")
+
+        feature_lags = tuple(self.feature_lags)
+        if len(feature_lags) != F:
+            raise ContractError(
+                f"feature_lags must contain {F} entries; got {len(feature_lags)}"
+            )
+        if any(
+            not isinstance(lag, (int, np.integer))
+            or isinstance(lag, (bool, np.bool_))
+            or int(lag) < 1
+            for lag in feature_lags
+        ):
+            raise ContractError("feature_lags entries must be positive integers")
+        feature_lags = tuple(int(lag) for lag in feature_lags)
+
+        provenance_pairs = tuple(zip(feature_names, feature_lags, strict=True))
+        if len(set(provenance_pairs)) != F:
+            raise ContractError("(feature_name, feature_lag) pairs must be unique")
+
+        if valid_mask.shape != (N,):
+            raise ContractError(f"valid_mask must have shape ({N},); got {valid_mask.shape}")
+        if valid_mask.dtype != np.bool_:
+            raise ContractError("valid_mask must have boolean dtype")
+
+        if np.any(valid_mask):
+            valid_X = X[valid_mask]
+            valid_y = y[valid_mask]
+            if not np.all(np.isfinite(valid_X)):
+                raise ContractError("valid rows of X must be finite")
+            if not np.all(np.isfinite(valid_y)):
+                raise ContractError("valid rows of y must be finite")
+
+        object.__setattr__(self, "X", X)
+        object.__setattr__(self, "y", y)
+        object.__setattr__(self, "subject_id", subject_id)
+        object.__setattr__(self, "region_id", region_id)
+        object.__setattr__(self, "forecast_origin", forecast_origin)
+        object.__setattr__(self, "target_time", target_time)
+        object.__setattr__(self, "feature_names", feature_names)
+        object.__setattr__(self, "feature_lags", feature_lags)
+        object.__setattr__(self, "valid_mask", valid_mask)
