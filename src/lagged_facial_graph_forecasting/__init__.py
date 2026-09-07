@@ -31,6 +31,8 @@ from .design_matrix import (
     build_pcmci_parent_design_matrix,
     build_persistence_design_matrix,
     build_self_history_design_matrix,
+    decode_feature_name,
+    encode_feature_name,
 )
 from .forecaster import (
     FittedRidgeForecaster,
@@ -107,8 +109,10 @@ __all__ = [
     "build_split_manifest_payload",
     "build_subject_split_manifest",
     "build_v0_result_payload",
+    "decode_feature_name",
     "deserialize_core_contract",
     "dumps_core_contract",
+    "encode_feature_name",
     "fit_ridge_forecaster",
     "generate_synthetic_face_time_series",
     "load_scientific_config",
