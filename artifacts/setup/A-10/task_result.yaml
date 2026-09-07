@@ -2,26 +2,44 @@ task_id: A-10
 task_name: Optional acceleration
 status: PASS
 
-disposition: intentionally_deferred_non_blocking
+disposition: implemented_optional_non_blocking
 
 implemented:
-  - no acceleration feature was added to the Primary preprocessing path
-  - recorded the research-plan decision that acceleration is optional and is not a Primary execution blocker
-  - preserved A-09 velocity as the highest-order required Primary motion feature at this stage
+  - added an optional acceleration helper in the canonical motion_features.py module
+  - computes consecutive A-09 velocity differences divided by observed elapsed time between their target frames
+  - makes the irregular-timestamp finite-difference convention explicit instead of assuming fixed FPS
+  - preserves immutable source/target frame provenance and elapsed-time provenance
+  - performs no smoothing, interpolation, imputation, resampling, population-level fitting, or feature selection
+  - acceleration remains optional and is not wired as a required Primary preprocessing feature
 
 files_changed:
+  - src/lagged_facial_graph_forecasting/motion_features.py
+  - tests/test_acceleration.py
   - artifacts/setup/A-10/task_result.yaml
 
 tests:
-  regression_suite_source: A-09 evidence commit 70481339bf1e7710067dea533e35871579616833
-  regression_result: success
-  note: no new executable acceleration behavior was introduced, so no acceleration unit test is applicable at this stage
+  workflow: tests
+  implementation_commit: 24e7b67918505644cb33b8e6befb3536b6c0147f
+  test_commit: f6d03d097dff67a65f7bb33d34cb2222f267d203
+  test_run_id: 34152898266
+  test_job_id: 101838659336
+  result: success
+  suite_result: 348 passed in 2.32s
+  cases:
+    - irregular elapsed time between velocity target frames is used explicitly
+    - constant velocity produces zero acceleration
+    - NaN velocity propagates without imputation
+    - fewer than two velocity rows are rejected
+    - temporal gaps in velocity provenance are rejected
+    - outputs are immutable and inputs are unchanged
 
 scientific_checks:
-  - consistent with the frozen plan: acceleration is optional and advanced acceleration metrics are not Primary blockers
-  - avoids expanding the Primary estimand or feature semantics without a pre-frozen need
-  - no preprocessing fit, outer-test-dependent selection, PCMCI+, Null, Sensitivity, or h>1 path is introduced
-  - future acceleration support, if scientifically required, must be additive and must not retroactively change frozen Primary results
+  - acceleration is optional and does not become a Primary blocker or redefine the Primary estimand
+  - A-01/A-09 irregular-timestamp semantics are preserved; no hidden fixed-FPS assumption is introduced
+  - no preprocessing statistic is fitted and outer-test outcomes cannot influence this deterministic helper
+  - no missingness repair/interpolation is introduced before A-12/A-13
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
+  - corrected the prior stale artifact text that incorrectly claimed no executable acceleration behavior existed
 
 artifacts:
   - artifacts/setup/A-10/task_result.yaml
