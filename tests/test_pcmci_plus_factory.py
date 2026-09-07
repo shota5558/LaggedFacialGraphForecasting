@@ -29,14 +29,17 @@ def _bundle():
     )
     series = []
     for subject_id in manifest.train_subject_ids:
-        values = np.arange(24, dtype=float).reshape(6, 2, 2)
+        # D-01 deliberately accepts exactly one scalar component per region until
+        # the real-data region-state mapping is scientifically frozen. D-03 tests
+        # object construction only and must not bypass that fail-closed contract.
+        values = np.arange(12, dtype=float).reshape(6, 2, 1)
         series.append(
             FaceTimeSeries(
                 X=values,
                 subject_id=subject_id,
                 time_index=np.arange(6, dtype=float) / 25.0,
                 region_id=("left_eye", "mouth"),
-                dimension=("vx", "vy"),
+                dimension=("scalar_motion",),
                 valid_mask=np.ones_like(values, dtype=bool),
                 sampling_rate=25.0,
             )
