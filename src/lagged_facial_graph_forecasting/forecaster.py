@@ -81,6 +81,17 @@ def predict_ridge_forecaster(
     if np.any(valid_rows):
         prediction = np.asarray(fitted.pipeline.predict(matrix.X[valid_rows]))
         expected_shape = matrix.y[valid_rows].shape
+
+        # scikit-learn may squeeze a single-output 2D target from (N, 1) to
+        # (N,) on predict. Restore the DesignMatrix target shape so the
+        # PredictionArtifact preserves its exact output-dimension contract.
+        if (
+            matrix.y.ndim == 2
+            and matrix.y.shape[1] == 1
+            and prediction.ndim == 1
+        ):
+            prediction = prediction.reshape(-1, 1)
+
         if prediction.shape != expected_shape:
             raise RuntimeError(
                 f"Ridge prediction shape mismatch: expected {expected_shape}, "
