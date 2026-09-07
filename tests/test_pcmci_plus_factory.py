@@ -56,10 +56,14 @@ def test_primary_pcmci_plus_factory_binds_guarded_dataframe_and_frozen_parcorr()
     assert callable(pcmci.run_pcmciplus)
 
 
-def test_primary_pcmci_plus_factory_does_not_run_discovery() -> None:
+def test_primary_pcmci_plus_factory_does_not_run_discovery(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _unexpected_run(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError("run_pcmciplus must not be called during D-03 construction")
+
+    monkeypatch.setattr(PCMCI, "run_pcmciplus", _unexpected_run)
     pcmci = make_primary_pcmci_plus(_bundle())
 
-    assert pcmci.all_parents is None
+    assert isinstance(pcmci, PCMCI)
 
 
 def test_primary_pcmci_plus_factory_rejects_noncanonical_input() -> None:
