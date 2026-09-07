@@ -1,10 +1,10 @@
-"""Frozen outer-train Ridge refit after inner-CV lambda selection."""
+"""Compatibility entry point for the canonical frozen outer-train Ridge refit."""
 
 from __future__ import annotations
 
 from .contracts import DesignMatrix, SplitManifest
-from .forecaster import FittedRidgeForecaster, fit_ridge_forecaster
-from .ridge_tuning import RidgeAlphaScore, select_ridge_alpha
+from .forecaster import FittedRidgeForecaster
+from .ridge_tuning import RidgeAlphaScore, refit_selected_ridge
 
 
 def refit_frozen_ridge(
@@ -13,38 +13,15 @@ def refit_frozen_ridge(
     split_manifest: SplitManifest,
     selected: RidgeAlphaScore,
 ) -> FittedRidgeForecaster:
-    """Refit scaler + Ridge once on complete outer-train using the frozen alpha.
+    """Delegate E-06 refit to the single canonical implementation.
 
-    E-05 owns model selection. This function only validates that the supplied
-    selection metadata is well-formed, verifies the refit matrix contains exactly
-    the outer-train subject set, and delegates the single final fit to the common
-    scikit-learn StandardScaler + Ridge pipeline.
+    ``ridge_tuning.refit_selected_ridge`` owns all scope checks, selected-alpha
+    validation, and the final StandardScaler + Ridge fit.  This wrapper retains the
+    task-oriented import path without duplicating fitting or leakage logic.
     """
 
-    matrix_subjects = set(matrix.subject_id)
-    outer_train_subjects = set(split_manifest.train_subject_ids)
-    outer_test_subjects = set(split_manifest.test_subject_ids)
-
-    leaked_test_subjects = matrix_subjects & outer_test_subjects
-    if leaked_test_subjects:
-        raise ValueError(
-            "Ridge frozen-refit matrix contains outer-test subjects: "
-            f"{sorted(leaked_test_subjects)}"
-        )
-    unexpected_subjects = matrix_subjects - outer_train_subjects
-    if unexpected_subjects:
-        raise ValueError(
-            "Ridge frozen-refit matrix contains subjects outside outer-train: "
-            f"{sorted(unexpected_subjects)}"
-        )
-    missing_subjects = outer_train_subjects - matrix_subjects
-    if missing_subjects:
-        raise ValueError(
-            "Ridge frozen-refit matrix is missing outer-train subjects: "
-            f"{sorted(missing_subjects)}"
-        )
-
-    # Validation only: a singleton cannot change the E-05 choice.  This rejects
-    # malformed/non-finite selection metadata before consuming the frozen alpha.
-    validated_selection = select_ridge_alpha((selected,))
-    return fit_ridge_forecaster(matrix, alpha=validated_selection.alpha)
+    return refit_selected_ridge(
+        matrix,
+        split_manifest=split_manifest,
+        selection=selected,
+    )
