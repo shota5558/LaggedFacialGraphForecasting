@@ -21,13 +21,12 @@ reused_files:
 
 tests:
   workflow: tests
-  run_id: 34150131853
-  job_id: 101830488594
-  head_sha: c39f89d74359cb7b1789ceaacd35b6004fdc7fb0
+  run_id: 34150160759
+  job_id: 101830578037
+  head_sha: 932f04494107ce48f91527ecc73995e19f00f773
   result: success
-  suite_result: 233 passed
   cases:
-    - canonical Primary run descriptor loads as ExperimentConfig
+    - repository Primary run descriptor loads as ExperimentConfig
     - sensitivity artifact root is rejected
     - modified scientific freeze is rejected
     - run_config_path must identify the loaded descriptor exactly
