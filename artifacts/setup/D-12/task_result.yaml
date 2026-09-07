@@ -1,0 +1,59 @@
+task_id: D-12
+task_name: PCMCI+ bootstrap discovery
+status: PASS
+
+implemented:
+  - reused Tigramite PCMCI.run_bootstrap_of with method run_pcmciplus; no generic bootstrap reimplementation
+  - outer-train subject scope is revalidated immediately before bootstrap discovery
+  - frozen Primary run_pcmciplus method args are injected, including tau_max = 10 and pc_alpha = 0.01
+  - boot_samples, boot_blocklength, and seed are explicit reproducibility inputs because the study-level stability resampling count/block length is not yet scientifically frozen
+  - validates positive integer bootstrap settings and non-negative integer seed
+  - validates Tigramite bootstrap result contains summary_results and boot_results
+  - raw boot_results are preserved for D-13; bootstrap summary/majority is not used to redefine the Primary ParentSet
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/pcmci_bootstrap.py
+  - tests/test_pcmci_bootstrap.py
+  - artifacts/setup/D-12/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/pcmci_runner.py
+  - src/lagged_facial_graph_forecasting/pcmci_plus_factory.py
+  - src/lagged_facial_graph_forecasting/leakage_guard.py
+  - src/lagged_facial_graph_forecasting/tigramite_adapter.py
+  - Tigramite PCMCI.run_bootstrap_of
+
+tests:
+  workflow: tests
+  run_id: 34162506195
+  job_id: 101867028257
+  head_sha: 13f9b0c07258c60a00159cff77755a0c37d2bfc1
+  python: 3.11.16
+  tigramite: 5.2.10.1
+  result: 526 passed, 1 warning in 3.73s
+  targeted_checks:
+    - exact delegation to Tigramite run_bootstrap_of(method=run_pcmciplus)
+    - frozen tau_max = 10 and pc_alpha = 0.01 propagated in method_args
+    - no runtime tau_max/pc_alpha override in D-12 API
+    - execution-boundary outer-test leakage rejection
+    - invalid boot_samples/blocklength/seed rejection
+    - malformed Tigramite result rejection
+    - real Tigramite bootstrap smoke
+    - same seed produces identical boot_results graph
+  warning: known Tigramite single-dataset analysis_mode=multiple warning in existing converter fixture; unrelated to D-12
+
+scientific_checks:
+  - bootstrap discovery is outer-train only
+  - Primary discovery remains PCMCI+ + ParCorr with tau_max = 10 and pc_alpha = 0.01
+  - bootstrap settings are not selected from outer-test or prediction outcomes
+  - bootstrap stability output cannot modify the frozen Primary ParentSet in D-12
+  - D-13 selection-frequency aggregation is not implemented inside D-12
+  - generic bootstrap mechanics are reused from Tigramite instead of reimplemented
+
+artifacts:
+  - artifacts/setup/D-12/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: D-13
