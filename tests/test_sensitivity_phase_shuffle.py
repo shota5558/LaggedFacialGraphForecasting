@@ -50,11 +50,15 @@ def test_phase_shuffle_preserves_subject_shape_sampling_metadata_and_spectrum() 
 def test_phase_shuffle_destroys_cross_series_temporal_alignment_on_broadband_fixture() -> None:
     source = _coherent_series("subject_a", 88)
     before = float(np.corrcoef(source.X[:, 0, 0], source.X[:, 1, 0])[0, 1])
-    shuffled = phase_shuffle_face_time_series(source, seed=1234).series
-    after = float(np.corrcoef(shuffled.X[:, 0, 0], shuffled.X[:, 1, 0])[0, 1])
+    after_abs_correlations = []
+    for seed in range(20):
+        shuffled = phase_shuffle_face_time_series(source, seed=seed).series
+        after = float(np.corrcoef(shuffled.X[:, 0, 0], shuffled.X[:, 1, 0])[0, 1])
+        after_abs_correlations.append(abs(after))
 
     assert before > 0.95
-    assert abs(after) < 0.35
+    assert float(np.median(after_abs_correlations)) < 0.30
+    assert sum(value < 0.35 for value in after_abs_correlations) >= 14
 
 
 def test_phase_shuffle_is_deterministic_and_subject_order_invariant() -> None:
