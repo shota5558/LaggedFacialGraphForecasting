@@ -169,16 +169,32 @@ def _lag_response(rng: np.random.Generator, metrics: pd.DataFrame) -> pd.DataFra
 
 
 def _edge_stability() -> pd.DataFrame:
+    """Create internally reconciled stability counts and frequencies.
+
+    Fold-level selection opportunities are discrete (4 outer folds), so arbitrary
+    decimal frequencies such as 0.88 cannot be represented exactly. Counts are the
+    source of truth and frequencies are derived from count / opportunities.
+    """
     edges = (
-        ("left_cheek", "vx", "mouth", "vx", 2, 0.88, 0.84),
-        ("right_cheek", "vx", "mouth", "vx", 3, 0.82, 0.79),
-        ("jaw", "vy", "mouth", "vy", 1, 0.94, 0.90),
-        ("mouth", "vx", "jaw", "vx", 2, 0.70, 0.66),
-        ("left_cheek", "vy", "right_cheek", "vy", 4, 0.56, 0.52),
-        ("right_cheek", "vy", "left_cheek", "vy", 4, 0.54, 0.50),
+        ("left_cheek", "vx", "mouth", "vx", 2, 4, 84),
+        ("right_cheek", "vx", "mouth", "vx", 3, 3, 79),
+        ("jaw", "vy", "mouth", "vy", 1, 4, 90),
+        ("mouth", "vx", "jaw", "vx", 2, 3, 66),
+        ("left_cheek", "vy", "right_cheek", "vy", 4, 2, 52),
+        ("right_cheek", "vy", "left_cheek", "vy", 4, 2, 50),
     )
+    fold_opportunities = 4
+    bootstrap_opportunities = 100
     rows = []
-    for source_region, source_dimension, target_region, target_dimension, lag, fold_freq, boot_freq in edges:
+    for (
+        source_region,
+        source_dimension,
+        target_region,
+        target_dimension,
+        lag,
+        fold_selected_count,
+        bootstrap_selected_count,
+    ) in edges:
         rows.append({
             **_common(),
             "source_region": source_region,
@@ -186,12 +202,12 @@ def _edge_stability() -> pd.DataFrame:
             "target_region": target_region,
             "target_dimension": target_dimension,
             "lag": lag,
-            "fold_selected_count": round(fold_freq * 4),
-            "fold_opportunities": 4,
-            "outer_fold_selection_frequency": fold_freq,
-            "bootstrap_selected_count": round(boot_freq * 100),
-            "bootstrap_opportunities": 100,
-            "bootstrap_selection_frequency": boot_freq,
+            "fold_selected_count": fold_selected_count,
+            "fold_opportunities": fold_opportunities,
+            "outer_fold_selection_frequency": fold_selected_count / fold_opportunities,
+            "bootstrap_selected_count": bootstrap_selected_count,
+            "bootstrap_opportunities": bootstrap_opportunities,
+            "bootstrap_selection_frequency": bootstrap_selected_count / bootstrap_opportunities,
             "evaluable": True,
         })
     return pd.DataFrame(rows)
