@@ -1,4 +1,4 @@
-"""Lag/horizon alignment utilities for direct forecasting."""
+"""Lag/horizon alignment utilities for the V0 vertical slice."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import numpy as np
 
 @dataclass(frozen=True, slots=True)
 class AlignedIndices:
-    """Aligned source, forecast-origin, and target indices for one target-relative lag."""
+    """Aligned source, forecast-origin, and target indices for one lag."""
 
     source_index: np.ndarray
     forecast_origin: np.ndarray
@@ -30,17 +30,15 @@ def aligned_indices(
     at target-relative lag ``tau`` is observed at ``t + h - tau``. Direct forecasting
     therefore requires ``tau >= h`` so the source is no later than forecast origin.
 
-    The utility is horizon-parameterized for Sensitivity implementation. Primary
-    callers remain frozen to ``h=1`` by the scientific/runner configuration; making
-    this indexing primitive generic does not change the Primary estimand.
+    V0 implements only the frozen Primary horizon ``h = 1``.
     """
 
     if not isinstance(n_steps, int) or isinstance(n_steps, bool) or n_steps < 2:
         raise ValueError("n_steps must be an integer >= 2")
     if not isinstance(horizon, int) or isinstance(horizon, bool):
         raise ValueError("horizon must be an integer")
-    if horizon < 1:
-        raise ValueError("horizon must be >= 1")
+    if horizon != 1:
+        raise ValueError("V0 Primary horizon is frozen to h=1")
     if not isinstance(lag, (int, np.integer)) or isinstance(lag, (bool, np.bool_)):
         raise ValueError("lag must be an integer")
     lag = int(lag)
@@ -57,8 +55,6 @@ def aligned_indices(
     forecast_origin = target_index - horizon
     source_index = target_index - lag
 
-    if np.any(forecast_origin < 0):
-        raise RuntimeError("alignment invariant violated: forecast origin is negative")
     if np.any(source_index > forecast_origin):
         raise RuntimeError("alignment invariant violated: source is after forecast origin")
 
