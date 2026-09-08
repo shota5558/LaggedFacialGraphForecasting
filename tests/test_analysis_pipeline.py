@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 import pandas as pd
 import pytest
@@ -11,8 +13,10 @@ from lagged_facial_graph_forecasting.analysis_pipeline import (
     AnalysisInputs,
     AnalysisOutputError,
     SYNTHETIC_NOTICE,
+    edge_lag_source,
     generate_analysis_outputs,
     lag_response_source,
+    null_distribution_source,
     table_t04,
     table_t08,
 )
@@ -71,7 +75,13 @@ def test_issue23_generates_t01_t09_f01_f14_from_mock_with_provenance(tmp_path: P
     manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert manifest["publication_ready"] is False
     assert manifest["sensitivity_validation_scope"] == "software_only_mock"
-    assert all(entry["synthetic"] is True for entry in manifest["artifacts"])
+    registry = pd.read_csv(result.registry_path)
+    assert not registry.empty
+    assert registry["is_synthetic"].all()
+    assert registry["output_id"].str.match(r"^(T\d\d|F\d\d|CAPTIONS)$").all()
+    assert registry["source_artifacts"].notna().all()
+    assert manifest["artifact_registry"]["record_count"] == len(registry)
+    assert manifest["artifact_registry"]["sha256"] == hashlib.sha256(result.registry_path.read_bytes()).hexdigest()
 
 
 def test_issue23_outputs_are_deterministic_for_same_config_seed(tmp_path: Path) -> None:
@@ -113,6 +123,8 @@ def test_lag_response_marks_incomplete_target_fold_unevaluable_without_clipping(
     assert source.unevaluable_target_folds.nunique() == 1
     assert int(source.unevaluable_target_folds.iloc[0]) == 1
     assert source.delta_frames.tolist() == [-2, -1, 0, 1, 2]
+    assert source.same_region_identity.all()
+    assert source.same_feature_count.all()
     cfg = _config()
     cfg["lag_response"] = dict(cfg["lag_response"])
     cfg["lag_response"]["clipping"] = "allowed"
@@ -120,7 +132,21 @@ def test_lag_response_marks_incomplete_target_fold_unevaluable_without_clipping(
         lag_response_source(lag, cfg)
 
 
-def test_stability_validates_tau_max_and_frequency_reconciliation() -> None:
+def test_null_provenance_is_outer_train_only_and_matched_sparsity_is_exact() -> None:
+    metrics = pd.read_csv(FIXTURE_ROOT / "mock_metrics.csv")
+    nulls = pd.read_csv(FIXTURE_ROOT / "mock_null_metrics.csv")
+    source = null_distribution_source(metrics, nulls, _config())
+    assert set(source.mapping_scope) == {"outer_train_only"}
+    assert source.input_count_preserved.all()
+    matched = source[source.condition == "matched_sparsity"]
+    assert (matched.pcmci_feature_count == matched.null_feature_count).all()
+    random_region = source[source.condition.str.startswith("random_region")]
+    assert random_region.lag_identity_preserved.all()
+    keys = ["outer_fold", "subject_id", "region_id", "condition", "metric_name", "replicate_id"]
+    assert not source.duplicated(keys).any()
+
+
+def test_stability_validates_tau_max_frequency_and_missing_vs_zero() -> None:
     edges = pd.read_csv(FIXTURE_ROOT / "mock_edge_stability.csv")
     table = table_t08(edges)
     assert table.lag.between(1, 10).all()
@@ -131,7 +157,52 @@ def test_stability_validates_tau_max_and_frequency_reconciliation() -> None:
     with pytest.raises(AnalysisOutputError, match="does not reconcile"):
         table_t08(bad)
 
+    zero = edges.iloc[[0]].copy()
+    zero["source_region"] = "zero_source"
+    zero["target_region"] = "zero_target"
+    zero["lag"] = 5
+    zero["fold_selected_count"] = 0
+    zero["outer_fold_selection_frequency"] = 0.0
+    zero["bootstrap_selected_count"] = 0
+    zero["bootstrap_selection_frequency"] = 0.0
+    expanded = table_t08(pd.concat([edges, zero], ignore_index=True))
+    source = edge_lag_source(expanded)
+    observed_zero = source[(source.relation == "zero_source→zero_target") & (source.lag == 5)].iloc[0]
+    missing = source[(source.relation == "zero_source→zero_target") & (source.lag == 6)].iloc[0]
+    assert bool(observed_zero.observed) is True
+    assert observed_zero.fold_selection_frequency == pytest.approx(0.0)
+    assert bool(missing.observed) is False
+    assert pd.isna(missing.fold_selection_frequency)
+
+
+def test_primary_outputs_can_be_generated_without_sensitivity_execution(tmp_path: Path) -> None:
+    result = generate_analysis_outputs(_inputs(), repository_root=tmp_path, include_sensitivity=False)
+    assert (result.output_root / "tables/T03_primary_condition_performance.csv").is_file()
+    assert not (result.output_root / "tables/T09_sensitivity_summary.csv").exists()
+    assert not (result.output_root / "figures/F10_sensitivity_forest_plot.png").exists()
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    assert manifest["sensitivity_included"] is False
+    assert manifest["sensitivity_validation_scope"] == "not_generated"
+
 
 def test_sensitivity_requires_primary_freeze_outside_explicit_mock_verification(tmp_path: Path) -> None:
     with pytest.raises(AnalysisOutputError, match="before Primary freeze"):
         generate_analysis_outputs(_inputs(), repository_root=tmp_path, include_sensitivity=True)
+
+
+def test_mock_generator_emits_issue23_v2_contract_columns(tmp_path: Path) -> None:
+    subprocess.run(
+        [sys.executable, "scripts/generate_mock_analysis_data.py", "--output-dir", str(tmp_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    nulls = pd.read_csv(tmp_path / "mock_null_metrics.csv")
+    assert {
+        "mapping_scope", "pcmci_feature_count", "null_feature_count",
+        "input_count_preserved", "lag_identity_preserved",
+    }.issubset(nulls.columns)
+    lag = pd.read_csv(tmp_path / "mock_lag_response.csv")
+    assert {"same_region_identity", "same_feature_count"}.issubset(lag.columns)
+    config = json.loads((tmp_path / "mock_primary_config.json").read_text(encoding="utf-8"))
+    assert config["evaluation"]["primary_metric"] == "velocity_rmse"
