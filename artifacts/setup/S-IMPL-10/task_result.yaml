@@ -1,40 +1,86 @@
 task_id: S-IMPL-10
 task_name: Primary Freeze execution barrier
 status: PASS
+
+audit_remediation:
+  issue: 22
+  prior_audit_verdict: FAIL
+  root_cause: >-
+    The Primary Freeze validator existed and passed unit tests, but phase shuffle,
+    circular shift, multi-horizon construction, GRU fit/predict, and raw Sensitivity
+    result serialization could be invoked without making the common execution barrier
+    structurally mandatory at their public entrypoints.
+  issue_reopened_before_fix: true
+  remediation_commits:
+    - bef72dbe08ea23d9ef852b003bc60d52899f73c7
+    - cd95c7bd9cc686a121c461c34b7c5bc91ca9ffb7
+    - 84b2700947786241160046c56c0c32589f156a1d
+
 implemented:
   - real-data Sensitivity execution fails closed when Primary Freeze manifest is absent
-  - existence-only / invalid / incomplete freeze manifests are rejected
-  - Primary Freeze manifest must declare PASS and use artifacts/primary root
-  - all Issue #20 freeze target artifact types are required
-  - all referenced Primary artifacts must exist beneath artifacts/primary and match SHA-256
-  - synthetic implementation tests remain executable without Primary Freeze
-  - real Sensitivity artifacts must reference the exact validated freeze manifest
-  - Sensitivity output paths remain structurally confined to artifacts/sensitivity
-  - S-IMPL-01 existence-only regression test migrated to the hardened S-IMPL-10 contract
-files_changed:
-  - src/lagged_facial_graph_forecasting/sensitivity_execution.py
-  - tests/test_sensitivity_freeze_barrier.py
-  - tests/test_sensitivity_execution_boundary.py
+  - existence-only, invalid, incomplete, or hash-mismatched Primary Freeze manifests are rejected
+  - Primary Freeze manifest must declare PASS and use artifacts/primary as its root
+  - all Issue #20 freeze target artifact types are required and SHA-256 verified
+  - GPDC and LPCMCI retain their execution-boundary and outer-train leakage guards
+  - phase-shuffle public execution APIs require SensitivityExperimentConfig and the common barrier
+  - circular-shift public execution APIs require SensitivityExperimentConfig and the common barrier
+  - all h>1 Sensitivity design-matrix builders require SensitivityExperimentConfig and the common barrier
+  - GRU fit and predict public APIs require SensitivityExperimentConfig and the common barrier
+  - real Sensitivity artifact provenance must reference the exact canonical Primary Freeze manifest
+  - raw Sensitivity result serialization requires an execution permit and validates real provenance
+  - canonical Sensitivity result writing is confined to artifacts/sensitivity
+  - synthetic pre-implementation remains executable without Primary Freeze
+  - Primary h=1, PCMCI+/ParCorr, Ridge, Core contracts, and Primary artifact namespace are unchanged
+
+files_changed_in_remediation:
+  - src/lagged_facial_graph_forecasting/sensitivity_phase_shuffle.py
+  - src/lagged_facial_graph_forecasting/sensitivity_circular_shift.py
+  - src/lagged_facial_graph_forecasting/sensitivity_horizon.py
+  - src/lagged_facial_graph_forecasting/sensitivity_gru.py
+  - src/lagged_facial_graph_forecasting/sensitivity_results.py
+  - tests/test_sensitivity_component_barrier.py
+  - tests/test_sensitivity_phase_shuffle.py
+  - tests/test_sensitivity_circular_shift.py
+  - tests/test_sensitivity_horizon.py
+  - tests/test_sensitivity_gru.py
+  - tests/test_sensitivity_results.py
+  - tests/test_sensitivity_integration.py
+  - tests/test_sensitivity_integration_torch.py
+
 tests:
-  initial_workflow_run_id: 34216108135
-  initial_result: FAIL
-  fail_type: contract mismatch
-  root_cause: legacy S-IMPL-01 test expected an empty existing manifest to unlock real execution, conflicting with S-IMPL-10 invalid/incomplete-manifest rejection
-  fix_commit: f5105cece71a5a1f8ae570a4468a8936829d48ba
-  regression_workflow_run_id: 34216263343
-  regression_result: success
+  surrogate_horizon_commit: bef72dbe08ea23d9ef852b003bc60d52899f73c7
+  surrogate_horizon_workflow_run_id: 34221900278
+  surrogate_horizon_result: success
+  gru_writer_commit: cd95c7bd9cc686a121c461c34b7c5bc91ca9ffb7
+  gru_writer_normal_workflow_run_id: 34222150577
+  gru_writer_normal_result: success
+  gru_writer_torch_workflow_run_id: 34222150533
+  gru_writer_torch_result: success
+  final_code_commit: 84b2700947786241160046c56c0c32589f156a1d
+  final_normal_workflow_run_id: 34222669956
+  final_normal_result: success
+  final_torch_workflow_run_id: 34222669837
+  final_torch_result: success
+
 scientific_checks:
   primary_freeze_generated_by_issue_22: false
   real_sensitivity_before_primary_freeze_allowed: false
+  component_direct_call_can_bypass_freeze_barrier: false
+  raw_result_serialization_can_bypass_freeze_barrier: false
   invalid_primary_freeze_can_unlock_real_execution: false
   primary_artifact_hashes_verified: true
   primary_namespace_write_allowed: false
   synthetic_preimplementation_allowed: true
+  primary_semantics_modified: false
   real_facial_data_used: false
+
 provenance:
-  implementation_commit: 88d2cff7756b056b381c8d2a584ef5a35580e274
-  fix_commit: f5105cece71a5a1f8ae570a4468a8936829d48ba
+  original_s_impl_10_implementation_commit: 88d2cff7756b056b381c8d2a584ef5a35580e274
+  original_contract_fix_commit: f5105cece71a5a1f8ae570a4468a8936829d48ba
+  audited_base_commit: 91633e2d33e5f81f5bf05e943e6d8abcb9863cb6
+  final_code_commit: 84b2700947786241160046c56c0c32589f156a1d
   branch: dev
+
 remaining_issue:
   - none
-next_task: issue_22_completion_audit
+next_task: issue_22_completion_reaudit
