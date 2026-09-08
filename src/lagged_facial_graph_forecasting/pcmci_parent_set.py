@@ -52,7 +52,8 @@ def convert_lagged_links_to_parent_set(
             )
         if link.link_mark != PRIMARY_LAGGED_LINK_MARK:
             raise ParentSetConversionError(
-                "ParentSet conversion accepts only validated Tigramite lagged links with '-->'; "
+                "ParentSet conversion accepts only D-09 validated Tigramite lagged links "
+                "with '-->'; "
                 f"got {link.link_mark!r}"
             )
         if link.target_region != target_region:
