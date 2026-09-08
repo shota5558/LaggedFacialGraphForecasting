@@ -1,778 +1,354 @@
 # PCMCI+ Facial Motion Research
 ## Analysis Tables & Figures Implementation Tracker
 
-**Purpose**  
-本ファイルは、Primary / Falsification / Stability / Sensitivity 解析で必要となる表・グラフの
-**実装済み / 未実装 / 作成済み / 検証済み**を一元管理するためのチェックリストである。
+**Scope:** Issue #23 — T01–T09 / F01–F14 analysis-output generation pipeline  
+**Branch:** `dev`  
+**Normative scientific contract:** Issue #23 + Scientific Freeze.  
+**Last implementation audit:** 2026-09-08
 
-**Status convention**
-
-- `[ ]` = 未実装 / 未完了
-- `[x]` = 実装済み / 完了
-- `N/A` = 対象外
-- 実装済みでも、実データ artifact の生成・内容検証が終わるまでは別列を `[ ]` のままとする。
+This tracker records software implementation status separately from real-data scientific validation.
+Synthetic/mock success may complete `Code` and `Test`, but **must not** be used to mark real-data
+`Artifact Generated`, `Validated`, `Final Status=COMPLETE`, or `publication_ready=true`.
 
 ---
 
-# 1. Completion Definition
+# 1. Status Convention
 
-各表・図は、以下をすべて満たした場合のみ **COMPLETE** とする。
-
-- [ ] 生成コードが実装されている
-- [ ] 入力 artifact / schema が固定されている
-- [ ] synthetic / fixture test がある
-- [ ] 実験 artifact から生成できる
-- [ ] 同一 config + seed で再現できる
-- [ ] 欠損・unevaluable 条件を安全に処理できる
-- [ ] 数値集計と図表の表示内容が一致する
-- [ ] 出力ファイルが artifact registry / manifest に記録される
-- [ ] Primary / Sensitivity の境界を破らない
-- [ ] 論文・報告書用の caption / interpretation contract が定義されている
+- `[x] Code` = generation path implemented.
+- `[x] Test` = synthetic/contract tests pass in repository CI.
+- `[ ] Artifact Generated` = real experiment artifact has not yet been generated.
+- `[ ] Validated` = real-data numerical/content validation has not yet been completed.
+- `IMPLEMENTED / REAL-DATA PENDING` = software implementation complete; scientific output pending.
+- `IMPLEMENTED / POST-PRIMARY PENDING` = Sensitivity software path complete; execution is intentionally deferred until Primary Freeze.
+- `COMPLETE` is reserved for a real-data artifact that satisfies the publication-level completion contract.
 
 ---
 
-# 2. Master Status Table
+# 2. Completion Contract
 
-| ID | Type | Deliverable | Main Question | Priority | Intended Placement | Code | Test | Artifact Generated | Validated | Final Status |
-|---|---|---|---|---|---|---|---|---|---|---|
-| T01 | Table | Dataset / outer-fold summary | データ量・fold偏り・評価可能性 | Required | Main/Supplement | [ ] | [ ] | [ ] | [ ] | TODO |
-| T02 | Table | Primary frozen configuration | 何を事前固定したか | Required | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| T03 | Table | Primary 4-condition performance | Persistence / Self / Full / PCMCI | Critical | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| T04 | Table | PCMCI vs Self paired effect | RQ1 / H1 incremental forecastability | Critical | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| T05 | Table | PCMCI vs Full + sparsity | RQ2 / H2 performance-efficiency | Critical | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| T06 | Table | Region-wise effect | target region 別効果 | Required | Main/Supplement | [ ] | [ ] | [ ] | [ ] | TODO |
-| T07 | Table | Null / falsification summary | lag / region / sparsity / time specificity | Critical | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| T08 | Table | Edge / lag stability | RQ4 discovery stability | Required | Main/Supplement | [ ] | [ ] | [ ] | [ ] | TODO |
-| T09 | Table | Sensitivity summary | Primary結論の頑健性 | Required | Supplement | [ ] | [ ] | [ ] | [ ] | TODO |
-| F01 | Figure | Primary condition comparison | 4条件の予測性能差 | Critical | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| F02 | Figure | Subject-level paired PCMCI vs Self | 被験者単位の改善・異質性 | Critical | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| F03 | Figure | Incremental Gain by target region | どの部位で追加情報が有効か | Critical | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| F04 | Figure | Lag-response curve | RQ3 / H3 lag specificity | Critical | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| F05 | Figure | Null / falsification effect comparison | PCMCI優位性の破壊検証 | Critical | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| F06 | Figure | Performance–sparsity plot | Fullに対する疎性効率 | Important | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| F07 | Figure | Region→region edge stability heatmap | 安定した部位間リンク | Important | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| F08 | Figure | Region × lag stability heatmap | 安定した region–lag | Important | Main/Supplement | [ ] | [ ] | [ ] | [ ] | TODO |
-| F09 | Figure | Outer-fold effect distribution | fold間再現性 | Important | Supplement | [ ] | [ ] | [ ] | [ ] | TODO |
-| F10 | Figure | Sensitivity forest plot | Sensitivity across methods/settings | Important | Main/Supplement | [ ] | [ ] | [ ] | [ ] | TODO |
-| F11 | Figure | Forecast trajectory example | SelfとPCMCI差の直感的例示 | Supporting | Main | [ ] | [ ] | [ ] | [ ] | TODO |
-| F12 | Figure | Data-quality / motion diagnostics | 静止・欠損・運動量等の診断 | Diagnostic | Supplement | [ ] | [ ] | [ ] | [ ] | TODO |
-| F13 | Figure | Prediction-error distribution | 外れ値依存の確認 | Diagnostic | Supplement | [ ] | [ ] | [ ] | [ ] | TODO |
-| F14 | Figure | Metric concordance plot | 指標間で結論が一致するか | Supporting | Supplement | [ ] | [ ] | [ ] | [ ] | TODO |
+## Software implementation gate
 
----
+- [x] T01–T09 generation paths implemented.
+- [x] F01–F14 generation paths implemented.
+- [x] Input schemas validated fail-closed.
+- [x] Synthetic / fixture tests implemented.
+- [x] Same config + same seed determinism tested.
+- [x] Missing / unevaluable conditions handled explicitly.
+- [x] Canonical source CSV is serialized before figure rendering.
+- [x] Artifact registry records output ID, source artifact(s), config hash, seed, metric, aggregation unit, code version, schema version, synthetic provenance, and SHA256.
+- [x] Analysis manifest records config/input provenance and hashes the artifact registry.
+- [x] Synthetic outputs are forced under `artifacts/mock_analysis/`.
+- [x] Synthetic publication-ready export is rejected.
+- [x] Primary / Sensitivity execution boundary is guarded.
+- [x] Caption / interpretation contract is emitted.
 
-# 3. Primary Tables
+## Real-data publication gate
 
-## T01 — Dataset / Outer-Fold Summary
-
-**Purpose**
-- 被験者数
-- frame 数
-- valid frame 数
-- missingness
-- motion magnitude
-- outer fold 構成
-- evaluable / unevaluable target-fold
-
-**Required inputs**
-- SplitManifest
-- FaceTimeSeries metadata
-- valid_mask
-- evaluability artifact
-
-**Implementation**
-- [ ] 集計関数
-- [ ] fold単位集計
-- [ ] region単位集計
-- [ ] missing / invalid frame 集計
-- [ ] evaluable / unevaluable count
-- [ ] Markdown / CSV 出力
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/tables/T01_dataset_outer_fold_summary.csv`
-- [ ] `artifacts/analysis/tables/T01_dataset_outer_fold_summary.md`
+- [ ] Real Primary experiment artifacts available.
+- [ ] Real T01–T08 / F01–F09 / F11–F14 artifacts generated as applicable.
+- [ ] Primary Freeze completed before real T09 / F10 Sensitivity generation.
+- [ ] Real generated tables/figures numerically reconciled and reviewed.
+- [ ] Real artifact registry / manifest archived with experiment provenance.
+- [ ] Publication-ready status explicitly approved.
 
 ---
 
-## T02 — Primary Frozen Configuration
+# 3. Master Status Table
 
-**Purpose**  
-Primary 実験前に固定した科学仕様を機械的に出力する。
-
-**Include**
-- PCMCI+
-- ParCorr
-- `tau_max = 10`
-- `pc_alpha`
-- Ridge
-- `h = 1`
-- region definition
-- feature representation
-- outer split
-- bootstrap settings
-- Null settings
-- lag-response grid
-- seed / schema version
-
-**Implementation**
-- [ ] Scientific Freeze artifact reader
-- [ ] schema validation
-- [ ] Markdown table generator
-- [ ] immutable / hash information
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/tables/T02_primary_frozen_configuration.md`
+| ID | Type | Deliverable | Code | Test | Artifact Generated (real) | Validated (real) | Final Status |
+|---|---|---|---|---|---|---|---|
+| T01 | Table | Dataset / outer-fold summary | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| T02 | Table | Primary frozen configuration | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| T03 | Table | Primary 4-condition performance | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| T04 | Table | PCMCI vs Self paired effect | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| T05 | Table | PCMCI vs Full + sparsity | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| T06 | Table | Region-wise effect | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| T07 | Table | Null / falsification summary | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| T08 | Table | Edge / lag stability | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| T09 | Table | Sensitivity summary | [x] | [x] | [ ] | [ ] | IMPLEMENTED / POST-PRIMARY PENDING |
+| F01 | Figure | Primary condition comparison | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F02 | Figure | Subject-level paired PCMCI vs Self | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F03 | Figure | Incremental Gain by target region | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F04 | Figure | Lag-response curve | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F05 | Figure | Null / falsification effect comparison | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F06 | Figure | Performance–sparsity plot | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F07 | Figure | Region→region edge stability heatmap | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F08 | Figure | Region × lag stability heatmap | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F09 | Figure | Outer-fold effect distribution | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F10 | Figure | Sensitivity forest plot | [x] | [x] | [ ] | [ ] | IMPLEMENTED / POST-PRIMARY PENDING |
+| F11 | Figure | Forecast trajectory example | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F12 | Figure | Data-quality / motion diagnostics | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F13 | Figure | Prediction-error distribution | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| F14 | Figure | Metric concordance plot | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
 
 ---
 
-## T03 — Primary 4-Condition Performance
+# 4. Canonical Output Contract
 
-Conditions:
+Real-data output root:
 
-- Persistence
-- Self
-- Full
-- PCMCI
+```text
+artifacts/analysis/
+```
 
-**Recommended columns**
-- condition
-- metric
-- median
-- mean
-- 95% bootstrap CI
-- subject count
-- evaluable unit count
+Synthetic verification output root:
 
-**Implementation**
-- [ ] PredictionArtifact reader
-- [ ] condition aggregation
-- [ ] subject-level metric aggregation
-- [ ] median
-- [ ] bootstrap CI
-- [ ] evaluability reporting
-- [ ] test
+```text
+artifacts/mock_analysis/
+```
 
-**Output**
-- [ ] `artifacts/analysis/tables/T03_primary_condition_performance.csv`
-- [ ] `artifacts/analysis/tables/T03_primary_condition_performance.md`
+The implementation writes canonical source tables before plotting. Major outputs include:
 
----
+```text
+T01  tables/T01_dataset_outer_fold_summary.csv
+T02  tables/T02_primary_frozen_configuration.csv
+T03  tables/T03_primary_condition_performance.csv
+T04  tables/T04_pcmci_vs_self_paired_effect.csv
+T05  tables/T05_pcmci_vs_full_sparsity.csv
+T06  tables/T06_region_wise_effect.csv
+T07  tables/T07_falsification_summary.csv
+     tables/T07_falsification_distribution.csv
+T08  tables/T08_edge_lag_stability.csv
+T09  tables/T09_sensitivity_summary.csv
 
-## T04 — PCMCI vs Self Paired Effect
+F01  tables/F01_primary_condition_comparison_source.csv
+F02  tables/F02_subject_paired_pcmci_vs_self_source.csv
+F03  tables/F03_incremental_gain_by_region_source.csv
+F04  tables/F04_lag_response_source.csv
+F05  tables/F05_falsification_effect_comparison_source.csv
+F06  tables/F06_performance_sparsity_source.csv
+F07  tables/F07_region_edge_stability_source.csv
+F08  tables/F08_region_lag_stability_source.csv
+F09  tables/F09_outer_fold_effect_distribution_source.csv
+F10  tables/F10_sensitivity_forest_source.csv
+F11  tables/F11_forecast_trajectory_source.csv
+F12  tables/F12_data_quality_source.csv
+F13  tables/F13_prediction_error_distribution_source.csv
+F14  tables/F14_metric_concordance_source.csv
 
-Primary effect:
+registry: analysis_artifact_registry.csv
+manifest: analysis_manifest.json
+captions: captions.json
+```
 
-\[
-\Delta E_s = E_{\mathrm{Self},s} - E_{\mathrm{PCMCI},s}
-\]
-
-Positive value = PCMCI improvement.
-
-**Required statistics**
-- median paired difference
-- mean paired difference
-- 95% bootstrap CI
-- N subjects
-- evaluable N
-- region breakdown if applicable
-
-**Implementation**
-- [ ] exact subject matching
-- [ ] same-unit support enforcement
-- [ ] paired difference calculation
-- [ ] bootstrap CI
-- [ ] sign convention test
-- [ ] missing-pair rejection
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/tables/T04_pcmci_vs_self_paired_effect.csv`
-- [ ] `artifacts/analysis/tables/T04_pcmci_vs_self_paired_effect.md`
+PNG and deterministic SVG renderings are generated for figures. F12 is a diagnostic figure directory containing multiple component plots.
 
 ---
 
-## T05 — PCMCI vs Full + Sparsity
+# 5. Primary Statistical Contract — Gate A
 
-**Purpose**
+Primary paired effect:
 
-Evaluate simultaneously:
+```text
+DeltaE = Error_Self - Error_PCMCI
+```
 
-\[
-E_{\mathrm{PCMCI}} \;\text{vs}\; E_{\mathrm{Full}}
-\]
+Interpretation:
 
-and
+```text
+DeltaE > 0  -> PCMCI improvement
+DeltaE = 0  -> no difference
+DeltaE < 0  -> Self better
+```
 
-\[
-|P_{\mathrm{PCMCI}}| \ll |P_{\mathrm{Full}}|
-\]
+- [x] Exact outer-test subject/unit pairing.
+- [x] Unmatched pair rejection; no silent dropping.
+- [x] Median paired difference.
+- [x] Mean paired difference where required.
+- [x] 95% bootstrap CI.
+- [x] Shared sign convention across T04 / F02 / F03 / F10.
+- [x] F01 contains subject points + median + CI.
+- [x] F02 contains subject effects + zero reference + median + CI band.
 
-**Recommended columns**
-- target region
-- Full error
-- PCMCI error
-- paired difference
-- Full feature count
-- PCMCI feature count
-- feature ratio
-- performance conclusion
-
-**Implementation**
-- [ ] performance join
-- [ ] feature provenance reader
-- [ ] feature count
-- [ ] feature ratio
-- [ ] paired performance statistic
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/tables/T05_pcmci_vs_full_sparsity.csv`
-- [ ] `artifacts/analysis/tables/T05_pcmci_vs_full_sparsity.md`
+**Gate A: SOFTWARE PASS**
 
 ---
 
-## T06 — Region-Wise Effect
+# 6. Lag-Response Contract — Gate B
 
-**Primary quantity**
-
-\[
-\Delta E_j =
-\operatorname{median}_s
-(E_{\mathrm{Self},s,j}-E_{\mathrm{PCMCI},s,j})
-\]
-
-**Implementation**
-- [ ] region aggregation
-- [ ] paired subject support
-- [ ] 95% bootstrap CI
-- [ ] evaluable count
-- [ ] multiple region handling
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/tables/T06_region_wise_effect.csv`
-- [ ] `artifacts/analysis/tables/T06_region_wise_effect.md`
-
----
-
-## T07 — Null / Falsification Summary
-
-**Primary controls**
-- PCMCI
-- lag-shift
-- random-region
-- matched sparsity
-- time-shuffle
-
-**Sensitivity**
-- autocorrelation-preserving surrogate
-
-**Implementation**
-- [ ] condition mapping
-- [ ] matched evaluation support
-- [ ] PCMCI vs each Null paired difference
-- [ ] repeated matched-sparsity aggregation
-- [ ] random-region aggregation
-- [ ] lag-shift aggregation
-- [ ] time-shuffle aggregation
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/tables/T07_falsification_summary.csv`
-- [ ] `artifacts/analysis/tables/T07_falsification_summary.md`
-
----
-
-## T08 — Edge / Lag Stability
-
-**Required summaries**
-- outer-fold selection frequency
-- bootstrap selection frequency
-- source region
-- target region
-- lag
-- selected count
-- total opportunities
-- frequency
-
-**Implementation**
-- [ ] ParentSet aggregation
-- [ ] fold frequency
-- [ ] bootstrap frequency
-- [ ] region→region aggregation
-- [ ] region×lag aggregation
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/tables/T08_edge_lag_stability.csv`
-- [ ] `artifacts/analysis/tables/T08_edge_lag_stability.md`
-
----
-
-## T09 — Sensitivity Summary
-
-**Sensitivity candidates**
-- GPDC
-- LPCMCI
-- phase-shuffled surrogate
-- circular-shift surrogate
-- `h > 1`
-- GRU if executed
-
-**Implementation**
-- [ ] sensitivity registry
-- [ ] Primary reference join
-- [ ] effect extraction
-- [ ] CI extraction
-- [ ] conclusion consistency field
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/tables/T09_sensitivity_summary.csv`
-- [ ] `artifacts/analysis/tables/T09_sensitivity_summary.md`
-
----
-
-# 4. Primary Figures
-
-## F01 — Primary Condition Comparison
-
-**Data**
-- Persistence
-- Self
-- Full
-- PCMCI
-- subject-level values
-- median
-- 95% CI
-
-**Implementation**
-- [ ] plotting function
-- [ ] subject point rendering
-- [ ] median rendering
-- [ ] CI rendering
-- [ ] fixed metric labels
-- [ ] evaluability annotation
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/figures/F01_primary_condition_comparison.png`
-- [ ] vector format if required
-
----
-
-## F02 — Subject-Level Paired PCMCI vs Self
-
-**Primary quantity**
-
-\[
-\Delta E_s = E_{\mathrm{Self},s}-E_{\mathrm{PCMCI},s}
-\]
-
-**Interpretation**
-- `> 0`: PCMCI improvement
-- `= 0`: no difference
-- `< 0`: Self better
-
-**Implementation**
-- [ ] paired subject join
-- [ ] zero reference line
-- [ ] subject-level points
-- [ ] median
-- [ ] 95% bootstrap CI
-- [ ] stable ordering
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/figures/F02_subject_paired_pcmci_vs_self.png`
-
----
-
-## F03 — Incremental Gain by Target Region
-
-**Implementation**
-- [ ] region-wise paired effects
-- [ ] median
-- [ ] CI
-- [ ] zero reference
-- [ ] evaluable N
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/figures/F03_incremental_gain_by_region.png`
-
----
-
-## F04 — Lag-Response Curve
-
-Primary grid:
+Frozen Primary grid:
 
 ```yaml
 delta_frames: [-2, -1, 0, 1, 2]
 reference_delta: 0
+shift_mode: common_shift_all_selected_parents
 ```
 
-**Primary requirements**
-- same selected region(s)
-- same feature count
-- common shift of selected parents
-- complete symmetric grid
-- no clipping
-- no wrapping
-- no feature dropping
-- target-fold unevaluable if grid cannot be completed
-- same support across all deltas
+- [x] Complete symmetric grid required.
+- [x] Same target-region identity required.
+- [x] Same feature count required.
+- [x] Same support / `n_valid` required across deltas.
+- [x] Clipping forbidden.
+- [x] Wrapping forbidden.
+- [x] Feature dropping forbidden.
+- [x] Incomplete target-fold is excluded as unevaluable rather than clipped.
+- [x] Unevaluable target-fold count exported.
+- [x] Frame and millisecond lag values exported.
+- [x] `DeltaError(delta) = Error(tau* + delta) - Error(tau*)` reconciled against reference error.
 
-**Quantity**
-
-\[
-\Delta E(\Delta)
-=
-E(\tau^\*+\Delta)-E(\tau^\*)
-\]
-
-**Implementation**
-- [ ] grid reader
-- [ ] complete-grid filter
-- [ ] same-unit support
-- [ ] median curve
-- [ ] 95% CI at each delta
-- [ ] frames x-axis
-- [ ] milliseconds secondary/report field
-- [ ] unevaluable count
-- [ ] zero/reference marker
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/figures/F04_lag_response_curve.png`
-- [ ] `artifacts/analysis/tables/F04_lag_response_source.csv`
+**Gate B: SOFTWARE PASS**
 
 ---
 
-## F05 — Null / Falsification Effect Comparison
+# 7. Falsification Contract — Gate C
 
-**Conditions**
-- PCMCI
-- lag-shift
-- random-region
-- matched sparsity
-- time-shuffle
+Primary Null controls:
 
-**Implementation**
-- [ ] common effect scale
-- [ ] subject-level aggregation
-- [ ] median
-- [ ] 95% CI
-- [ ] repeated Null summary
-- [ ] test
+```text
+lag-shift
+random-region
+matched-sparsity
+time-shuffle
+```
 
-**Output**
-- [ ] `artifacts/analysis/figures/F05_falsification_effect_comparison.png`
+Sensitivity-only temporal controls remain outside Primary.
 
----
+- [x] `mapping_scope=outer_train_only` required.
+- [x] Matched-sparsity requires `null_feature_count == pcmci_feature_count` exactly.
+- [x] Random-region requires lag identity preservation.
+- [x] Required input-count preservation validated.
+- [x] Replicate identity retained.
+- [x] Seed retained.
+- [x] Distribution source artifact retained in addition to aggregate statistic.
+- [x] Null outer-test support must match PCMCI support.
 
-## F06 — Performance–Sparsity Plot
-
-**X-axis**
-- feature count
-- or `|P_PCMCI| / |P_Full|`
-
-**Y-axis**
-- prediction error
-
-**Implementation**
-- [ ] feature count provenance
-- [ ] Full / PCMCI mapping
-- [ ] point aggregation
-- [ ] region/fold optional grouping
-- [ ] test
-
-**Output**
-- [ ] `artifacts/analysis/figures/F06_performance_sparsity.png`
+**Gate C: SOFTWARE PASS**
 
 ---
 
-## F07 — Region→Region Edge Stability Heatmap
+# 8. Region, Stability, Sparsity — Gates D/E/F
 
-**Cell**
+## Gate D — Region-level effect
 
-\[
-P(i \rightarrow j \text{ selected})
-\]
+- [x] T06 region-wise paired effect.
+- [x] F03 region-wise effect with CI and zero reference.
 
-**Implementation**
-- [ ] source-target matrix
-- [ ] fold aggregation
-- [ ] bootstrap aggregation
-- [ ] stable region order
-- [ ] missing cell semantics
-- [ ] test
+**Gate D: SOFTWARE PASS**
 
-**Output**
-- [ ] `artifacts/analysis/figures/F07_region_edge_stability_heatmap.png`
+## Gate E — Discovery stability
 
----
+- [x] Source region / target region / lag retained.
+- [x] Selected count and opportunity denominator retained.
+- [x] Outer-fold frequency reconciled from counts.
+- [x] Bootstrap frequency reconciled from counts.
+- [x] `tau_max=10` enforced.
+- [x] Missing/not-observed cells represented as missing (`NaN`, `observed=False`).
+- [x] Observed zero-frequency cells remain explicit zero (`observed=True`).
+- [x] Deterministic region / relation / lag ordering.
 
-## F08 — Region × Lag Stability Heatmap
+**Gate E: SOFTWARE PASS**
 
-**Axes**
-- rows: source→target relation
-- columns: lag `1..10`
-- values: selection frequency
+## Gate F — Sparsity
 
-**Implementation**
-- [ ] relation×lag matrix
-- [ ] `tau_max=10` validation
-- [ ] fold/boot frequency
-- [ ] missing vs zero distinction
-- [ ] test
+- [x] Full vs PCMCI performance exact pairing.
+- [x] Full / PCMCI feature-count provenance join.
+- [x] PCMCI/Full feature ratio.
+- [x] Performance–sparsity source and plot.
 
-**Output**
-- [ ] `artifacts/analysis/figures/F08_region_lag_stability_heatmap.png`
+**Gate F: SOFTWARE PASS**
 
 ---
 
-# 5. Secondary / Diagnostic Figures
+# 9. Sensitivity — Gate G
 
-## F09 — Outer-Fold Effect Distribution
+- [x] T09 generation path implemented.
+- [x] F10 generation path implemented.
+- [x] Primary reference is explicit.
+- [x] Sensitivity order deterministic.
+- [x] Effect/CI extraction explicit.
+- [x] Direction consistency field emitted.
+- [x] Real Sensitivity generation fails before `primary_frozen=True`.
+- [x] Synthetic software verification requires explicit `allow_mock_sensitivity=True` override.
+- [x] Primary outputs can be generated with `include_sensitivity=False` and no T09/F10 output is produced.
 
-- [ ] fold-level effect extraction
-- [ ] fold identifiers
-- [ ] distribution plot
-- [ ] pooled median reference
-- [ ] test
-- [ ] output generated
-
-Output:
-`artifacts/analysis/figures/F09_outer_fold_effect_distribution.png`
-
----
-
-## F10 — Sensitivity Forest Plot
-
-**Rows**
-- Primary ParCorr + Ridge
-- GPDC
-- LPCMCI
-- phase surrogate
-- circular shift
-- h > 1
-- GRU if executed
-
-**X-axis**
-- `Self − PCMCI` paired effect
-
-- [ ] effect reader
-- [ ] CI reader
-- [ ] Primary reference marker
-- [ ] zero reference
-- [ ] Sensitivity ordering
-- [ ] test
-- [ ] output generated
-
-Output:
-`artifacts/analysis/figures/F10_sensitivity_forest_plot.png`
+**Gate G: SOFTWARE PASS / REAL EXECUTION DEFERRED UNTIL PRIMARY FREEZE**
 
 ---
 
-## F11 — Forecast Trajectory Example
+# 10. Diagnostics / Supporting — Gate H
 
-- [ ] example selection rule frozen
-- [ ] no cherry-picking from outcome
-- [ ] y_true
-- [ ] Self prediction
-- [ ] PCMCI prediction
-- [ ] time axis
-- [ ] region label
-- [ ] test
-- [ ] output generated
+- [x] T01 dataset / fold summary.
+- [x] T02 frozen configuration + config hash.
+- [x] F09 outer-fold effect distribution.
+- [x] F11 example selection is lexicographic (`subject_id`, `region_id`) and outcome-independent.
+- [x] F12 frame count / sequence length / missingness / valid ratio / motion / activity diagnostics.
+- [x] F13 subject-level Self vs PCMCI error distribution.
+- [x] F14 metric registry through input metrics, metric-direction normalization, effect + CI.
+- [x] Positive F14 effect is normalized to mean `PCMCI better` for both lower- and higher-is-better metrics.
 
-Output:
-`artifacts/analysis/figures/F11_forecast_trajectory_example.png`
+**Gate H: SOFTWARE PASS**
 
 ---
 
-## F12 — Data-Quality / Motion Diagnostics
+# 11. Synthetic Mock Verification Dataset
 
-Suggested panels/data products:
-- subject frame counts
-- valid frame ratio
-- missing ratio
-- region motion magnitude
-- static vs active interval proportion
-- sequence length
-- evaluability counts
+Source directory:
 
-- [ ] frame count plot
-- [ ] missingness plot
-- [ ] motion magnitude plot
-- [ ] static/activity diagnostic
-- [ ] evaluability diagnostic
-- [ ] test
-- [ ] output generated
+```text
+data/mock_analysis/
+```
 
-Output directory:
-`artifacts/analysis/figures/F12_data_quality/`
+Mandatory provenance:
 
----
+```text
+is_synthetic=True
+synthetic_notice=FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS
+```
 
-## F13 — Prediction-Error Distribution
+- [x] Reserved `MOCK_S*` subject IDs.
+- [x] Deterministic generator seed `20260908`.
+- [x] Mock primary metric explicitly `velocity_rmse`.
+- [x] Mock Null schema contains outer-train mapping, feature-count, input-count, lag-identity, replicate, and seed provenance.
+- [x] Mock lag-response schema contains `same_support`, `same_region_identity`, and `same_feature_count`.
+- [x] Generator emits the same Issue #23 v2 contract fields.
+- [x] Mock-derived tables preserve synthetic provenance.
+- [x] Mock-derived plots are visibly marked synthetic.
+- [x] Mock outputs are restricted to `artifacts/mock_analysis/`.
+- [x] Publication-ready mock export rejected.
 
-- [ ] subject-level distribution
-- [ ] region-level optional split
-- [ ] Self / PCMCI comparison
-- [ ] outlier-safe display
-- [ ] test
-- [ ] output generated
-
-Output:
-`artifacts/analysis/figures/F13_prediction_error_distribution.png`
+Mock results are **software verification only** and are not scientific evidence.
 
 ---
 
-## F14 — Metric Concordance
+# 12. CI Evidence
 
-Candidate metrics:
-- Position RMSE
-- Velocity RMSE
-- Acceleration RMSE
-- Temporal correlation
-- Peak timing error
-- Onset timing error
-- Lag preservation
+Latest repository-wide Issue #23 verification on `dev`:
 
-- [ ] metric registry
-- [ ] sign normalization
-- [ ] metric-wise effect calculation
-- [ ] cross-metric comparison
-- [ ] test
-- [ ] output generated
+```text
+commit: 2d8df71725601b617944090e4771d975ccc4c806
+workflow: tests #639
+result: PASS
+pytest: 766 passed, 2 skipped, 3 warnings
+```
 
-Output:
-`artifacts/analysis/figures/F14_metric_concordance.png`
+Warnings are the existing Tigramite single-dataset warning in sensitivity/converter tests; no Issue #23 failure remains.
+
+Dedicated Sensitivity GRU smoke/integration workflow previously passed after analysis dependencies were introduced. The repository-wide suite above also includes the existing GPDC/LPCMCI sensitivity integration tests.
 
 ---
 
-# 6. Recommended Implementation Order
+# 13. Implementation Commits
 
-## Phase A — Primary Statistical Backbone
+Key Issue #23 implementation sequence:
 
-- [ ] T03 Primary 4-condition performance
-- [ ] T04 PCMCI vs Self paired effect
-- [ ] F01 Primary condition comparison
-- [ ] F02 Subject-level paired effect
-
-**Gate A**
-- [ ] `Self − PCMCI` の符号・集計単位・CIが全artifactで一致する
-
----
-
-## Phase B — Lag Specificity
-
-- [ ] F04 Lag-response curve
-- [ ] lag-response source table
-- [ ] complete symmetric grid enforcement
-- [ ] unevaluable count report
-
-**Gate B**
-- [ ] Δごとに同一 support を使用
-- [ ] clipping / wrapping / dropping が発生しない
+```text
+b13d2db  synthetic mock fixtures
+b07100a  analysis pipeline foundation
+3c7a4c9  analysis CLI / integration
+6e97331  analysis contract tests
+0f1c2ab  matplotlib test dependency
+6a00b01  tabulate markdown dependency
+7069fae  complete v2 analysis-output contracts
+5c23411  Null mock schema synchronization
+8d0c8ba  lag-response mock schema synchronization
+c5feec7  mock generator v2 synchronization
+fd72830  explicit mock primary metric
+2d8df71  strengthened provenance/stability tests
+```
 
 ---
 
-## Phase C — Falsification
-
-- [ ] T07 Null summary
-- [ ] F05 Null comparison
-- [ ] random-region
-- [ ] matched sparsity
-- [ ] time-shuffle
-- [ ] lag-shift
-
-**Gate C**
-- [ ] Null mapping が outer-train で freeze されている
-
----
-
-## Phase D — Region-Level Effect
-
-- [ ] T06 Region-wise table
-- [ ] F03 Region-wise figure
-
----
-
-## Phase E — Discovery Stability
-
-- [ ] T08 Stability table
-- [ ] F07 Region→region heatmap
-- [ ] F08 Region×lag heatmap
-
----
-
-## Phase F — Sparsity
-
-- [ ] T05 PCMCI vs Full + sparsity
-- [ ] F06 Performance–sparsity plot
-
----
-
-## Phase G — Sensitivity
-
-Primary Freeze 後のみ実行。
-
-- [ ] T09 Sensitivity summary
-- [ ] F10 Sensitivity forest plot
-
----
-
-## Phase H — Diagnostics / Supporting
-
-- [ ] T01 Dataset summary
-- [ ] F09 Fold distribution
-- [ ] F11 Forecast example
-- [ ] F12 Data-quality diagnostics
-- [ ] F13 Error distribution
-- [ ] F14 Metric concordance
-
----
-
-# 7. Publication-Level Completion Gate
-
-## Main Tables
-- [ ] T02
-- [ ] T03
-- [ ] T04
-- [ ] T05
-- [ ] T07
-
-## Main Figures
-- [ ] F01
-- [ ] F02
-- [ ] F03
-- [ ] F04
-- [ ] F05
-- [ ] F06
-- [ ] F07 or F08
-
-## Supplement / Audit
-- [ ] T01
-- [ ] T06
-- [ ] T08
-- [ ] T09
-- [ ] F09
-- [ ] F10
-- [ ] F11
-- [ ] F12
-- [ ] F13
-- [ ] F14
-
----
-
-# 8. Final Completion Summary
-
-Update this block when implementation progresses.
+# 14. Final Completion Summary
 
 ```yaml
 analysis_outputs:
@@ -780,113 +356,41 @@ analysis_outputs:
   total_figures: 14
   total_outputs: 23
 
-  tables:
-    implemented: 0
-    remaining: 9
+  software:
+    generation_paths_implemented: 23
+    synthetic_contract_tested: 23
+    repository_ci: PASS
 
-  figures:
-    implemented: 0
-    remaining: 14
+  mock_verification:
+    generated: 23
+    scientific_validation: false
+    publication_ready: false
 
-  critical_primary:
-    total:
-      - T03
-      - T04
-      - T05
-      - T07
-      - F01
-      - F02
-      - F03
-      - F04
-      - F05
-    implemented: []
-    remaining:
-      - T03
-      - T04
-      - T05
-      - T07
-      - F01
-      - F02
-      - F03
-      - F04
-      - F05
+  real_data:
+    artifact_generated: 0
+    validated: 0
+    publication_ready: false
 
-  publication_ready: false
+  sensitivity:
+    T09_code: implemented
+    F10_code: implemented
+    real_execution: deferred_until_primary_freeze
+
+  issue_23_implementation_acceptance: PASS
+  publication_level_completion: PENDING_REAL_DATA
 ```
 
 ---
 
-# 9. Update Rule
+# 15. Update Rule for Future Real Runs
 
-実装時は単に master table の `Code = [x]` にするだけでなく、以下を更新する。
+When real experiment artifacts become available, update each row independently:
 
-1. 該当項目の `Implementation` checklist
-2. Output artifact path
-3. test の有無
-4. artifact generation status
-5. validation status
-6. Master Status Table
-7. Final Completion Summary
-
-**禁止事項**
-
-- コードファイルが存在するだけで COMPLETE にしない
-- plot 関数が存在するだけで COMPLETE にしない
-- synthetic output だけで publication-ready にしない
-- Primary と Sensitivity の結果を同じ status として混同しない
-- 実データ未実行を「解析完了」と扱わない
-
----
-
-# 10. Synthetic Mock Verification Dataset
-
-A deterministic mock dataset is maintained under:
-
-```text
-data/mock_analysis/
-```
-
-This dataset is **FAKE / SYNTHETIC DATA ONLY** and exists only for software verification.
-
-## Mandatory provenance
-
-- [x] Mock directory separated from real experiment artifacts
-- [x] CSV rows contain `is_synthetic=True`
-- [x] CSV rows contain `synthetic_notice=FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS`
-- [x] Synthetic subjects use reserved `MOCK_S*` identifiers
-- [x] Deterministic generator script exists
-- [x] Mock README explicitly forbids scientific use
-- [x] Mock config explicitly declares `purpose=software verification only`
-- [ ] Analysis-generated mock outputs preserve synthetic provenance
-- [ ] Mock tables / plots are written to `artifacts/mock_analysis/`
-- [ ] Publication-ready export rejects or visibly marks mock-derived outputs
-
-## Coverage
-
-| Mock source | Intended outputs |
-|---|---|
-| `mock_dataset_summary.csv` | T01 / F12 |
-| `mock_primary_config.json` | T02 |
-| `mock_metrics.csv` | T03 / T04 / T06 / F01 / F02 / F03 / F13 / F14 |
-| `mock_feature_counts.csv` | T05 / F06 |
-| `mock_null_metrics.csv` | T07 / F05 |
-| `mock_lag_response.csv` | F04 |
-| `mock_edge_stability.csv` | T08 / F07 / F08 |
-| `mock_sensitivity.csv` | T09 / F10 |
-| `mock_prediction_trajectory.csv` | F11 |
-
-## Mock validation rule
-
-Passing the mock dataset means only:
-
-> the analysis implementation can read, aggregate, render, and preserve provenance for a known synthetic fixture.
-
-It does **not** mean:
-
-- the scientific hypothesis is supported,
-- Primary has been executed,
-- a table/figure is validated on real data,
-- an item may be marked publication-ready.
-
-Accordingly, mock generation can satisfy `Code` / `Test` checks but must not by itself set
-`Artifact Generated`, `Validated`, or `Final Status=COMPLETE` for real Primary outputs.
+1. Generate the canonical source table / figure from the frozen experiment artifacts.
+2. Confirm registry + manifest provenance and SHA256.
+3. Reconcile source numerical values with the rendered output.
+4. Set `Artifact Generated` to `[x]` only for the real artifact.
+5. Set `Validated` to `[x]` only after content review.
+6. Set `Final Status=COMPLETE` only when all completion requirements for that output are satisfied.
+7. Never promote mock-derived evidence into the real-data columns.
+8. Do not execute or promote T09/F10 before Primary Freeze.
