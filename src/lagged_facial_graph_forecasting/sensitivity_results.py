@@ -1,4 +1,10 @@
-"""Sensitivity-only result envelope reusing frozen Core metric contracts (S-IMPL-08)."""
+"""Sensitivity-only result envelope reusing frozen Core metric contracts (S-IMPL-08).
+
+Serialization is an execution boundary, not a passive escape hatch: every public
+serializer requires a SensitivityExperimentConfig. Synthetic serialization remains
+available before Primary Freeze; real serialization validates the complete, hashed
+Primary Freeze manifest and exact provenance before bytes can be produced.
+"""
 
 from __future__ import annotations
 
@@ -145,9 +151,27 @@ def collect_software_versions(packages: Iterable[str]) -> tuple[SoftwareVersion,
     return tuple(sorted(versions))
 
 
-def serialize_sensitivity_metric(value: SensitivityMetricArtifact) -> dict[str, Any]:
+def _authorize_serialization(
+    execution: SensitivityExperimentConfig,
+    value: SensitivityMetricArtifact,
+    *,
+    repository_root: str | Path | None,
+) -> None:
+    assert_sensitivity_execution_allowed(execution, repository_root=repository_root)
+    assert_real_sensitivity_artifact_provenance(
+        execution, value, repository_root=repository_root
+    )
+
+
+def serialize_sensitivity_metric(
+    execution: SensitivityExperimentConfig,
+    value: SensitivityMetricArtifact,
+    *,
+    repository_root: str | Path | None = None,
+) -> dict[str, Any]:
     if not isinstance(value, SensitivityMetricArtifact):
         raise SensitivityResultError("value must be SensitivityMetricArtifact")
+    _authorize_serialization(execution, value, repository_root=repository_root)
     return {
         "schema_version": value.schema_version,
         "namespace": value.namespace,
@@ -227,8 +251,19 @@ def deserialize_sensitivity_metric(envelope: Any) -> SensitivityMetricArtifact:
     )
 
 
-def dumps_sensitivity_metric(value: SensitivityMetricArtifact) -> str:
-    return json.dumps(serialize_sensitivity_metric(value), sort_keys=True, separators=(",", ":"))
+def dumps_sensitivity_metric(
+    execution: SensitivityExperimentConfig,
+    value: SensitivityMetricArtifact,
+    *,
+    repository_root: str | Path | None = None,
+) -> str:
+    return json.dumps(
+        serialize_sensitivity_metric(
+            execution, value, repository_root=repository_root
+        ),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
 
 def loads_sensitivity_metric(text: str) -> SensitivityMetricArtifact:
@@ -246,15 +281,14 @@ def write_sensitivity_metric_json(
     *,
     repository_root: str | Path | None = None,
 ) -> Path:
-    """Canonical artifact writer: authorize, verify provenance, confine path, then write."""
+    """Canonical artifact writer: authorize, confine path, serialize, then write."""
 
-    assert_sensitivity_execution_allowed(execution, repository_root=repository_root)
-    assert_real_sensitivity_artifact_provenance(
-        execution, value, repository_root=repository_root
-    )
     output = resolve_sensitivity_output_path(
         execution, relative_path, repository_root=repository_root
     )
+    encoded = dumps_sensitivity_metric(
+        execution, value, repository_root=repository_root
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(dumps_sensitivity_metric(value) + "\n", encoding="utf-8")
+    output.write_text(encoded + "\n", encoding="utf-8")
     return output

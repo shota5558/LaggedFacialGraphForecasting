@@ -59,9 +59,12 @@ def _artifact() -> SensitivityMetricArtifact:
     )
 
 
-def test_sensitivity_metric_round_trip_reuses_core_metric_for_paired_statistics() -> None:
+def test_sensitivity_metric_round_trip_reuses_core_metric_for_paired_statistics(tmp_path) -> None:
+    execution = _execution(SensitivityExecutionMode.SYNTHETIC)
     artifact = _artifact()
-    restored = loads_sensitivity_metric(dumps_sensitivity_metric(artifact))
+    restored = loads_sensitivity_metric(
+        dumps_sensitivity_metric(execution, artifact, repository_root=tmp_path)
+    )
     assert restored == artifact
     assert restored.as_metrics_result() == artifact.metric
     assert serialize_core_contract(restored.metric) == serialize_core_contract(artifact.metric)
@@ -71,8 +74,11 @@ def test_sensitivity_metric_round_trip_reuses_core_metric_for_paired_statistics(
     assert restored.horizon == 1
 
 
-def test_sensitivity_wire_format_is_explicitly_separate_from_primary_results() -> None:
-    envelope = serialize_sensitivity_metric(_artifact())
+def test_sensitivity_wire_format_is_explicitly_separate_from_primary_results(tmp_path) -> None:
+    execution = _execution(SensitivityExecutionMode.SYNTHETIC)
+    envelope = serialize_sensitivity_metric(
+        execution, _artifact(), repository_root=tmp_path
+    )
     assert envelope["namespace"] == "sensitivity"
     assert envelope["artifact_type"] == "sensitivity_metric"
     assert envelope["payload"]["method_id"] == "gru"
@@ -88,42 +94,24 @@ def test_sensitivity_metric_rejects_provenance_mismatch_or_primary_method() -> N
     metric = _metric()
     with pytest.raises(SensitivityResultError, match="subject_id"):
         SensitivityMetricArtifact(
-            method_id="gru",
-            source_primary_freeze_manifest=PRIMARY_FREEZE_MANIFEST_PATH,
-            outer_fold=metric.outer_fold,
-            subject_id="different_subject",
-            region_id=metric.region_id,
-            horizon=1,
-            metric=metric,
-            config_path="configs/sensitivity_preimplementation.yaml",
-            seed=1,
-            software_versions=(SoftwareVersion("numpy", "2.4.0"),),
+            method_id="gru", source_primary_freeze_manifest=PRIMARY_FREEZE_MANIFEST_PATH,
+            outer_fold=metric.outer_fold, subject_id="different_subject", region_id=metric.region_id,
+            horizon=1, metric=metric, config_path="configs/sensitivity_preimplementation.yaml",
+            seed=1, software_versions=(SoftwareVersion("numpy", "2.4.0"),),
         )
     with pytest.raises(SensitivityResultError, match="Primary"):
         SensitivityMetricArtifact(
-            method_id="primary",
-            source_primary_freeze_manifest=PRIMARY_FREEZE_MANIFEST_PATH,
-            outer_fold=metric.outer_fold,
-            subject_id=metric.subject_id,
-            region_id=metric.region_id,
-            horizon=1,
-            metric=metric,
-            config_path="configs/sensitivity_preimplementation.yaml",
-            seed=1,
-            software_versions=(SoftwareVersion("numpy", "2.4.0"),),
+            method_id="primary", source_primary_freeze_manifest=PRIMARY_FREEZE_MANIFEST_PATH,
+            outer_fold=metric.outer_fold, subject_id=metric.subject_id, region_id=metric.region_id,
+            horizon=1, metric=metric, config_path="configs/sensitivity_preimplementation.yaml",
+            seed=1, software_versions=(SoftwareVersion("numpy", "2.4.0"),),
         )
     with pytest.raises(SensitivityResultError, match="canonical Primary Freeze"):
         SensitivityMetricArtifact(
-            method_id="gru",
-            source_primary_freeze_manifest="artifacts/primary/other.json",
-            outer_fold=metric.outer_fold,
-            subject_id=metric.subject_id,
-            region_id=metric.region_id,
-            horizon=1,
-            metric=metric,
-            config_path="configs/sensitivity_preimplementation.yaml",
-            seed=1,
-            software_versions=(SoftwareVersion("numpy", "2.4.0"),),
+            method_id="gru", source_primary_freeze_manifest="artifacts/primary/other.json",
+            outer_fold=metric.outer_fold, subject_id=metric.subject_id, region_id=metric.region_id,
+            horizon=1, metric=metric, config_path="configs/sensitivity_preimplementation.yaml",
+            seed=1, software_versions=(SoftwareVersion("numpy", "2.4.0"),),
         )
 
 
@@ -136,6 +124,14 @@ def test_synthetic_writer_is_confined_to_sensitivity_namespace(tmp_path) -> None
     )
     assert output == (tmp_path / "artifacts/sensitivity/metrics/result.json").resolve()
     assert loads_sensitivity_metric(output.read_text(encoding="utf-8")) == _artifact()
+
+
+def test_real_raw_serialization_fails_closed_without_primary_freeze(tmp_path) -> None:
+    execution = _execution(SensitivityExecutionMode.REAL)
+    with pytest.raises(SensitivityExecutionError, match="PRIMARY FREEZE"):
+        serialize_sensitivity_metric(execution, _artifact(), repository_root=tmp_path)
+    with pytest.raises(SensitivityExecutionError, match="PRIMARY FREEZE"):
+        dumps_sensitivity_metric(execution, _artifact(), repository_root=tmp_path)
 
 
 def test_real_writer_fails_closed_without_primary_freeze(tmp_path) -> None:
