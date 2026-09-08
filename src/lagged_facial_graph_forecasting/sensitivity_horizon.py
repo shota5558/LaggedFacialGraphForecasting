@@ -1,15 +1,14 @@
 """Multi-horizon DesignMatrix adapters for Sensitivity only (S-IMPL-06).
 
-Primary remains frozen to h=1.  Existing Primary DesignMatrix builders and the V0
-``aligned_indices`` contract are intentionally left unchanged.  This module reuses
-their target-relative feature construction at h=1, enforces ``tau >= h`` for every
-Sensitivity feature, and replaces only the forecast-origin provenance with the true
-h-step origin.  The canonical DesignMatrix schema therefore remains unchanged.
+Primary remains frozen to h=1. Existing Primary DesignMatrix builders and the V0
+``aligned_indices`` contract are intentionally left unchanged. Every public h>1
+builder requires the common Sensitivity execution boundary before constructing data.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Iterable
 
 import numpy as np
@@ -20,6 +19,10 @@ from .design_matrix import (
     build_full_history_design_matrix,
     build_pcmci_parent_design_matrix,
     build_self_history_design_matrix,
+)
+from .sensitivity_execution import (
+    SensitivityExperimentConfig,
+    assert_sensitivity_execution_allowed,
 )
 
 
@@ -32,8 +35,6 @@ class SensitivityHorizonError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class SensitivityHorizonDesignMatrix:
-    """Canonical DesignMatrix plus explicit Sensitivity horizon provenance."""
-
     design_matrix: DesignMatrix
     horizon: int
     condition: str
@@ -90,20 +91,10 @@ def _rebase_forecast_origin(
     horizon: int,
     alignment_lag: int | None,
 ) -> DesignMatrix:
-    """Replace h=1 metadata with the true h-step forecast origin.
-
-    Target-relative feature indices do not depend on the forecast horizon; for a
-    fixed target at index T and lag tau they are always T-tau.  Therefore the frozen
-    Primary builder can safely construct X/y at h=1, after which this adapter moves
-    only ``forecast_origin`` to T-h.  Availability is already guarded by tau>=h.
-    """
-
     feature_support = max(matrix.feature_lags)
     support_lag = feature_support if alignment_lag is None else int(alignment_lag)
     if support_lag < feature_support:
-        raise SensitivityHorizonError(
-            "alignment_lag must be >= every feature lag"
-        )
+        raise SensitivityHorizonError("alignment_lag must be >= every feature lag")
     if support_lag < horizon:
         raise SensitivityHorizonError("alignment support must be >= horizon")
 
@@ -149,7 +140,15 @@ def _wrap(
     return SensitivityHorizonDesignMatrix(rebased, horizon, condition)
 
 
+def _authorize(
+    execution: SensitivityExperimentConfig,
+    repository_root: str | Path | None,
+) -> None:
+    assert_sensitivity_execution_allowed(execution, repository_root=repository_root)
+
+
 def build_sensitivity_self_history_design_matrix(
+    execution: SensitivityExperimentConfig,
     series: FaceTimeSeries,
     *,
     target_region: str,
@@ -157,7 +156,9 @@ def build_sensitivity_self_history_design_matrix(
     lags: Iterable[int],
     alignment_lag: int | None = None,
     target_dimension: str | None = None,
+    repository_root: str | Path | None = None,
 ) -> SensitivityHorizonDesignMatrix:
+    _authorize(execution, repository_root)
     h = _validate_sensitivity_horizon(horizon)
     available_lags = _validate_available_lags(lags, horizon=h, field="lags")
     matrix = build_self_history_design_matrix(
@@ -168,24 +169,20 @@ def build_sensitivity_self_history_design_matrix(
         alignment_lag=alignment_lag,
         target_dimension=target_dimension,
     )
-    return _wrap(
-        matrix, series, horizon=h, condition="self", alignment_lag=alignment_lag
-    )
+    return _wrap(matrix, series, horizon=h, condition="self", alignment_lag=alignment_lag)
 
 
 def build_sensitivity_persistence_design_matrix(
+    execution: SensitivityExperimentConfig,
     series: FaceTimeSeries,
     *,
     target_region: str,
     horizon: int,
     alignment_lag: int | None = None,
     target_dimension: str | None = None,
+    repository_root: str | Path | None = None,
 ) -> SensitivityHorizonDesignMatrix:
-    """Use the observation at forecast origin as the h-step persistence feature.
-
-    In target-relative lag notation the forecast-origin observation has ``tau=h``.
-    """
-
+    _authorize(execution, repository_root)
     h = _validate_sensitivity_horizon(horizon)
     matrix = build_self_history_design_matrix(
         series,
@@ -205,6 +202,7 @@ def build_sensitivity_persistence_design_matrix(
 
 
 def build_sensitivity_full_history_design_matrix(
+    execution: SensitivityExperimentConfig,
     series: FaceTimeSeries,
     *,
     target_region: str,
@@ -212,7 +210,9 @@ def build_sensitivity_full_history_design_matrix(
     lags: Iterable[int],
     alignment_lag: int | None = None,
     target_dimension: str | None = None,
+    repository_root: str | Path | None = None,
 ) -> SensitivityHorizonDesignMatrix:
+    _authorize(execution, repository_root)
     h = _validate_sensitivity_horizon(horizon)
     available_lags = _validate_available_lags(lags, horizon=h, field="lags")
     matrix = build_full_history_design_matrix(
@@ -223,12 +223,11 @@ def build_sensitivity_full_history_design_matrix(
         alignment_lag=alignment_lag,
         target_dimension=target_dimension,
     )
-    return _wrap(
-        matrix, series, horizon=h, condition="full", alignment_lag=alignment_lag
-    )
+    return _wrap(matrix, series, horizon=h, condition="full", alignment_lag=alignment_lag)
 
 
 def build_sensitivity_pcmci_parent_design_matrix(
+    execution: SensitivityExperimentConfig,
     series: FaceTimeSeries,
     *,
     parent_set: ParentSet,
@@ -236,7 +235,9 @@ def build_sensitivity_pcmci_parent_design_matrix(
     self_lags: Iterable[int],
     alignment_lag: int | None = None,
     target_dimension: str | None = None,
+    repository_root: str | Path | None = None,
 ) -> SensitivityHorizonDesignMatrix:
+    _authorize(execution, repository_root)
     h = _validate_sensitivity_horizon(horizon)
     available_self_lags = _validate_available_lags(
         self_lags, horizon=h, field="self_lags"
@@ -255,6 +256,4 @@ def build_sensitivity_pcmci_parent_design_matrix(
         alignment_lag=alignment_lag,
         target_dimension=target_dimension,
     )
-    return _wrap(
-        matrix, series, horizon=h, condition="pcmci", alignment_lag=alignment_lag
-    )
+    return _wrap(matrix, series, horizon=h, condition="pcmci", alignment_lag=alignment_lag)

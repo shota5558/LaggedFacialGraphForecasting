@@ -9,14 +9,9 @@ from lagged_facial_graph_forecasting.design_matrix import (
     build_pcmci_parent_design_matrix,
     build_self_history_design_matrix,
 )
-from lagged_facial_graph_forecasting.forecaster import (
-    fit_ridge_forecaster,
-    predict_ridge_forecaster,
-)
+from lagged_facial_graph_forecasting.forecaster import fit_ridge_forecaster, predict_ridge_forecaster
 from lagged_facial_graph_forecasting.metrics import velocity_rmse_by_subject_region
-from lagged_facial_graph_forecasting.sensitivity_circular_shift import (
-    circular_shift_face_time_series,
-)
+from lagged_facial_graph_forecasting.sensitivity_circular_shift import circular_shift_face_time_series
 from lagged_facial_graph_forecasting.sensitivity_execution import (
     assert_sensitivity_execution_allowed,
     load_sensitivity_experiment_config,
@@ -25,27 +20,21 @@ from lagged_facial_graph_forecasting.sensitivity_gpdc import (
     gpdc_result_to_parent_set,
     run_sensitivity_pcmciplus_gpdc,
 )
-from lagged_facial_graph_forecasting.sensitivity_horizon import (
-    build_sensitivity_self_history_design_matrix,
-)
+from lagged_facial_graph_forecasting.sensitivity_horizon import build_sensitivity_self_history_design_matrix
 from lagged_facial_graph_forecasting.sensitivity_lpcmci import (
     load_lpcmci_config,
     lpcmci_graph_to_parent_set,
     lpcmci_result_to_graph_artifact,
     run_sensitivity_lpcmci,
 )
-from lagged_facial_graph_forecasting.sensitivity_phase_shuffle import (
-    phase_shuffle_face_time_series,
-)
+from lagged_facial_graph_forecasting.sensitivity_phase_shuffle import phase_shuffle_face_time_series
 from lagged_facial_graph_forecasting.sensitivity_results import (
     SensitivityMetricArtifact,
     SoftwareVersion,
     dumps_sensitivity_metric,
     loads_sensitivity_metric,
 )
-from lagged_facial_graph_forecasting.tigramite_adapter import (
-    face_time_series_to_tigramite_dataframe,
-)
+from lagged_facial_graph_forecasting.tigramite_adapter import face_time_series_to_tigramite_dataframe
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,12 +46,7 @@ def _manifest() -> SplitManifest:
         outer_fold=0,
         train_subject_ids=("train_a", "train_b"),
         test_subject_ids=("outer_test",),
-        inner_folds=(
-            InnerFold(
-                inner_train_subject_ids=("train_a",),
-                inner_val_subject_ids=("train_b",),
-            ),
-        ),
+        inner_folds=(InnerFold(inner_train_subject_ids=("train_a",), inner_val_subject_ids=("train_b",)),),
         seed=909,
     )
 
@@ -115,35 +99,17 @@ def _serialize_result(method_id: str, prediction, *, horizon: int, seed: int) ->
 
 
 def _ridge_from_parent_set(parent_set, train: FaceTimeSeries, test: FaceTimeSeries, condition: str):
-    train_matrix = build_pcmci_parent_design_matrix(
-        train,
-        parent_set=parent_set,
-        self_lags=(1,),
-        target_dimension="value",
-    )
-    test_matrix = build_pcmci_parent_design_matrix(
-        test,
-        parent_set=parent_set,
-        self_lags=(1,),
-        target_dimension="value",
-    )
+    train_matrix = build_pcmci_parent_design_matrix(train, parent_set=parent_set, self_lags=(1,), target_dimension="value")
+    test_matrix = build_pcmci_parent_design_matrix(test, parent_set=parent_set, self_lags=(1,), target_dimension="value")
     fitted = fit_ridge_forecaster(train_matrix, alpha=1.0)
-    return predict_ridge_forecaster(
-        fitted, test_matrix, outer_fold=_manifest().outer_fold, condition=condition
-    )
+    return predict_ridge_forecaster(fitted, test_matrix, outer_fold=_manifest().outer_fold, condition=condition)
 
 
 def _ridge_from_self(train: FaceTimeSeries, test: FaceTimeSeries, condition: str):
-    train_matrix = build_self_history_design_matrix(
-        train, target_region=TARGET, lags=(1, 2), target_dimension="value"
-    )
-    test_matrix = build_self_history_design_matrix(
-        test, target_region=TARGET, lags=(1, 2), target_dimension="value"
-    )
+    train_matrix = build_self_history_design_matrix(train, target_region=TARGET, lags=(1, 2), target_dimension="value")
+    test_matrix = build_self_history_design_matrix(test, target_region=TARGET, lags=(1, 2), target_dimension="value")
     fitted = fit_ridge_forecaster(train_matrix, alpha=1.0)
-    return predict_ridge_forecaster(
-        fitted, test_matrix, outer_fold=_manifest().outer_fold, condition=condition
-    )
+    return predict_ridge_forecaster(fitted, test_matrix, outer_fold=_manifest().outer_fold, condition=condition)
 
 
 def test_gpdc_synthetic_end_to_end_reaches_sensitivity_result_namespace() -> None:
@@ -152,16 +118,10 @@ def test_gpdc_synthetic_end_to_end_reaches_sensitivity_result_namespace() -> Non
     train = _series("train_a", 1001)
     test = _series("outer_test", 1003)
     bundle = face_time_series_to_tigramite_dataframe(manifest, (train,))
-
-    discovery, provenance = run_sensitivity_pcmciplus_gpdc(
-        execution, manifest, bundle, seed=1201
-    )
-    parent_set = gpdc_result_to_parent_set(
-        discovery, bundle, outer_fold=manifest.outer_fold, target_region=TARGET
-    )
+    discovery, provenance = run_sensitivity_pcmciplus_gpdc(execution, manifest, bundle, seed=1201)
+    parent_set = gpdc_result_to_parent_set(discovery, bundle, outer_fold=manifest.outer_fold, target_region=TARGET)
     prediction = _ridge_from_parent_set(parent_set, train, test, "gpdc")
     encoded = _serialize_result("pcmci_plus_gpdc", prediction, horizon=1, seed=provenance.seed)
-
     assert parent_set.discovery_method == "pcmci_plus_gpdc"
     assert '"namespace":"sensitivity"' in encoded
 
@@ -173,103 +133,61 @@ def test_lpcmci_synthetic_end_to_end_reaches_sensitivity_result_namespace() -> N
     test = _series("outer_test", 2003)
     bundle = face_time_series_to_tigramite_dataframe(manifest, (train,))
     method = load_lpcmci_config(ROOT / "configs/sensitivity_lpcmci.yaml")
-
-    discovery = run_sensitivity_lpcmci(
-        execution, manifest, bundle, method, seed=2201
-    )
-    graph = lpcmci_result_to_graph_artifact(
-        discovery, bundle, outer_fold=manifest.outer_fold, seed=2201
-    )
+    discovery = run_sensitivity_lpcmci(execution, manifest, bundle, method, seed=2201)
+    graph = lpcmci_result_to_graph_artifact(discovery, bundle, outer_fold=manifest.outer_fold, seed=2201)
     parent_set = lpcmci_graph_to_parent_set(graph, target_region=TARGET)
     prediction = _ridge_from_parent_set(parent_set, train, test, "lpcmci")
     encoded = _serialize_result("lpcmci", prediction, horizon=1, seed=graph.seed)
-
     assert parent_set.discovery_method == "lpcmci"
     assert '"namespace":"sensitivity"' in encoded
 
 
 def test_phase_shuffle_synthetic_end_to_end_is_deterministic() -> None:
-    _execution()
+    execution = _execution()
     train = _series("train_a", 3001)
     test = _series("outer_test", 3003)
     seed = 3201
-    first_train = phase_shuffle_face_time_series(train, seed=seed).series
-    first_test = phase_shuffle_face_time_series(test, seed=seed).series
-    second_train = phase_shuffle_face_time_series(train, seed=seed).series
-    second_test = phase_shuffle_face_time_series(test, seed=seed).series
-
+    first_train = phase_shuffle_face_time_series(execution, train, seed=seed, repository_root=ROOT).series
+    first_test = phase_shuffle_face_time_series(execution, test, seed=seed, repository_root=ROOT).series
+    second_train = phase_shuffle_face_time_series(execution, train, seed=seed, repository_root=ROOT).series
+    second_test = phase_shuffle_face_time_series(execution, test, seed=seed, repository_root=ROOT).series
     np.testing.assert_array_equal(first_train.X, second_train.X)
     np.testing.assert_array_equal(first_test.X, second_test.X)
-    first = _serialize_result(
-        "phase_shuffle",
-        _ridge_from_self(first_train, first_test, "phase_shuffle"),
-        horizon=1,
-        seed=seed,
-    )
-    second = _serialize_result(
-        "phase_shuffle",
-        _ridge_from_self(second_train, second_test, "phase_shuffle"),
-        horizon=1,
-        seed=seed,
-    )
+    first = _serialize_result("phase_shuffle", _ridge_from_self(first_train, first_test, "phase_shuffle"), horizon=1, seed=seed)
+    second = _serialize_result("phase_shuffle", _ridge_from_self(second_train, second_test, "phase_shuffle"), horizon=1, seed=seed)
     assert first == second
 
 
 def test_circular_shift_synthetic_end_to_end_is_deterministic() -> None:
-    _execution()
+    execution = _execution()
     train = _series("train_a", 4001)
     test = _series("outer_test", 4003)
     seed = 4201
-    first_train = circular_shift_face_time_series(train, seed=seed).series
-    first_test = circular_shift_face_time_series(test, seed=seed).series
-    second_train = circular_shift_face_time_series(train, seed=seed).series
-    second_test = circular_shift_face_time_series(test, seed=seed).series
-
+    first_train = circular_shift_face_time_series(execution, train, seed=seed, repository_root=ROOT).series
+    first_test = circular_shift_face_time_series(execution, test, seed=seed, repository_root=ROOT).series
+    second_train = circular_shift_face_time_series(execution, train, seed=seed, repository_root=ROOT).series
+    second_test = circular_shift_face_time_series(execution, test, seed=seed, repository_root=ROOT).series
     np.testing.assert_array_equal(first_train.X, second_train.X)
     np.testing.assert_array_equal(first_test.X, second_test.X)
-    first = _serialize_result(
-        "circular_shift",
-        _ridge_from_self(first_train, first_test, "circular_shift"),
-        horizon=1,
-        seed=seed,
-    )
-    second = _serialize_result(
-        "circular_shift",
-        _ridge_from_self(second_train, second_test, "circular_shift"),
-        horizon=1,
-        seed=seed,
-    )
+    first = _serialize_result("circular_shift", _ridge_from_self(first_train, first_test, "circular_shift"), horizon=1, seed=seed)
+    second = _serialize_result("circular_shift", _ridge_from_self(second_train, second_test, "circular_shift"), horizon=1, seed=seed)
     assert first == second
 
 
 def test_multi_horizon_synthetic_end_to_end_preserves_horizon_provenance() -> None:
-    _execution()
+    execution = _execution()
     train = _series("train_a", 5001)
     test = _series("outer_test", 5003)
     train_wrapped = build_sensitivity_self_history_design_matrix(
-        train,
-        target_region=TARGET,
-        horizon=3,
-        lags=(3, 4),
-        target_dimension="value",
+        execution, train, target_region=TARGET, horizon=3, lags=(3, 4), target_dimension="value", repository_root=ROOT
     )
     test_wrapped = build_sensitivity_self_history_design_matrix(
-        test,
-        target_region=TARGET,
-        horizon=3,
-        lags=(3, 4),
-        target_dimension="value",
+        execution, test, target_region=TARGET, horizon=3, lags=(3, 4), target_dimension="value", repository_root=ROOT
     )
     fitted = fit_ridge_forecaster(train_wrapped.design_matrix, alpha=1.0)
-    prediction = predict_ridge_forecaster(
-        fitted,
-        test_wrapped.design_matrix,
-        outer_fold=_manifest().outer_fold,
-        condition="h3",
-    )
+    prediction = predict_ridge_forecaster(fitted, test_wrapped.design_matrix, outer_fold=_manifest().outer_fold, condition="h3")
     encoded = _serialize_result("multi_horizon", prediction, horizon=3, seed=5201)
     restored = loads_sensitivity_metric(encoded)
-
     assert train_wrapped.horizon == 3
     assert test_wrapped.horizon == 3
     assert restored.horizon == 3

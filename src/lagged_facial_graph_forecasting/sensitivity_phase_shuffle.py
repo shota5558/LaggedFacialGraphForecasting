@@ -7,19 +7,24 @@ alignment.  Subject boundaries and canonical FaceTimeSeries metadata are preserv
 
 Missing/invalid observations are rejected in this pre-implementation task rather
 than silently interpolated, because interpolation would alter the spectrum being
-claimed as preserved.  Real-data handling remains gated by the Sensitivity execution
-boundary and the later real execution task.
+claimed as preserved.  Every public execution entrypoint requires the common
+Sensitivity execution boundary, so real-data use is fail-closed before Primary Freeze.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+from pathlib import Path
 from typing import Sequence
 
 import numpy as np
 
 from .contracts import FaceTimeSeries
+from .sensitivity_execution import (
+    SensitivityExperimentConfig,
+    assert_sensitivity_execution_allowed,
+)
 
 
 PHASE_SHUFFLE_SCHEMA_VERSION = 1
@@ -74,10 +79,6 @@ def _phase_randomize_1d(values: np.ndarray, *, seed: int) -> np.ndarray:
     spectrum = np.fft.rfft(signal)
     randomized = np.array(spectrum, copy=True)
     rng = np.random.default_rng(seed)
-
-    # DC is preserved.  For even-length real series the final rFFT coefficient is
-    # the Nyquist term and must also remain real, so only strict interior bins are
-    # phase randomized.
     stop = randomized.size - 1 if signal.size % 2 == 0 else randomized.size
     if stop > 1:
         phases = rng.uniform(0.0, 2.0 * np.pi, size=stop - 1)
@@ -88,12 +89,15 @@ def _phase_randomize_1d(values: np.ndarray, *, seed: int) -> np.ndarray:
 
 
 def phase_shuffle_face_time_series(
+    execution: SensitivityExperimentConfig,
     series: FaceTimeSeries,
     *,
     seed: int,
+    repository_root: str | Path | None = None,
 ) -> PhaseShuffleResult:
-    """Phase-shuffle one subject without crossing subject or component boundaries."""
+    """Phase-shuffle one subject after enforcing the shared execution barrier."""
 
+    assert_sensitivity_execution_allowed(execution, repository_root=repository_root)
     if not isinstance(series, FaceTimeSeries):
         raise PhaseShuffleError("series must be a FaceTimeSeries")
     if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
@@ -135,12 +139,15 @@ def phase_shuffle_face_time_series(
 
 
 def phase_shuffle_subjects(
+    execution: SensitivityExperimentConfig,
     series_by_subject: Sequence[FaceTimeSeries],
     *,
     seed: int,
+    repository_root: str | Path | None = None,
 ) -> tuple[PhaseShuffleResult, ...]:
-    """Transform subjects independently with order-invariant subject/component seeds."""
+    """Transform subjects independently after enforcing the shared execution barrier."""
 
+    assert_sensitivity_execution_allowed(execution, repository_root=repository_root)
     sequences = tuple(series_by_subject)
     if not sequences:
         raise PhaseShuffleError("at least one FaceTimeSeries is required")
@@ -151,5 +158,11 @@ def phase_shuffle_subjects(
         raise PhaseShuffleError("subject_id values must be unique within a surrogate batch")
 
     return tuple(
-        phase_shuffle_face_time_series(series, seed=seed) for series in sequences
+        phase_shuffle_face_time_series(
+            execution,
+            series,
+            seed=seed,
+            repository_root=repository_root,
+        )
+        for series in sequences
     )

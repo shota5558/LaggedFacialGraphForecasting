@@ -3,8 +3,8 @@
 Each scalar region×dimension component is shifted independently within its own
 subject sequence.  The transform uses explicit circular wrapping, preserves the
 component's Fourier magnitude/circular autocorrelation, and never concatenates or
-moves samples across subject boundaries.  Real-data execution remains controlled
-by the common Sensitivity execution barrier.
+moves samples across subject boundaries.  Every public execution entrypoint requires
+the common Sensitivity execution barrier.
 """
 
 from __future__ import annotations
@@ -12,11 +12,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import math
+from pathlib import Path
 from typing import Sequence
 
 import numpy as np
 
 from .contracts import FaceTimeSeries
+from .sensitivity_execution import (
+    SensitivityExperimentConfig,
+    assert_sensitivity_execution_allowed,
+)
 
 
 CIRCULAR_SHIFT_SCHEMA_VERSION = 1
@@ -33,8 +38,6 @@ class CircularShiftError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class CircularShiftPolicy:
-    """Policy requiring a non-trivial circular distance from the original alignment."""
-
     min_circular_distance_fraction: float = 0.25
 
     def __post_init__(self) -> None:
@@ -120,13 +123,16 @@ def _stable_subject_seed(seed: int, subject_id: str) -> int:
 
 
 def circular_shift_face_time_series(
+    execution: SensitivityExperimentConfig,
     series: FaceTimeSeries,
     *,
     seed: int,
     policy: CircularShiftPolicy | None = None,
+    repository_root: str | Path | None = None,
 ) -> CircularShiftResult:
-    """Circularly shift scalar components inside one subject, never across subjects."""
+    """Circularly shift one subject after enforcing the shared execution barrier."""
 
+    assert_sensitivity_execution_allowed(execution, repository_root=repository_root)
     if not isinstance(series, FaceTimeSeries):
         raise CircularShiftError("series must be a FaceTimeSeries")
     if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
@@ -150,9 +156,6 @@ def circular_shift_face_time_series(
     component_count = values.shape[1] * values.shape[2]
     rng = np.random.default_rng(_stable_subject_seed(seed, series.subject_id))
 
-    # Avoid accidental identical shifts when the candidate set is large enough.
-    # Distinct component shifts better realize the intended destruction of
-    # cross-series alignment without changing any marginal series spectrum.
     if candidates.size >= component_count:
         assigned = rng.choice(candidates, size=component_count, replace=False)
     else:
@@ -195,13 +198,16 @@ def circular_shift_face_time_series(
 
 
 def circular_shift_subjects(
+    execution: SensitivityExperimentConfig,
     series_by_subject: Sequence[FaceTimeSeries],
     *,
     seed: int,
     policy: CircularShiftPolicy | None = None,
+    repository_root: str | Path | None = None,
 ) -> tuple[CircularShiftResult, ...]:
-    """Apply the surrogate independently per subject with order-invariant seeds."""
+    """Apply the surrogate independently after enforcing the shared execution barrier."""
 
+    assert_sensitivity_execution_allowed(execution, repository_root=repository_root)
     sequences = tuple(series_by_subject)
     if not sequences:
         raise CircularShiftError("at least one FaceTimeSeries is required")
@@ -212,6 +218,12 @@ def circular_shift_subjects(
         raise CircularShiftError("subject_id values must be unique within a surrogate batch")
 
     return tuple(
-        circular_shift_face_time_series(series, seed=seed, policy=policy)
+        circular_shift_face_time_series(
+            execution,
+            series,
+            seed=seed,
+            policy=policy,
+            repository_root=repository_root,
+        )
         for series in sequences
     )
