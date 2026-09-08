@@ -1,0 +1,40 @@
+task_id: S-IMPL-10
+task_name: Primary Freeze execution barrier
+status: PASS
+implemented:
+  - real-data Sensitivity execution fails closed when Primary Freeze manifest is absent
+  - existence-only / invalid / incomplete freeze manifests are rejected
+  - Primary Freeze manifest must declare PASS and use artifacts/primary root
+  - all Issue #20 freeze target artifact types are required
+  - all referenced Primary artifacts must exist beneath artifacts/primary and match SHA-256
+  - synthetic implementation tests remain executable without Primary Freeze
+  - real Sensitivity artifacts must reference the exact validated freeze manifest
+  - Sensitivity output paths remain structurally confined to artifacts/sensitivity
+  - S-IMPL-01 existence-only regression test migrated to the hardened S-IMPL-10 contract
+files_changed:
+  - src/lagged_facial_graph_forecasting/sensitivity_execution.py
+  - tests/test_sensitivity_freeze_barrier.py
+  - tests/test_sensitivity_execution_boundary.py
+tests:
+  initial_workflow_run_id: 34216108135
+  initial_result: FAIL
+  fail_type: contract mismatch
+  root_cause: legacy S-IMPL-01 test expected an empty existing manifest to unlock real execution, conflicting with S-IMPL-10 invalid/incomplete-manifest rejection
+  fix_commit: f5105cece71a5a1f8ae570a4468a8936829d48ba
+  regression_workflow_run_id: 34216263343
+  regression_result: success
+scientific_checks:
+  primary_freeze_generated_by_issue_22: false
+  real_sensitivity_before_primary_freeze_allowed: false
+  invalid_primary_freeze_can_unlock_real_execution: false
+  primary_artifact_hashes_verified: true
+  primary_namespace_write_allowed: false
+  synthetic_preimplementation_allowed: true
+  real_facial_data_used: false
+provenance:
+  implementation_commit: 88d2cff7756b056b381c8d2a584ef5a35580e274
+  fix_commit: f5105cece71a5a1f8ae570a4468a8936829d48ba
+  branch: dev
+remaining_issue:
+  - none
+next_task: issue_22_completion_audit
