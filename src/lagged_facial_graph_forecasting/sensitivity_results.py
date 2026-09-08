@@ -1,21 +1,22 @@
-"""Sensitivity-only result envelope reusing frozen Core metric contracts (S-IMPL-08).
-
-Primary MetricsResult remains unchanged.  This module wraps that canonical metric with
-Sensitivity method, horizon, Primary-Freeze reference, config, seed, and software
-provenance.  The wire format is explicitly namespaced to ``sensitivity`` so it cannot
-be deserialized as a Primary result table by accident.
-"""
+"""Sensitivity-only result envelope reusing frozen Core metric contracts (S-IMPL-08)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from importlib import metadata
 import json
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Any, Iterable, Mapping
 
 from .core_contract_io import deserialize_core_contract, serialize_core_contract
 from .core_contracts import MetricsResult
+from .sensitivity_execution import (
+    PRIMARY_FREEZE_MANIFEST_PATH,
+    SensitivityExperimentConfig,
+    assert_real_sensitivity_artifact_provenance,
+    assert_sensitivity_execution_allowed,
+    resolve_sensitivity_output_path,
+)
 
 
 SENSITIVITY_RESULT_SCHEMA_VERSION = 1
@@ -65,8 +66,6 @@ class SoftwareVersion:
 
 @dataclass(frozen=True, slots=True)
 class SensitivityMetricArtifact:
-    """One paired-comparison-compatible metric plus Sensitivity provenance."""
-
     method_id: str
     source_primary_freeze_manifest: str
     outer_fold: int
@@ -89,9 +88,9 @@ class SensitivityMetricArtifact:
         freeze_path = _relative_path(
             self.source_primary_freeze_manifest, "source_primary_freeze_manifest"
         )
-        if not freeze_path.startswith("artifacts/primary/"):
+        if freeze_path != PRIMARY_FREEZE_MANIFEST_PATH:
             raise SensitivityResultError(
-                "source_primary_freeze_manifest must reference artifacts/primary/"
+                "source_primary_freeze_manifest must reference the canonical Primary Freeze manifest"
             )
         object.__setattr__(self, "source_primary_freeze_manifest", freeze_path)
         object.__setattr__(self, "config_path", _relative_path(self.config_path, "config_path"))
@@ -106,7 +105,6 @@ class SensitivityMetricArtifact:
             raise SensitivityResultError("seed must be a non-negative integer")
         if not isinstance(self.metric, MetricsResult):
             raise SensitivityResultError("metric must be the frozen Core MetricsResult")
-
         if self.metric.outer_fold != self.outer_fold:
             raise SensitivityResultError("outer_fold must match metric.outer_fold")
         if self.metric.subject_id != self.subject_id:
@@ -130,14 +128,10 @@ class SensitivityMetricArtifact:
             raise SensitivityResultError("unsupported Sensitivity result schema_version")
 
     def as_metrics_result(self) -> MetricsResult:
-        """Return the unchanged Core metric used by paired-statistics code."""
-
         return self.metric
 
 
 def collect_software_versions(packages: Iterable[str]) -> tuple[SoftwareVersion, ...]:
-    """Collect installed package versions for deterministic provenance recording."""
-
     names = tuple(_non_empty_text(name, "package name") for name in packages)
     if not names or len(set(names)) != len(names):
         raise SensitivityResultError("packages must be a non-empty unique sequence")
@@ -213,9 +207,7 @@ def deserialize_sensitivity_metric(envelope: Any) -> SensitivityMetricArtifact:
         raise SensitivityResultError("software_versions must be a list")
     versions = []
     for index, item in enumerate(raw_versions):
-        record = _strict_mapping(
-            item, {"package", "version"}, f"software_versions[{index}]"
-        )
+        record = _strict_mapping(item, {"package", "version"}, f"software_versions[{index}]")
         versions.append(SoftwareVersion(record["package"], record["version"]))
 
     return SensitivityMetricArtifact(
@@ -236,9 +228,7 @@ def deserialize_sensitivity_metric(envelope: Any) -> SensitivityMetricArtifact:
 
 
 def dumps_sensitivity_metric(value: SensitivityMetricArtifact) -> str:
-    return json.dumps(
-        serialize_sensitivity_metric(value), sort_keys=True, separators=(",", ":")
-    )
+    return json.dumps(serialize_sensitivity_metric(value), sort_keys=True, separators=(",", ":"))
 
 
 def loads_sensitivity_metric(text: str) -> SensitivityMetricArtifact:
@@ -247,3 +237,24 @@ def loads_sensitivity_metric(text: str) -> SensitivityMetricArtifact:
     except (TypeError, json.JSONDecodeError) as exc:
         raise SensitivityResultError("invalid Sensitivity metric JSON") from exc
     return deserialize_sensitivity_metric(envelope)
+
+
+def write_sensitivity_metric_json(
+    execution: SensitivityExperimentConfig,
+    value: SensitivityMetricArtifact,
+    relative_path: str | Path,
+    *,
+    repository_root: str | Path | None = None,
+) -> Path:
+    """Canonical artifact writer: authorize, verify provenance, confine path, then write."""
+
+    assert_sensitivity_execution_allowed(execution, repository_root=repository_root)
+    assert_real_sensitivity_artifact_provenance(
+        execution, value, repository_root=repository_root
+    )
+    output = resolve_sensitivity_output_path(
+        execution, relative_path, repository_root=repository_root
+    )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(dumps_sensitivity_metric(value) + "\n", encoding="utf-8")
+    return output

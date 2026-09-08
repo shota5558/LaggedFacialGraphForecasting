@@ -1,21 +1,25 @@
 """PyTorch GRU forecaster adapter for Sensitivity only (S-IMPL-07).
 
-The recurrent implementation is delegated to ``torch.nn.GRU``.  This module only
+The recurrent implementation is delegated to ``torch.nn.GRU``. This module only
 provides contract adaptation, subject-scope guards, deterministic fitting, sequence
-window construction, and PredictionArtifact conversion.  It is not imported by the
-Primary Ridge path and does not alter the Primary forecaster contract.
+window construction, and PredictionArtifact conversion. Every public fit/predict
+entrypoint requires the common Sensitivity execution boundary.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
+from pathlib import Path
 
 import numpy as np
 import torch
 from torch import nn
 
 from .contracts import DesignMatrix, PredictionArtifact, SplitManifest
+from .sensitivity_execution import (
+    SensitivityExperimentConfig,
+    assert_sensitivity_execution_allowed,
+)
 
 
 SENSITIVITY_GRU_SCHEMA_VERSION = 1
@@ -57,8 +61,6 @@ class GRUConfig:
 
 
 class _TorchGRURegressor(nn.Module):
-    """Thin composition of OSS ``nn.GRU`` and ``nn.Linear`` components."""
-
     def __init__(self, input_size: int, output_size: int, config: GRUConfig) -> None:
         super().__init__()
         self.gru = nn.GRU(
@@ -145,9 +147,7 @@ def _assert_prediction_scope(manifest: SplitManifest, matrix: DesignMatrix) -> N
     if not subjects:
         raise SensitivityGRUError("prediction matrix must contain at least one subject")
     if not subjects <= expected:
-        raise SensitivityGRUError(
-            "GRU final prediction may contain only outer-test subjects"
-        )
+        raise SensitivityGRUError("GRU final prediction may contain only outer-test subjects")
 
 
 def _check_matrix_provenance(
@@ -203,7 +203,9 @@ def _sequence_batch(
             target_index = int(indices[end_position])
             if not np.all(matrix.valid_mask[window_indices]) or not matrix.valid_mask[target_index]:
                 continue
-            window = (np.asarray(matrix.X[window_indices], dtype=float) - scaler_mean) / scaler_scale
+            window = (
+                np.asarray(matrix.X[window_indices], dtype=float) - scaler_mean
+            ) / scaler_scale
             windows.append(window)
             targets.append(np.asarray(y_2d[target_index], dtype=float))
             row_indices.append(target_index)
@@ -229,15 +231,18 @@ def _configure_torch_determinism(seed: int) -> None:
 
 
 def fit_sensitivity_gru(
+    execution: SensitivityExperimentConfig,
     manifest: SplitManifest,
     train_matrix: DesignMatrix,
     validation_matrix: DesignMatrix,
     *,
     inner_fold_index: int,
     config: GRUConfig,
+    repository_root: str | Path | None = None,
 ) -> FittedSensitivityGRU:
-    """Fit a deterministic GRU on one inner-train split and inspect only inner-val."""
+    """Fit a deterministic GRU only after the shared execution barrier passes."""
 
+    assert_sensitivity_execution_allowed(execution, repository_root=repository_root)
     if not isinstance(config, GRUConfig):
         raise SensitivityGRUError("config must be GRUConfig")
     train_subjects, validation_subjects = _assert_exact_inner_fold_scope(
@@ -322,14 +327,17 @@ def fit_sensitivity_gru(
 
 
 def predict_sensitivity_gru(
+    execution: SensitivityExperimentConfig,
     fitted: FittedSensitivityGRU,
     manifest: SplitManifest,
     matrix: DesignMatrix,
     *,
     condition: str = "gru",
+    repository_root: str | Path | None = None,
 ) -> PredictionArtifact:
-    """Predict outer-test rows and return the canonical PredictionArtifact contract."""
+    """Predict outer-test rows only after the shared execution barrier passes."""
 
+    assert_sensitivity_execution_allowed(execution, repository_root=repository_root)
     if not isinstance(fitted, FittedSensitivityGRU):
         raise SensitivityGRUError("fitted must be FittedSensitivityGRU")
     _assert_prediction_scope(manifest, matrix)
