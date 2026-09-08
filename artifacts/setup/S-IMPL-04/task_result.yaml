@@ -1,0 +1,35 @@
+task_id: S-IMPL-04
+task_name: Phase-shuffled surrogate
+status: PASS
+implemented:
+  - independent Fourier phase randomization per subject and region-dimension component
+  - DC and Nyquist preservation with exact rFFT magnitude preservation up to numerical precision
+  - stable component seeds derived from global seed and canonical subject/region/dimension identity
+  - subject boundary, sequence length, time index, region/dimension labels, valid mask, and sampling rate preservation
+  - fail-closed handling for invalid samples instead of implicit interpolation
+  - input mutation prohibition
+  - batch API with subject-order-invariant deterministic results
+tests:
+  initial_workflow_run_id: 34213237105
+  initial_result: FAIL
+  initial_summary: 1 failed, 706 passed, 1 warning
+  fail_type: data issue
+  root_cause: single surrogate draw can retain substantial accidental zero-lag correlation despite independent phase randomization
+  fix_commit: b79849b7650e5f4f815efe3079234808864b9489
+  regression_workflow_run_id: 34213393432
+  regression_result: success
+  alignment_validation: deterministic 20-surrogate ensemble median and pass-count criterion
+scientific_checks:
+  real_facial_data_used: false
+  individual_spectrum_preserved: true
+  cross_series_alignment_destroyed_in_surrogate_ensemble: true
+  primary_semantics_changed: false
+  subject_boundaries_preserved: true
+  input_mutation_allowed: false
+provenance:
+  implementation_commit: b8fa7c65a2db3239c993d4c52fa553772fe0a856
+  fix_commit: b79849b7650e5f4f815efe3079234808864b9489
+  branch: dev
+remaining_issue:
+  - none
+next_task: S-IMPL-05
