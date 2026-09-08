@@ -1,9 +1,10 @@
 """Multi-horizon DesignMatrix adapters for Sensitivity only (S-IMPL-06).
 
-Primary remains frozen to h=1.  This module exposes explicit h>1 entry points and
-adds the direct-observation availability guard ``tau >= h`` before delegating to
-the existing canonical DesignMatrix builders.  The core DesignMatrix schema is not
-changed; horizon is carried in a Sensitivity-only provenance wrapper.
+Primary remains frozen to h=1.  Existing Primary DesignMatrix builders and the V0
+``aligned_indices`` contract are intentionally left unchanged.  This module reuses
+their target-relative feature construction at h=1, enforces ``tau >= h`` for every
+Sensitivity feature, and replaces only the forecast-origin provenance with the true
+h-step origin.  The canonical DesignMatrix schema therefore remains unchanged.
 """
 
 from __future__ import annotations
@@ -65,7 +66,9 @@ def _validate_sensitivity_horizon(horizon: int) -> int:
     return value
 
 
-def _validate_available_lags(lags: Iterable[int], *, horizon: int, field: str) -> tuple[int, ...]:
+def _validate_available_lags(
+    lags: Iterable[int], *, horizon: int, field: str
+) -> tuple[int, ...]:
     normalized: list[int] = []
     for lag in lags:
         if not isinstance(lag, (int, np.integer)) or isinstance(lag, (bool, np.bool_)):
@@ -78,6 +81,72 @@ def _validate_available_lags(lags: Iterable[int], *, horizon: int, field: str) -
             f"direct-observation h={horizon} requires every {field} value tau >= h"
         )
     return tuple(normalized)
+
+
+def _rebase_forecast_origin(
+    matrix: DesignMatrix,
+    series: FaceTimeSeries,
+    *,
+    horizon: int,
+    alignment_lag: int | None,
+) -> DesignMatrix:
+    """Replace h=1 metadata with the true h-step forecast origin.
+
+    Target-relative feature indices do not depend on the forecast horizon; for a
+    fixed target at index T and lag tau they are always T-tau.  Therefore the frozen
+    Primary builder can safely construct X/y at h=1, after which this adapter moves
+    only ``forecast_origin`` to T-h.  Availability is already guarded by tau>=h.
+    """
+
+    feature_support = max(matrix.feature_lags)
+    support_lag = feature_support if alignment_lag is None else int(alignment_lag)
+    if support_lag < feature_support:
+        raise SensitivityHorizonError(
+            "alignment_lag must be >= every feature lag"
+        )
+    if support_lag < horizon:
+        raise SensitivityHorizonError("alignment support must be >= horizon")
+
+    target_indices = np.arange(support_lag, len(series.time_index), dtype=np.int64)
+    if len(target_indices) != matrix.X.shape[0]:
+        raise SensitivityHorizonError(
+            "Primary builder row support disagrees with multi-horizon provenance"
+        )
+    expected_target_time = series.time_index[target_indices]
+    if not np.array_equal(matrix.target_time, expected_target_time):
+        raise SensitivityHorizonError(
+            "Primary builder target support disagrees with canonical time_index"
+        )
+    origin_indices = target_indices - horizon
+    if np.any(origin_indices < 0):
+        raise SensitivityHorizonError("multi-horizon forecast origin would be negative")
+
+    return DesignMatrix(
+        X=np.array(matrix.X, copy=True),
+        y=np.array(matrix.y, copy=True),
+        subject_id=matrix.subject_id,
+        region_id=matrix.region_id,
+        target_dimensions=matrix.target_dimensions,
+        forecast_origin=np.array(series.time_index[origin_indices], copy=True),
+        target_time=np.array(matrix.target_time, copy=True),
+        feature_names=matrix.feature_names,
+        feature_lags=matrix.feature_lags,
+        valid_mask=np.array(matrix.valid_mask, copy=True),
+    )
+
+
+def _wrap(
+    matrix: DesignMatrix,
+    series: FaceTimeSeries,
+    *,
+    horizon: int,
+    condition: str,
+    alignment_lag: int | None,
+) -> SensitivityHorizonDesignMatrix:
+    rebased = _rebase_forecast_origin(
+        matrix, series, horizon=horizon, alignment_lag=alignment_lag
+    )
+    return SensitivityHorizonDesignMatrix(rebased, horizon, condition)
 
 
 def build_sensitivity_self_history_design_matrix(
@@ -95,11 +164,13 @@ def build_sensitivity_self_history_design_matrix(
         series,
         target_region=target_region,
         lags=available_lags,
-        horizon=h,
+        horizon=1,
         alignment_lag=alignment_lag,
         target_dimension=target_dimension,
     )
-    return SensitivityHorizonDesignMatrix(matrix, h, "self")
+    return _wrap(
+        matrix, series, horizon=h, condition="self", alignment_lag=alignment_lag
+    )
 
 
 def build_sensitivity_persistence_design_matrix(
@@ -120,11 +191,17 @@ def build_sensitivity_persistence_design_matrix(
         series,
         target_region=target_region,
         lags=(h,),
-        horizon=h,
+        horizon=1,
         alignment_lag=alignment_lag,
         target_dimension=target_dimension,
     )
-    return SensitivityHorizonDesignMatrix(matrix, h, "persistence")
+    return _wrap(
+        matrix,
+        series,
+        horizon=h,
+        condition="persistence",
+        alignment_lag=alignment_lag,
+    )
 
 
 def build_sensitivity_full_history_design_matrix(
@@ -142,11 +219,13 @@ def build_sensitivity_full_history_design_matrix(
         series,
         target_region=target_region,
         lags=available_lags,
-        horizon=h,
+        horizon=1,
         alignment_lag=alignment_lag,
         target_dimension=target_dimension,
     )
-    return SensitivityHorizonDesignMatrix(matrix, h, "full")
+    return _wrap(
+        matrix, series, horizon=h, condition="full", alignment_lag=alignment_lag
+    )
 
 
 def build_sensitivity_pcmci_parent_design_matrix(
@@ -172,8 +251,10 @@ def build_sensitivity_pcmci_parent_design_matrix(
         series,
         parent_set=parent_set,
         self_lags=available_self_lags,
-        horizon=h,
+        horizon=1,
         alignment_lag=alignment_lag,
         target_dimension=target_dimension,
     )
-    return SensitivityHorizonDesignMatrix(matrix, h, "pcmci")
+    return _wrap(
+        matrix, series, horizon=h, condition="pcmci", alignment_lag=alignment_lag
+    )
