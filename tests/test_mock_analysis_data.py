@@ -71,3 +71,17 @@ def test_generator_produces_richer_synthetic_fixture_set(tmp_path: Path) -> None
     assert rows
     assert all(row["is_synthetic"] == "True" for row in rows)
     assert all(row["synthetic_notice"] == NOTICE for row in rows)
+
+    with (tmp_path / "mock_edge_stability.csv").open("r", encoding="utf-8", newline="") as handle:
+        stability_rows = list(csv.DictReader(handle))
+    assert stability_rows
+    for row in stability_rows:
+        fold_count = int(row["fold_selected_count"])
+        fold_opportunities = int(row["fold_opportunities"])
+        fold_frequency = float(row["outer_fold_selection_frequency"])
+        assert fold_frequency == pytest.approx(fold_count / fold_opportunities)
+
+        bootstrap_count = int(row["bootstrap_selected_count"])
+        bootstrap_opportunities = int(row["bootstrap_opportunities"])
+        bootstrap_frequency = float(row["bootstrap_selection_frequency"])
+        assert bootstrap_frequency == pytest.approx(bootstrap_count / bootstrap_opportunities)
