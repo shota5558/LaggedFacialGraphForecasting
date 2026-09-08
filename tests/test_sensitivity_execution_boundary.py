@@ -75,7 +75,11 @@ def test_real_mode_fails_closed_without_primary_freeze_manifest(tmp_path: Path) 
         assert_sensitivity_execution_allowed(loaded, repository_root=tmp_path)
 
 
-def test_real_mode_passes_stage_one_barrier_when_manifest_exists(tmp_path: Path) -> None:
+def test_real_mode_rejects_stage_one_existence_only_manifest_after_hardening(
+    tmp_path: Path,
+) -> None:
+    """S-IMPL-10 supersedes the S-IMPL-01 existence-only barrier."""
+
     _write_fixture(tmp_path, execution_mode="real")
     manifest = tmp_path / "artifacts" / "primary" / "freeze_manifest.json"
     manifest.parent.mkdir(parents=True)
@@ -83,7 +87,8 @@ def test_real_mode_passes_stage_one_barrier_when_manifest_exists(tmp_path: Path)
     loaded = load_sensitivity_experiment_config(
         "configs/sensitivity_preimplementation.yaml", repository_root=tmp_path
     )
-    assert_sensitivity_execution_allowed(loaded, repository_root=tmp_path)
+    with pytest.raises(SensitivityExecutionError, match="frozen schema"):
+        assert_sensitivity_execution_allowed(loaded, repository_root=tmp_path)
 
 
 def test_sensitivity_loader_rejects_primary_artifact_root(tmp_path: Path) -> None:
