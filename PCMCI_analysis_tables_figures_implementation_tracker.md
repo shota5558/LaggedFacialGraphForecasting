@@ -835,3 +835,58 @@ analysis_outputs:
 - synthetic output だけで publication-ready にしない
 - Primary と Sensitivity の結果を同じ status として混同しない
 - 実データ未実行を「解析完了」と扱わない
+
+---
+
+# 10. Synthetic Mock Verification Dataset
+
+A deterministic mock dataset is maintained under:
+
+```text
+data/mock_analysis/
+```
+
+This dataset is **FAKE / SYNTHETIC DATA ONLY** and exists only for software verification.
+
+## Mandatory provenance
+
+- [x] Mock directory separated from real experiment artifacts
+- [x] CSV rows contain `is_synthetic=True`
+- [x] CSV rows contain `synthetic_notice=FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS`
+- [x] Synthetic subjects use reserved `MOCK_S*` identifiers
+- [x] Deterministic generator script exists
+- [x] Mock README explicitly forbids scientific use
+- [x] Mock config explicitly declares `purpose=software verification only`
+- [ ] Analysis-generated mock outputs preserve synthetic provenance
+- [ ] Mock tables / plots are written to `artifacts/mock_analysis/`
+- [ ] Publication-ready export rejects or visibly marks mock-derived outputs
+
+## Coverage
+
+| Mock source | Intended outputs |
+|---|---|
+| `mock_dataset_summary.csv` | T01 / F12 |
+| `mock_primary_config.json` | T02 |
+| `mock_metrics.csv` | T03 / T04 / T06 / F01 / F02 / F03 / F13 / F14 |
+| `mock_feature_counts.csv` | T05 / F06 |
+| `mock_null_metrics.csv` | T07 / F05 |
+| `mock_lag_response.csv` | F04 |
+| `mock_edge_stability.csv` | T08 / F07 / F08 |
+| `mock_sensitivity.csv` | T09 / F10 |
+| `mock_prediction_trajectory.csv` | F11 |
+
+## Mock validation rule
+
+Passing the mock dataset means only:
+
+> the analysis implementation can read, aggregate, render, and preserve provenance for a known synthetic fixture.
+
+It does **not** mean:
+
+- the scientific hypothesis is supported,
+- Primary has been executed,
+- a table/figure is validated on real data,
+- an item may be marked publication-ready.
+
+Accordingly, mock generation can satisfy `Code` / `Test` checks but must not by itself set
+`Artifact Generated`, `Validated`, or `Final Status=COMPLETE` for real Primary outputs.
