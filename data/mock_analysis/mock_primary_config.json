@@ -11,6 +11,9 @@
     "forecaster": "ridge",
     "horizon": 1
   },
+  "evaluation": {
+    "primary_metric": "velocity_rmse"
+  },
   "lag_response": {
     "delta_frames": [
       -2,
