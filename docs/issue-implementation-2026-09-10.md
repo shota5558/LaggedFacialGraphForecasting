@@ -1,5 +1,35 @@
 # Issue implementation — 2026-09-10
 
+## Enrichment図表・実成果受入ゲート — 2026-09-11 (#75 / R-16-ENRICHMENT)
+
+- ENRICHMENTの入力にrun ID、full git SHA、protocol/config/source hash、fold、horizon、metric/directionを必須化し、run/config/grid/supportの不一致、未定義metric、差分不整合を拒否するようにした。subjectごとのsupport差は許容し、repeat内の一致は維持する。
+- canonical distribution/subject summaryへseed、estimand、集約規則、評価可能・評価不能件数を保持し、analysis manifestの`enrichment_provenance`へ実行監査情報を保存する。
+- ENRICHMENT図をselected vs matched分布に加え、subject-level enrichment effectと95% CIを表示する構成へ更新した。図はcanonical CSV再読込後に描画し、mockでは`MOCK DATA / NOT A SCIENTIFIC RESULT`を表示する。
+- 回帰・手計算・図表生成検証: `.venv/Scripts/python.exe -m pytest tests/test_extended_analysis_outputs.py tests/test_enrichment.py tests/test_landscape.py -o addopts='' -q -p no:cacheprovider --basetemp tmp/pytest-r16-enrichment` — 84 passed。生成PNGを目視確認し、`git diff --check`も通過。
+- `artifacts/`には現時点で実験解析入力／real Primary成果がなく、#19依存と実成果受入は未完了。mock/software PASSをreal-data COMPLETEへ昇格していない。
+
+## Population図表・実成果受入ゲート — 2026-09-11 (#76 / R-16-POPULATION)
+
+- POPULATIONのraw recordにrun ID、full git SHA、protocol/config/source hash、metric/direction、estimand、horizonを必須化し、run/config/source/metricの混在とsupport不整合を拒否するようにした。
+- `E_shifted - E_reference`を再計算し、完全なedge/subject Δ grid、Δ=0、frame/ms、edge/subject/evaluable/unevaluable/failure分母をcanonical summaryへ保存する。CIは設定済みestimatorでsubject clusterを再標本化する。
+- canonical source/summary CSVを先に保存し、独立した`POPULATION` registry ID、manifest provenance、caption、PNG/SVGを生成する。captionでは旧F04 common-shift曲線と区別する。
+- 回帰・手計算・mock図表生成検証: `.venv/Scripts/python.exe -m pytest tests/test_mock_analysis_data.py tests/test_extended_analysis_outputs.py tests/test_population_response.py -o addopts='' -q -p no:cacheprovider --basetemp tmp/pytest-population-generator` — 99 passed。`git diff --check`も通過。
+- `artifacts/`にはreal Primary成果がなく、R-08/#19依存の実成果生成・数値受入・目視reviewは未完了。mock/software PASSをreal-data COMPLETEへ昇格していない。
+
+## Landscape lag-band configuration validation — 2026-09-11 (#74 / R-16-LANDSCAPE)
+
+- Lag-band aggregation requires explicit nonempty bands with integer boundaries and nonempty string labels. Null no longer generates outcome-dependent singleton bands; fractional, boolean and string boundaries are rejected instead of coerced. Overlapping intervals are rejected even outside currently evaluable lags.
+- Coverage is checked against all supplied candidate cells, including failed/unevaluable cells, before numerical aggregation. Existing subject-first means/medians and evaluable denominators are preserved.
+- The LANDSCAPE raw contract now preserves run ID, full git SHA, protocol/config/source/support hashes, seed, metric/direction, estimand, fold/horizon, and failure status. Canonical cell summaries include subject/cell denominators and an outcome-independent-in-execution exploratory exact-cell rank; registry and manifest carry the same provenance.
+- Validation: `.venv/Scripts/python.exe -m pytest tests/test_landscape_aggregation.py tests/test_landscape.py tests/test_extended_analysis_outputs.py tests/test_mock_analysis_data.py -o addopts='' -q -p no:cacheprovider` — 126 passed, including hand-calculated aggregates, provenance rejection, denominator preservation, canonical CSV/figure generation, and mock fixture generation. `git diff --check` passed.
+- This is a software/mock verification pass only. Scientific band selection, raw export from R-08/R-17, and real-result acceptance remain open; no real experiment was run.
+
+## Population fold-level edge identity — 2026-09-11 (#35 / R-19)
+
+- The individual population reducer now binds `(outer_fold, edge_id)` to one source/target region, source/target component and reference lag across all observations. Reusing an ID for different edges can no longer undercount the edge denominator.
+- Subject-specific reference errors and support remain allowed. Identical edge IDs in different folds may represent different fitted selections.
+- Validation: `.venv/Scripts/python.exe -m pytest tests/test_population_response.py tests/test_extended_analysis_outputs.py -o addopts='' -q -p no:cacheprovider --basetemp tmp/pytest-edge-identity` — 63 passed, including six new edge identity/denominator regression cases. No runner changes or real experiment; scientific decisions and real-run acceptance remain open.
+
 ## Candidate-grid JSON identity — 2026-09-11 (#33 / R-17)
 
 - Removed integer coercion from candidate-grid loading. The existing `LandscapeCandidate` contract now validates the original JSON lag; fractional numbers, booleans and numeric strings cannot silently become another frozen candidate.

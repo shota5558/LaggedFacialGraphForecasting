@@ -4,7 +4,7 @@
 **Scope:** Issue #23 — T01–T09 / F01–F14 analysis-output generation pipeline  
 **Branch:** `dev`  
 **Normative scientific contract:** Issue #23 + Scientific Freeze.  
-**Last implementation audit:** 2026-09-08
+**Last implementation audit:** 2026-09-11
 
 This tracker records software implementation status separately from real-data scientific validation.
 Synthetic/mock success may complete `Code` and `Test`, but **must not** be used to mark real-data
@@ -41,6 +41,9 @@ Synthetic/mock success may complete `Code` and `Test`, but **must not** be used 
 - [x] Synthetic publication-ready export is rejected.
 - [x] Primary / Sensitivity execution boundary is guarded.
 - [x] Caption / interpretation contract is emitted.
+- [x] LANDSCAPE full-cell source, source→target/lag-band summaries, exploratory cell rank, and provenance gate are implemented.
+- [x] ENRICHMENT selected/matched distribution, subject effect/CI, and provenance gate are implemented.
+- [x] POPULATION edge-centered source/summary/figure, subject-cluster CI, and provenance gate are implemented.
 
 ## Real-data publication gate
 
@@ -80,6 +83,9 @@ Synthetic/mock success may complete `Code` and `Test`, but **must not** be used 
 | F12 | Figure | Data-quality / motion diagnostics | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
 | F13 | Figure | Prediction-error distribution | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
 | F14 | Figure | Metric concordance plot | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| LANDSCAPE | Extended | Full-cell gain, source→target/lag-band summaries, exploratory rank, provenance | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| ENRICHMENT | Extended | Selected/matched enrichment distribution, subject effect, CI | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
+| POPULATION | Extended | Edge-centered response curve, CI, denominators, provenance | [x] | [x] | [ ] | [ ] | IMPLEMENTED / REAL-DATA PENDING |
 
 ---
 
@@ -126,12 +132,27 @@ F12  tables/F12_data_quality_source.csv
 F13  tables/F13_prediction_error_distribution_source.csv
 F14  tables/F14_metric_concordance_source.csv
 
+LANDSCAPE  tables/LANDSCAPE_cell_gain_source.csv
+           tables/LANDSCAPE_cell_summary.csv
+           tables/LANDSCAPE_source_target_summary.csv
+           tables/LANDSCAPE_lag_band_summary.csv
+ENRICHMENT  tables/ENRICHMENT_distribution_source.csv
+            tables/ENRICHMENT_subject_summary.csv
+POPULATION  tables/POPULATION_edge_subject_response_source.csv
+            tables/POPULATION_response_summary.csv
+
 registry: analysis_artifact_registry.csv
 manifest: analysis_manifest.json
 captions: captions.json
 ```
 
 PNG and deterministic SVG renderings are generated for figures. F12 is a diagnostic figure directory containing multiple component plots.
+
+Extended ENRICHMENT output is software-complete only: real artifact generation and numerical review remain blocked until the Primary run/statistics dependency (#19) supplies a validated input set.
+
+Extended POPULATION output is software-complete only: real artifact generation and numerical review remain blocked until the Primary run/statistics dependency (#19) supplies a validated input set.
+
+Extended LANDSCAPE output is software-complete only: real artifact generation and numerical review remain blocked until the Primary run/statistics dependency (#19) supplies a validated input set.
 
 ---
 
@@ -277,6 +298,37 @@ Sensitivity-only temporal controls remain outside Primary.
 - [x] Positive F14 effect is normalized to mean `PCMCI better` for both lower- and higher-is-better metrics.
 
 **Gate H: SOFTWARE PASS**
+
+## Extended ENRICHMENT — Gate I
+
+- [x] Selected and matched repeat distribution is retained with seed and membership hash.
+- [x] Subject-level selected-minus-matched effect uses the configured repeat aggregation.
+- [x] Subject bootstrap CI and evaluable/unevaluable denominators are emitted.
+- [x] Run/config/protocol/source/support provenance and failure counts are preserved.
+- [x] Figure is rendered from the serialized canonical source tables and visibly marks mock data.
+- [ ] Real artifact generated and reviewed after #19 / Primary statistics.
+
+**Gate I: SOFTWARE PASS / REAL-DATA PENDING**
+
+## Extended POPULATION — Gate J
+
+- [x] Edge/subject raw records require run/config/source/support and frozen metric provenance.
+- [x] Exact lag response, Δ=0 reference, frame/ms units, edge/subject denominators, and failed/unevaluable counts are emitted.
+- [x] Subject-cluster percentile CI resamples all edges attached to each subject and preserves the configured point estimator.
+- [x] Canonical CSVs precede PNG/SVG rendering; registry, manifest, caption, and synthetic safeguards use independent `POPULATION` output ID.
+- [ ] Real artifact generated, numerically reconciled, visually reviewed, and accepted after #19 / Primary statistics.
+
+**Gate J: SOFTWARE PASS / REAL-DATA PENDING**
+
+## Extended LANDSCAPE — Gate K
+
+- [x] Every approved candidate cell is retained as evaluable, unevaluable, or failed and `G = E_self − E_cell` is reconciled.
+- [x] Explicit non-overlapping lag bands, source→target summaries, subject/cell denominators, and exploratory exact-cell rank are emitted.
+- [x] Run/config/protocol/source/support hashes, full git SHA, seed, metric, estimand, and failure counts are preserved in canonical outputs, registry, and manifest.
+- [x] Canonical CSVs precede the landscape heatmap; mock outputs carry the synthetic warning and use independent `LANDSCAPE` output ID.
+- [ ] Real artifact generated, numerically reconciled, visually reviewed, and accepted after #19 / Primary statistics.
+
+**Gate K: SOFTWARE PASS / REAL-DATA PENDING**
 
 ---
 

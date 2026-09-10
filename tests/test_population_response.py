@@ -16,6 +16,39 @@ SUPPORT_A = "a" * 64
 SUPPORT_B = "b" * 64
 
 
+@pytest.mark.parametrize("field,value", [
+    ("source_region", "brow"), ("target_region", "cheek"),
+    ("source_dimension", "vz"), ("target_dimension", "vz"), ("tau_star", 3),
+])
+def test_edge_id_cannot_change_definition_between_subjects(field, value) -> None:
+    first = _row(edge_id="e1", subject_id="s01", tau_star=2, delta=0,
+                 reference_error=1.0, shifted_error=1.0)
+    changes = {"subject_id": "s02", field: value}
+    if field == "tau_star":
+        changes["shifted_lag"] = value
+    with pytest.raises(PopulationResponseContractError, match="edge .* changes identity"):
+        aggregate_edge_lag_response(
+            [first, replace(first, **changes)], deltas=(0,),
+            aggregate=median, aggregation_id="median_edge_subject",
+        )
+
+
+def test_edge_definition_is_fold_scoped_and_support_is_subject_specific() -> None:
+    first = _row(edge_id="e1", subject_id="s01", tau_star=2, delta=0,
+                 reference_error=1.0, shifted_error=1.0)
+    second = replace(first, subject_id="s02", reference_error=2.0, shifted_error=2.0,
+                     reference_support_sha256=SUPPORT_B, shifted_support_sha256=SUPPORT_B)
+    third = replace(first, subject_id="s03", outer_fold=1, source_region="brow",
+                    tau_star=3, shifted_lag=3)
+    result, = aggregate_edge_lag_response(
+        [first, second, third], deltas=(0,), aggregate=median,
+        aggregation_id="median_edge_subject",
+    )
+    assert result.n_edges == 2
+    assert result.n_subjects == result.n_edge_subject == 3
+    assert result.value == 0.0
+
+
 @pytest.mark.parametrize("changed_delta", [-1, 0, 1])
 @pytest.mark.parametrize("deltas", [(-1, 0, 1), (1, -1, 0)])
 def test_edge_response_rejects_reference_error_drift(changed_delta, deltas) -> None:

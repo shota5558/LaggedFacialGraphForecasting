@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 import shutil
 
@@ -13,6 +14,7 @@ from lagged_facial_graph_forecasting.analysis_pipeline import (
     AnalysisOutputError,
     enrichment_sources,
     generate_analysis_outputs,
+    landscape_aggregate_sources,
     landscape_source,
     population_sources,
     table_t04,
@@ -63,15 +65,37 @@ def _provenance(frame: pd.DataFrame) -> pd.DataFrame:
     return frame
 
 
+def _with_config_hash(frame: pd.DataFrame, config: dict[str, object]) -> pd.DataFrame:
+    frame = frame.copy()
+    frame["config_sha256"] = hashlib.sha256(
+        json.dumps(config, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    return frame
+
+
 def _landscape_frame(grid: CandidateGrid) -> pd.DataFrame:
+    config_sha256 = hashlib.sha256(
+        json.dumps(_config(), sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
     rows = []
     for subject_index, subject_id in enumerate(("MOCK_S01", "MOCK_S02", "MOCK_S03", "MOCK_S04")):
         for candidate_index, candidate in enumerate(grid.candidates):
             self_error = 1.0 + subject_index * 0.1
             cell_error = self_error - 0.1 * (candidate_index + 1)
             rows.append({
+                "run_id": "MOCK_RUN_R16_LANDSCAPE",
+                "git_sha": "a" * 40,
+                "protocol_sha256": HASH_A,
+                "config_sha256": config_sha256,
+                "source_sha256": HASH_C,
+                "outer_fold": subject_index,
+                "horizon": 1,
+                "seed": 20260908,
                 "subject_id": subject_id,
                 **candidate.to_payload(),
+                "metric_name": "velocity_rmse",
+                "metric_direction": "lower_is_better",
+                "estimand_id": "landscape_cell_gain_v1",
                 "self_error": self_error,
                 "cell_error": cell_error,
                 "gain": self_error - cell_error,
@@ -83,13 +107,25 @@ def _landscape_frame(grid: CandidateGrid) -> pd.DataFrame:
 
 
 def _enrichment_frame() -> pd.DataFrame:
+    config_sha256 = hashlib.sha256(
+        json.dumps(_config(), sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
     rows = []
     for index, subject_id in enumerate(("MOCK_S01", "MOCK_S02", "MOCK_S03", "MOCK_S04")):
         selected = 0.5 + index * 0.1
         matched = 0.1 + index * 0.05
         rows.append({
+            "run_id": "MOCK_RUN_R16_ENRICHMENT",
+            "git_sha": "a" * 40,
+            "protocol_sha256": HASH_A,
+            "config_sha256": config_sha256,
+            "source_sha256": HASH_C,
+            "outer_fold": 0,
             "subject_id": subject_id,
             "target_region": "mouth",
+            "horizon": 1,
+            "metric_name": "velocity_rmse",
+            "metric_direction": "lower_is_better",
             "repeat_id": "MOCK_R000",
             "seed": 20260908 + index,
             "selected_aggregate": selected,
@@ -106,12 +142,24 @@ def _enrichment_frame() -> pd.DataFrame:
 
 
 def _population_frame() -> pd.DataFrame:
+    config_sha256 = hashlib.sha256(
+        json.dumps(_config(), sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
     rows = []
     for index, subject_id in enumerate(("MOCK_S01", "MOCK_S02", "MOCK_S03", "MOCK_S04")):
         reference = 1.0 + index * 0.1
         for delta in (-1, 0, 1):
             shifted = reference + 0.2 * abs(delta)
             rows.append({
+            "run_id": "MOCK_RUN_20260911",
+            "git_sha": "a" * 40,
+            "protocol_sha256": HASH_A,
+            "config_sha256": config_sha256,
+            "source_sha256": HASH_C,
+            "metric_name": "velocity_rmse",
+            "metric_direction": "lower_is_better",
+            "estimand_id": "edge_centered_self_plus_edge_v1",
+            "horizon": 1,
             "subject_id": subject_id,
             "outer_fold": 0,
             "edge_id": "edge_left_eye_mouth",
@@ -129,6 +177,7 @@ def _population_frame() -> pd.DataFrame:
                 "difference": shifted - reference,
             "reference_support_sha256": HASH_B,
             "shifted_support_sha256": HASH_B,
+            "status": "evaluable",
             })
     return _provenance(pd.DataFrame(rows))
 
@@ -143,6 +192,8 @@ def test_enrichment_rejects_repeat_contract_drift(column) -> None:
     )
     config = _config()
     config["primary"]["matched_sparsity"]["repeat_count"] = 2
+    first = _with_config_hash(first, config)
+    second = _with_config_hash(second, config)
     with pytest.raises(AnalysisOutputError, match=f"{column} changes across repeats"):
         enrichment_sources(pd.concat([first, second], ignore_index=True), config)
 
@@ -184,10 +235,46 @@ def test_enrichment_accepts_same_digest_case_and_subject_specific_support() -> N
         second[column] = second[column].str.upper()
     config = _config()
     config["primary"]["matched_sparsity"]["repeat_count"] = 2
+    first = _with_config_hash(first, config)
+    second = _with_config_hash(second, config)
     distribution, summary = enrichment_sources(pd.concat([first, second]), config)
     assert len(distribution) == 8
     assert summary.iloc[0].n_subjects == 4
     assert summary.iloc[0].n_repeats_per_subject == 2
+
+
+def test_enrichment_rejects_missing_repeat_record() -> None:
+    first = _enrichment_frame()
+    second = first.assign(repeat_id="MOCK_R001", seed=123)
+    config = _config()
+    config["primary"]["matched_sparsity"]["repeat_count"] = 2
+    first = _with_config_hash(first, config)
+    second = _with_config_hash(second, config)
+    combined = pd.concat([first, second], ignore_index=True).drop(index=4)
+    with pytest.raises(AnalysisOutputError, match="frozen repeat count"):
+        enrichment_sources(combined, config)
+
+
+@pytest.mark.parametrize("column", ["run_id", "git_sha", "protocol_sha256", "source_sha256"])
+def test_enrichment_rejects_run_provenance_drift(column) -> None:
+    frame = _enrichment_frame()
+    frame.loc[0, column] = "different-run" if column in {"run_id"} else "f" * (40 if column == "git_sha" else 64)
+    with pytest.raises(AnalysisOutputError, match=f"enrichment {column} changes across run"):
+        enrichment_sources(frame, _config())
+
+
+def test_enrichment_rejects_resolved_config_drift() -> None:
+    frame = _enrichment_frame()
+    frame["config_sha256"] = HASH_C
+    with pytest.raises(AnalysisOutputError, match="does not match resolved config"):
+        enrichment_sources(frame, _config())
+
+
+def test_enrichment_rejects_undefined_metric() -> None:
+    frame = _enrichment_frame()
+    frame["metric_name"] = "position_rmse"
+    with pytest.raises(AnalysisOutputError, match="undefined or not the frozen primary metric"):
+        enrichment_sources(frame, _config())
 
 
 @pytest.mark.parametrize("column", ["outer_fold", "tau_star", "delta", "shifted_lag"])
@@ -198,6 +285,59 @@ def test_population_source_rejects_non_integer_identity(column, value) -> None:
     frame.loc[0, column] = value
     with pytest.raises(AnalysisOutputError, match=f"population.{column}.*finite integers"):
         population_sources(frame, _config())
+
+
+@pytest.mark.parametrize("column", [
+    "run_id", "git_sha", "protocol_sha256", "config_sha256", "source_sha256",
+    "metric_name", "metric_direction", "estimand_id", "horizon", "status",
+])
+def test_population_source_requires_provenance_record_fields(column) -> None:
+    frame = _population_frame().drop(columns=column)
+    with pytest.raises(AnalysisOutputError, match=f"population missing required columns.*{column}"):
+        population_sources(frame, _config())
+
+
+@pytest.mark.parametrize("column", ["run_id", "protocol_sha256", "config_sha256", "source_sha256"])
+def test_population_source_rejects_mixed_run_provenance(column) -> None:
+    frame = _population_frame()
+    frame.loc[1, column] = "e" * (40 if column == "run_id" else 64)
+    if column == "config_sha256":
+        frame.loc[1, column] = "c" * 64
+    with pytest.raises(AnalysisOutputError, match=f"population {column} changes across records"):
+        population_sources(frame, _config())
+
+
+def test_population_source_rejects_resolved_config_drift() -> None:
+    frame = _population_frame()
+    frame["config_sha256"] = HASH_B
+    with pytest.raises(AnalysisOutputError, match="config_sha256 does not match resolved config"):
+        population_sources(frame, _config())
+
+
+@pytest.mark.parametrize("column,value", [
+    ("metric_name", "position_rmse"),
+    ("metric_direction", "higher_is_better"),
+])
+def test_population_source_rejects_undefined_metric(column, value) -> None:
+    frame = _population_frame()
+    frame.loc[0, column] = value
+    with pytest.raises(AnalysisOutputError, match="configured lower_is_better primary metric"):
+        population_sources(frame, _config())
+
+
+def test_population_source_reconciles_difference_and_preserves_failure_counts() -> None:
+    frame = _population_frame()
+    frame.loc[0, "difference"] = 99.0
+    with pytest.raises(AnalysisOutputError, match="difference does not reconcile"):
+        population_sources(frame, _config())
+
+    frame = _population_frame()
+    frame.loc[0, "status"] = "failed"
+    frame.loc[1, "status"] = "failed"
+    _, summary = population_sources(frame, _config())
+    assert (summary.failure_count == 2).all()
+    assert (summary.n_failed_edge_subject_units == 1).all()
+    assert (summary.n_unevaluable_edge_subject_units == 1).all()
 
 
 def test_population_source_rejects_reference_drift() -> None:
@@ -218,10 +358,14 @@ def test_population_ci_resamples_whole_subjects_with_the_point_estimand(aggregat
                 rows.append({**template, "subject_id": f"s{subject}", "edge_id": f"e{edge}",
                              "delta": delta, "shifted_lag": 2 + delta,
                              "reference_error": 1.0,
-                             "shifted_error": 1.0 + (value if delta else 0.0)})
+                             "shifted_error": 1.0 + (value if delta else 0.0),
+                             "difference": value if delta else 0.0})
     config = _config()
     config["population"]["aggregation_id"] = f"{aggregation}_edge_subject"
     frame = pd.DataFrame(rows)
+    frame["config_sha256"] = hashlib.sha256(
+        json.dumps(config, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
     _, summary = population_sources(frame, config)
     point = summary.loc[summary.delta_frames == 1].iloc[0]
     statistic = getattr(np, aggregation)
@@ -284,6 +428,49 @@ def test_landscape_unevaluable_cells_do_not_supply_a_self_reference() -> None:
     assert result.loc[result.status == "unevaluable", "gain"].isna().all()
 
 
+@pytest.mark.parametrize("column", [
+    "run_id", "git_sha", "protocol_sha256", "config_sha256", "source_sha256",
+    "outer_fold", "horizon", "seed", "metric_name", "metric_direction", "estimand_id",
+])
+def test_landscape_source_requires_run_provenance(column) -> None:
+    frame = _landscape_frame(_grid()).drop(columns=column)
+    with pytest.raises(AnalysisOutputError, match=f"landscape missing required columns.*{column}"):
+        landscape_source(frame, _grid(), _config())
+
+
+@pytest.mark.parametrize("column", ["run_id", "git_sha", "protocol_sha256", "source_sha256"])
+def test_landscape_source_rejects_provenance_drift(column) -> None:
+    frame = _landscape_frame(_grid())
+    frame.loc[0, column] = "different-run" if column == "run_id" else "f" * (40 if column == "git_sha" else 64)
+    with pytest.raises(AnalysisOutputError, match=f"landscape {column} changes across records"):
+        landscape_source(frame, _grid(), _config())
+
+
+def test_landscape_source_rejects_resolved_config_or_metric_drift() -> None:
+    frame = _landscape_frame(_grid())
+    frame["config_sha256"] = HASH_C
+    with pytest.raises(AnalysisOutputError, match="config_sha256 does not match resolved config"):
+        landscape_source(frame, _grid(), _config())
+
+    frame = _landscape_frame(_grid())
+    frame["metric_name"] = "position_rmse"
+    with pytest.raises(AnalysisOutputError, match="lower_is_better primary metric"):
+        landscape_source(frame, _grid(), _config())
+
+
+def test_landscape_aggregation_preserves_cell_and_subject_denominators() -> None:
+    grid = _grid()
+    frame = _landscape_frame(grid)
+    frame.loc[frame.subject_id == "MOCK_S01", ["self_error", "cell_error", "gain"]] = np.nan
+    frame.loc[frame.subject_id == "MOCK_S01", "status"] = "failed"
+    source = landscape_source(frame, grid, _config())
+    pair, _ = landscape_aggregate_sources(source, _config())
+    row = pair.iloc[0]
+    assert (row.n_total_cells, row.n_evaluable_cells, row.n_failed_cells) == (8, 6, 2)
+    assert (row.n_total_subjects, row.n_evaluable_subjects, row.n_unevaluable_subjects) == (4, 3, 1)
+    assert row.failure_count == 2
+
+
 def test_extended_sources_validate_and_reconcile() -> None:
     grid = _grid()
     source = landscape_source(_landscape_frame(grid), grid)
@@ -322,6 +509,7 @@ def test_extended_outputs_are_generated_without_overwriting_old_contract(tmp_pat
     )
     assert result.is_synthetic
     assert (result.output_root / "tables/LANDSCAPE_lag_band_summary.csv").is_file()
+    assert (result.output_root / "tables/LANDSCAPE_cell_summary.csv").is_file()
     assert (result.output_root / "tables/ENRICHMENT_subject_summary.csv").is_file()
     assert (result.output_root / "tables/POPULATION_response_summary.csv").is_file()
     assert (result.output_root / "figures/LANDSCAPE_gain_heatmap.svg").is_file()
@@ -331,10 +519,27 @@ def test_extended_outputs_are_generated_without_overwriting_old_contract(tmp_pat
     manifest = json.loads(result.manifest_path.read_text())
     assert manifest["extended_outputs_included"] is True
     assert manifest["extended_output_ids"] == ["LANDSCAPE", "ENRICHMENT", "POPULATION"]
+    assert manifest["landscape_provenance"]["run_id"] == "MOCK_RUN_R16_LANDSCAPE"
+    assert manifest["landscape_provenance"]["failure_count"] == 0
+    assert manifest["landscape_provenance"]["n_candidate_cells"] == 4
+    assert manifest["enrichment_provenance"]["run_id"] == "MOCK_RUN_R16_ENRICHMENT"
+    assert manifest["enrichment_provenance"]["n_unevaluable_records"] == 0
+    assert manifest["population_provenance"]["run_id"] == "MOCK_RUN_20260911"
+    assert manifest["population_provenance"]["config_sha256"] == hashlib.sha256(
+        json.dumps(_config(), sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    assert manifest["population_provenance"]["source_sha256"] == HASH_C
+    assert manifest["population_provenance"]["failure_count"] == 0
     captions = json.loads((result.output_root / "captions.json").read_text())
     assert {"LANDSCAPE", "ENRICHMENT", "POPULATION"}.issubset(captions)
+    assert "legacy F04 common-shift" in captions["POPULATION"]
     registry = pd.read_csv(result.registry_path)
     assert {"LANDSCAPE", "ENRICHMENT", "POPULATION"}.issubset(set(registry.output_id))
+    population_registry = registry[registry.output_id == "POPULATION"]
+    assert set(population_registry.run_id) == {"MOCK_RUN_20260911"}
+    assert set(population_registry.config_sha256) == {manifest["population_provenance"]["config_sha256"]}
+    landscape_registry = registry[registry.output_id == "LANDSCAPE"]
+    assert set(landscape_registry.run_id) == {"MOCK_RUN_R16_LANDSCAPE"}
     assert (result.output_root / "tables/T04_pcmci_vs_self_paired_effect.csv").is_file()
 
 

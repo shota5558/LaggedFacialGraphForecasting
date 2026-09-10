@@ -33,6 +33,39 @@ def _evaluation_support_sha256(outer_fold: int, subject_id: str, region_id: str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def _landscape_grid() -> tuple[dict[str, object], str]:
+    candidates = [
+        {
+            "source_region": source,
+            "target_region": "mouth",
+            "lag": lag,
+            "source_dimension": "vx",
+            "target_dimension": "vy",
+            "feature_unit": "region_dimension_lag",
+        }
+        for source in ("left_cheek", "right_cheek")
+        for lag in (1, 2)
+    ]
+    candidates.sort(
+        key=lambda item: (
+            item["source_region"], item["target_region"], item["lag"],
+            item["source_dimension"], item["target_dimension"], item["feature_unit"],
+        )
+    )
+    payload = {
+        "protocol_sha256": hashlib.sha256(b"mock-landscape-protocol-v1").hexdigest(),
+        "candidates": candidates,
+    }
+    digest = hashlib.sha256(
+        json.dumps(
+            {"candidates": candidates, "protocol_sha256": payload["protocol_sha256"]},
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    return payload, digest
+
+
 def _metrics(rng: np.random.Generator) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     specs = {
@@ -287,6 +320,95 @@ def _trajectory() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _population() -> pd.DataFrame:
+    """Create a deterministic edge-centered response fixture."""
+    run_id = "MOCK_RUN_20260908"
+    git_sha = "a" + "0" * 39
+    protocol_sha256 = hashlib.sha256(b"mock-population-protocol-v1").hexdigest()
+    config_sha256 = hashlib.sha256(
+        json.dumps(_primary_config(), sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    source_sha256 = hashlib.sha256(b"mock-population-source-v1").hexdigest()
+    rows = []
+    for subject in SUBJECTS:
+        fold = (int(subject[-2:]) - 1) % 4
+        reference = 0.9 + int(subject[-2:]) * 0.01
+        support = _evaluation_support_sha256(fold, subject, "mouth")
+        for delta in (-1, 0, 1):
+            difference = 0.08 * abs(delta)
+            rows.append({
+                **_common(),
+                "run_id": run_id,
+                "git_sha": git_sha,
+                "protocol_sha256": protocol_sha256,
+                "config_sha256": config_sha256,
+                "source_sha256": source_sha256,
+                "metric_name": "velocity_rmse",
+                "metric_direction": "lower_is_better",
+                "estimand_id": "edge_centered_self_plus_edge_v1",
+                "horizon": 1,
+                "outer_fold": fold,
+                "edge_id": "edge_left_cheek_mouth",
+                "subject_id": subject,
+                "source_region": "left_cheek",
+                "target_region": "mouth",
+                "source_dimension": "vx",
+                "target_dimension": "vy",
+                "context_id": "self_plus_edge_v1",
+                "tau_star": 2,
+                "delta": delta,
+                "shifted_lag": 2 + delta,
+                "sampling_rate_hz": 30.0,
+                "reference_error": round(reference, 6),
+                "shifted_error": round(reference + difference, 6),
+                "difference": round(difference, 6),
+                "reference_support_sha256": support,
+                "shifted_support_sha256": support,
+                "status": "evaluable",
+            })
+    return pd.DataFrame(rows)
+
+
+def _landscape() -> pd.DataFrame:
+    """Create a deterministic full-candidate landscape fixture."""
+    grid, grid_digest = _landscape_grid()
+    protocol_sha256 = str(grid["protocol_sha256"])
+    source_sha256 = hashlib.sha256(b"mock-landscape-source-v1").hexdigest()
+    config_sha256 = hashlib.sha256(
+        json.dumps(_primary_config(), sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    rows = []
+    for subject in SUBJECTS:
+        fold = (int(subject[-2:]) - 1) % 4
+        self_error = 1.0 + int(subject[-2:]) * 0.01
+        support = _evaluation_support_sha256(fold, subject, "mouth")
+        for index, candidate in enumerate(grid["candidates"]):
+            cell_error = self_error - 0.02 * (index + 1)
+            rows.append({
+                **_common(),
+                "run_id": "MOCK_RUN_R16_LANDSCAPE",
+                "git_sha": "a" + "0" * 39,
+                "protocol_sha256": protocol_sha256,
+                "config_sha256": config_sha256,
+                "source_sha256": source_sha256,
+                "outer_fold": fold,
+                "horizon": 1,
+                "seed": SEED,
+                "subject_id": subject,
+                **candidate,
+                "metric_name": "velocity_rmse",
+                "metric_direction": "lower_is_better",
+                "estimand_id": "landscape_cell_gain_v1",
+                "self_error": round(self_error, 6),
+                "cell_error": round(cell_error, 6),
+                "gain": round(self_error - cell_error, 6),
+                "support_sha256": support,
+                "candidate_grid_sha256": grid_digest,
+                "status": "evaluable",
+            })
+    return pd.DataFrame(rows)
+
+
 def _primary_config() -> dict[str, object]:
     return {
         **_common(),
@@ -321,6 +443,16 @@ def _primary_config() -> dict[str, object]:
             "bootstrap_n_resamples": 10000,
             "bootstrap_method": "percentile",
         },
+        "population": {
+            "delta_frames": [-1, 0, 1],
+            "aggregation_id": "median_edge_subject",
+            "ci_method": "subject_cluster_percentile",
+        },
+        "landscape": {
+            "lag_bands": {"early": [1, 1], "late": [2, 2]},
+            "aggregation_id": "cell_mean_then_subject_median",
+            "ci_method": "subject_percentile",
+        },
     }
 
 
@@ -337,11 +469,18 @@ def generate(output_dir: Path) -> None:
         "mock_sensitivity.csv": _sensitivity(),
         "mock_dataset_summary.csv": _dataset_summary(),
         "mock_prediction_trajectory.csv": _trajectory(),
+        "mock_population.csv": _population(),
+        "mock_landscape.csv": _landscape(),
     }
     for filename, frame in frames.items():
         frame.to_csv(output_dir / filename, index=False, lineterminator="\n")
     (output_dir / "mock_primary_config.json").write_text(
         json.dumps(_primary_config(), indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    grid, _ = _landscape_grid()
+    (output_dir / "mock_candidate_grid.json").write_text(
+        json.dumps(grid, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
 

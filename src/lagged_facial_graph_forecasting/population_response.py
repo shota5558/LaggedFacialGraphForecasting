@@ -226,7 +226,17 @@ def aggregate_edge_lag_response(
     context_id = next(iter(contexts))
 
     by_key: dict[tuple[int, str, str], dict[int, EdgeLagResponseObservation]] = {}
+    edge_definitions: dict[tuple[int, str], tuple[str, str, str, str, int]] = {}
     for item in observations:
+        edge_key = (item.outer_fold, item.edge_id)
+        definition = (
+            item.source_region, item.target_region,
+            item.source_dimension, item.target_dimension, item.tau_star,
+        )
+        if edge_definitions.setdefault(edge_key, definition) != definition:
+            raise PopulationResponseContractError(
+                f"edge {edge_key!r} changes identity across observations"
+            )
         unit = by_key.setdefault(item.unit_key, {})
         if item.delta in unit:
             raise PopulationResponseContractError(
