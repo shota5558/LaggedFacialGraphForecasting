@@ -34,6 +34,13 @@ from .design_matrix import (
     decode_feature_name,
     encode_feature_name,
 )
+from .enrichment import (
+    CellGainObservation,
+    EnrichmentContractError,
+    EnrichmentDistribution,
+    MatchedGainRepeat,
+    reduce_cell_gain_enrichment,
+)
 from .forecaster import (
     FittedRidgeForecaster,
     fit_ridge_forecaster,
@@ -51,6 +58,12 @@ from .leakage_guard import (
     assert_ridge_tuning_scope,
 )
 from .metrics import velocity_rmse
+from .population_response import (
+    EdgeLagResponseAggregate,
+    EdgeLagResponseObservation,
+    PopulationResponseContractError,
+    aggregate_edge_lag_response,
+)
 from .primary_statistics import (
     PrimaryPairedStatistics,
     compute_primary_velocity_paired_statistics,
@@ -81,8 +94,13 @@ __all__ = [
     "AlignedIndices",
     "CORE_CONTRACT_SCHEMA_VERSION",
     "ContractError",
+    "CellGainObservation",
     "CoreContractIOError",
     "DesignMatrix",
+    "EdgeLagResponseAggregate",
+    "EdgeLagResponseObservation",
+    "EnrichmentContractError",
+    "EnrichmentDistribution",
     "ExperimentArtifact",
     "ExperimentConfig",
     "FaceTimeSeries",
@@ -92,12 +110,14 @@ __all__ = [
     "LagResponseMetricAggregate",
     "LeakageGuardError",
     "MetricsResult",
+    "MatchedGainRepeat",
     "MinimalFoldRunner",
     "NullMapping",
     "OuterTestLockedError",
     "ParentLink",
     "ParentSet",
     "PredictionArtifact",
+    "PopulationResponseContractError",
     "PrimaryPairedStatistics",
     "SPLIT_MANIFEST_SCHEMA_VERSION",
     "SplitManifest",
@@ -132,6 +152,8 @@ __all__ = [
     "loads_core_contract",
     "predict_ridge_forecaster",
     "read_split_manifest_json",
+    "aggregate_edge_lag_response",
+    "reduce_cell_gain_enrichment",
     "serialize_core_contract",
     "validate_subject_ids",
     "velocity_rmse",

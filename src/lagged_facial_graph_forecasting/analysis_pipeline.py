@@ -22,6 +22,7 @@ from .sensitivity_execution import (
     SensitivityExecutionMode,
     validate_primary_freeze_manifest,
 )
+from .landscape import CandidateGrid, LandscapeCandidate, validate_candidate_grid_coverage
 
 ANALYSIS_SCHEMA_VERSION = 3
 ANALYSIS_CODE_VERSION = "issue23-analysis-v3"
@@ -59,9 +60,19 @@ class AnalysisInputs:
     edge_stability: Path
     sensitivity: Path | None
     prediction_trajectory: Path
+    landscape: Path | None = None
+    enrichment: Path | None = None
+    population: Path | None = None
+    candidate_grid: Path | None = None
 
     @classmethod
-    def from_directory(cls, root: str | Path, *, include_sensitivity: bool = False) -> "AnalysisInputs":
+    def from_directory(
+        cls,
+        root: str | Path,
+        *,
+        include_sensitivity: bool = False,
+        include_extended: bool = False,
+    ) -> "AnalysisInputs":
         root = Path(root)
 
         def pick(stem: str, suffix: str = ".csv") -> Path:
@@ -69,6 +80,12 @@ class AnalysisInputs:
                 if candidate.is_file():
                     return candidate
             raise AnalysisOutputError(f"required analysis input missing: {stem}{suffix}")
+
+        def pick_optional(stem: str, suffix: str = ".csv") -> Path | None:
+            for candidate in (root / f"{stem}{suffix}", root / f"mock_{stem}{suffix}"):
+                if candidate.is_file():
+                    return candidate
+            return None
 
         return cls(
             dataset_summary=pick("dataset_summary"),
@@ -80,10 +97,16 @@ class AnalysisInputs:
             edge_stability=pick("edge_stability"),
             sensitivity=pick("sensitivity") if include_sensitivity else None,
             prediction_trajectory=pick("prediction_trajectory"),
+            landscape=pick("landscape") if include_extended else pick_optional("landscape"),
+            enrichment=pick("enrichment") if include_extended else pick_optional("enrichment"),
+            population=pick("population") if include_extended else pick_optional("population"),
+            candidate_grid=pick("candidate_grid", ".json") if include_extended else pick_optional("candidate_grid", ".json"),
         )
 
-    def paths(self, *, include_sensitivity: bool = False) -> tuple[Path, ...]:
-        return (
+    def paths(
+        self, *, include_sensitivity: bool = False, include_extended: bool = False
+    ) -> tuple[Path, ...]:
+        paths = (
             self.dataset_summary,
             self.primary_config,
             self.metrics,
@@ -93,6 +116,12 @@ class AnalysisInputs:
             self.edge_stability,
             self.prediction_trajectory,
         ) + ((self.sensitivity,) if include_sensitivity and self.sensitivity is not None else ())
+        if include_extended:
+            extended = (self.landscape, self.enrichment, self.population, self.candidate_grid)
+            if any(path is None for path in extended):
+                raise AnalysisOutputError("extended analysis inputs are incomplete")
+            paths += tuple(path for path in extended if path is not None)
+        return paths
 
 
 @dataclass(frozen=True, slots=True)
@@ -818,6 +847,352 @@ def metric_concordance_source(metrics: pd.DataFrame, config: Mapping[str, object
             "n_subjects": int(len(paired)),
         })
     return pd.DataFrame(rows).sort_values("metric_name", kind="stable")
+
+
+def _validate_sha256_column(frame: pd.DataFrame, column: str, name: str) -> None:
+    values = frame[column].astype("string")
+    if values.isna().any() or (~values.str.fullmatch(r"[0-9a-fA-F]{64}")).any():
+        raise AnalysisOutputError(f"{name}.{column} must contain SHA-256 digests")
+
+
+def _load_candidate_grid(path: Path) -> CandidateGrid:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = payload.get("payload", payload)
+        candidates = tuple(
+            LandscapeCandidate(
+                source_region=item["source_region"],
+                target_region=item["target_region"],
+                lag=int(item["lag"]),
+                source_dimension=item["source_dimension"],
+                target_dimension=item["target_dimension"],
+                feature_unit=item["feature_unit"],
+            )
+            for item in payload["candidates"]
+        )
+        return CandidateGrid.from_candidates(
+            candidates, protocol_sha256=payload["protocol_sha256"]
+        )
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise AnalysisOutputError(f"invalid candidate_grid.json: {path}") from exc
+
+
+def landscape_source(
+    landscape: pd.DataFrame, candidate_grid: CandidateGrid
+) -> pd.DataFrame:
+    """Validate and canonicalize one row per subject/candidate landscape cell."""
+
+    required = (
+        "subject_id", "source_region", "target_region", "lag", "source_dimension",
+        "target_dimension", "feature_unit", "self_error", "cell_error", "gain",
+        "support_sha256", "candidate_grid_sha256", "status",
+    )
+    _require_columns(landscape, required, "landscape")
+    if not isinstance(candidate_grid, CandidateGrid):
+        raise TypeError("candidate_grid must be a CandidateGrid")
+    out = landscape.copy()
+    _validate_sha256_column(out, "support_sha256", "landscape")
+    _validate_sha256_column(out, "candidate_grid_sha256", "landscape")
+    if not (out.candidate_grid_sha256.astype(str).str.lower() == candidate_grid.digest).all():
+        raise AnalysisOutputError("landscape candidate_grid_sha256 does not match candidate_grid.json")
+    out["lag"] = pd.to_numeric(out.lag, errors="coerce")
+    if out.lag.isna().any() or (out.lag % 1 != 0).any() or (out.lag < 1).any():
+        raise AnalysisOutputError("landscape lag must be positive integers")
+    out["lag"] = out.lag.astype(int)
+    out["status"] = out.status.astype(str)
+    allowed = {"evaluable", "unevaluable", "failed"}
+    if not set(out.status).issubset(allowed):
+        raise AnalysisOutputError("landscape status must be evaluable, unevaluable, or failed")
+    candidate_columns = (
+        "source_region", "target_region", "lag", "source_dimension", "target_dimension", "feature_unit"
+    )
+    candidates = [
+        LandscapeCandidate(**{column: row[column] for column in candidate_columns})
+        for _, row in out.iterrows()
+    ]
+    if out.duplicated(["subject_id", *candidate_columns]).any():
+        raise AnalysisOutputError("landscape contains duplicate subject/candidate cells")
+    unit_keys = ["subject_id"]
+    for key in ("outer_fold", "h"):
+        if key in out.columns:
+            unit_keys.append(key)
+    for _, group in out.groupby(unit_keys, sort=False, dropna=False):
+        observed = [candidates[index] for index in group.index]
+        try:
+            validate_candidate_grid_coverage(candidate_grid, observed)
+        except ValueError as exc:
+            raise AnalysisOutputError(f"landscape candidate coverage mismatch for {unit_keys}") from exc
+
+    evaluable = out.status == "evaluable"
+    for column in ("self_error", "cell_error"):
+        out[column] = pd.to_numeric(out[column], errors="coerce")
+        if out.loc[evaluable, column].isna().any() or not np.isfinite(out.loc[evaluable, column]).all():
+            raise AnalysisOutputError(f"landscape.{column} must be finite for evaluable cells")
+    supplied_gain = pd.to_numeric(out.gain, errors="coerce")
+    calculated_gain = out.self_error - out.cell_error
+    if not np.allclose(
+        supplied_gain.loc[evaluable].astype(float),
+        calculated_gain.loc[evaluable].astype(float),
+        rtol=1e-9,
+        atol=1e-12,
+    ):
+        raise AnalysisOutputError("landscape gain does not reconcile with Self - cell error")
+    out.loc[evaluable, "gain"] = calculated_gain.loc[evaluable]
+    out.loc[~evaluable, "gain"] = np.nan
+    if not evaluable.any():
+        raise AnalysisOutputError("landscape has no evaluable cells")
+    return out.sort_values(
+        ["subject_id", "target_region", "source_region", "lag", "source_dimension", "target_dimension"],
+        kind="stable",
+    ).reset_index(drop=True)
+
+
+def _landscape_lag_bands(config: Mapping[str, object], lags: Sequence[int]) -> dict[str, tuple[int, int]]:
+    landscape_config = config.get("landscape", {})
+    if landscape_config is None:
+        landscape_config = {}
+    if not isinstance(landscape_config, Mapping):
+        raise AnalysisOutputError("landscape config must be an object")
+    configured = landscape_config.get("lag_bands")
+    if configured is None:
+        return {f"lag_{lag}": (lag, lag) for lag in sorted(set(lags))}
+    if not isinstance(configured, Mapping) or not configured:
+        raise AnalysisOutputError("landscape.lag_bands must be a non-empty object")
+    bands: dict[str, tuple[int, int]] = {}
+    for label, bounds in configured.items():
+        if not isinstance(bounds, (list, tuple)) or len(bounds) != 2:
+            raise AnalysisOutputError(f"landscape lag band {label!r} must be [low, high]")
+        low, high = (int(bounds[0]), int(bounds[1]))
+        if low < 1 or low > high:
+            raise AnalysisOutputError(f"landscape lag band {label!r} is invalid")
+        bands[str(label)] = (low, high)
+    return bands
+
+
+def landscape_aggregate_sources(
+    source: pd.DataFrame, config: Mapping[str, object]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return source→target and lag-band summaries from validated cell gains."""
+
+    evaluable = source[source.status == "evaluable"].copy()
+    bands = _landscape_lag_bands(config, evaluable.lag.astype(int).tolist())
+    def label_for(lag: int) -> str | None:
+        labels = [label for label, (low, high) in bands.items() if low <= lag <= high]
+        if len(labels) != 1:
+            return labels[0] if len(labels) == 1 else None
+        return labels[0]
+    evaluable["lag_band"] = evaluable.lag.astype(int).map(label_for)
+    if evaluable.lag_band.isna().any():
+        raise AnalysisOutputError("landscape lag bands do not cover every evaluable cell")
+
+    unit_keys = ["subject_id", "source_region", "target_region"]
+    subject_pair = evaluable.groupby(unit_keys, as_index=False).agg(
+        gain=("gain", "mean"), cell_count=("gain", "size")
+    )
+    n_resamples, seed, method = _statistics_config(config)
+
+    def summarize(group: pd.DataFrame, keys: list[str], *, label_column: str) -> pd.DataFrame:
+        rows: list[dict[str, object]] = []
+        for labels, values in group.groupby(keys, sort=True):
+            if not isinstance(labels, tuple):
+                labels = (labels,)
+            median, low, high = _bootstrap_median(
+                values.gain, n_resamples=n_resamples, seed=seed, method=method
+            )
+            row = dict(zip(keys, labels))
+            row.update({
+                "metric": "cell_gain",
+                "aggregation_id": "cell_mean_then_subject_median",
+                "median_gain": median,
+                "mean_gain": float(values.gain.mean()),
+                "ci_low": low,
+                "ci_high": high,
+                "confidence_level": 0.95,
+                "n_subjects": int(values.subject_id.nunique()),
+                "n_cells": int(values.cell_count.sum()),
+            })
+            rows.append(row)
+        return pd.DataFrame(rows)
+
+    pair_summary = summarize(subject_pair, ["source_region", "target_region"], label_column="target_region")
+    band_unit = evaluable.groupby(
+        ["subject_id", "source_region", "target_region", "lag_band"], as_index=False
+    ).agg(gain=("gain", "mean"), cell_count=("gain", "size"))
+    band_summary = summarize(
+        band_unit, ["source_region", "target_region", "lag_band"], label_column="lag_band"
+    )
+    return pair_summary, band_summary
+
+
+def enrichment_sources(
+    enrichment: pd.DataFrame, config: Mapping[str, object]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Validate repeat-level enrichment and summarize it by subject."""
+
+    required = (
+        "subject_id", "target_region", "repeat_id", "seed", "selected_aggregate",
+        "matched_aggregate", "difference_selected_minus_matched", "status", "estimand_id",
+        "aggregation_id", "candidate_grid_sha256", "support_sha256", "membership_sha256",
+    )
+    _require_columns(enrichment, required, "enrichment")
+    out = enrichment.copy()
+    for column in ("candidate_grid_sha256", "support_sha256", "membership_sha256"):
+        _validate_sha256_column(out, column, "enrichment")
+    seeds = pd.to_numeric(out.seed, errors="coerce")
+    if seeds.isna().any() or (seeds % 1 != 0).any() or (seeds < 0).any():
+        raise AnalysisOutputError("enrichment seed must be a non-negative integer")
+    out["seed"] = seeds.astype(int)
+    if out.duplicated(["subject_id", "target_region", "repeat_id"]).any():
+        raise AnalysisOutputError("enrichment repeat identity must be unique")
+    if not set(out.status.astype(str)).issubset({"evaluable", "unevaluable_empty_selected"}):
+        raise AnalysisOutputError("enrichment status is invalid")
+    numeric = ("selected_aggregate", "matched_aggregate", "difference_selected_minus_matched")
+    for column in numeric:
+        out[column] = pd.to_numeric(out[column], errors="coerce")
+    evaluable = out.status.astype(str) == "evaluable"
+    if not np.isfinite(out.loc[evaluable, numeric].to_numpy(dtype=float)).all():
+        raise AnalysisOutputError("evaluable enrichment aggregates must be finite")
+    if not np.allclose(
+        out.loc[evaluable, "difference_selected_minus_matched"],
+        out.loc[evaluable, "selected_aggregate"] - out.loc[evaluable, "matched_aggregate"],
+        rtol=1e-9,
+        atol=1e-12,
+    ):
+        raise AnalysisOutputError("enrichment difference does not reconcile")
+    repeat_count = _mapping(_mapping(config.get("primary"), "primary").get("matched_sparsity"), "primary.matched_sparsity").get("repeat_count")
+    counts = out.groupby(["subject_id", "target_region"], sort=False).repeat_id.nunique()
+    if (counts != int(repeat_count)).any():
+        raise AnalysisOutputError("enrichment does not contain the frozen repeat count for every unit")
+    rows: list[dict[str, object]] = []
+    for (subject_id, target_region), group in out[evaluable].groupby(
+        ["subject_id", "target_region"], sort=True
+    ):
+        selected = group.selected_aggregate.to_numpy(dtype=float)
+        if not np.allclose(selected, selected[0], rtol=1e-9, atol=1e-12):
+            raise AnalysisOutputError("enrichment selected aggregate changes across repeats")
+        rows.append({
+            "subject_id": subject_id,
+            "target_region": target_region,
+            "selected_aggregate": float(selected[0]),
+            "matched_mean": float(group.matched_aggregate.mean()),
+            "enrichment_effect": float(selected[0] - group.matched_aggregate.mean()),
+            "n_repeats": int(len(group)),
+            "estimand_id": str(group.estimand_id.iloc[0]),
+            "aggregation_id": str(group.aggregation_id.iloc[0]),
+            "candidate_grid_sha256": str(group.candidate_grid_sha256.iloc[0]).lower(),
+            "support_sha256": str(group.support_sha256.iloc[0]).lower(),
+        })
+    subject = pd.DataFrame(rows)
+    if subject.empty:
+        raise AnalysisOutputError("enrichment has no evaluable subject units")
+    n_resamples, seed, method = _statistics_config(config)
+    summary_rows: list[dict[str, object]] = []
+    for target_region, group in subject.groupby("target_region", sort=True):
+        median, low, high = _bootstrap_median(
+            group.enrichment_effect, n_resamples=n_resamples, seed=seed, method=method
+        )
+        summary_rows.append({
+            "target_region": target_region,
+            "estimand_id": str(group.estimand_id.iloc[0]),
+            "aggregation_id": str(group.aggregation_id.iloc[0]),
+            "median_enrichment_effect": median,
+            "mean_enrichment_effect": float(group.enrichment_effect.mean()),
+            "ci_low": low,
+            "ci_high": high,
+            "confidence_level": 0.95,
+            "n_subjects": int(group.subject_id.nunique()),
+            "n_repeats_per_subject": int(group.n_repeats.iloc[0]),
+        })
+    return out.sort_values(["subject_id", "target_region", "repeat_id"], kind="stable").reset_index(drop=True), pd.DataFrame(summary_rows)
+
+
+def population_sources(population: pd.DataFrame, config: Mapping[str, object]) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Validate edge-centered response rows and compute population summaries."""
+
+    required = (
+        "subject_id", "edge_id", "source_region", "target_region", "source_dimension",
+        "target_dimension", "tau_star", "delta_frames", "delta_ms", "shifted_lag",
+        "reference_error", "shifted_error", "difference", "evaluable", "same_support",
+        "support_sha256",
+    )
+    _require_columns(population, required, "population")
+    out = population.copy()
+    _validate_sha256_column(out, "support_sha256", "population")
+    out["delta_frames"] = pd.to_numeric(out.delta_frames, errors="coerce")
+    out["tau_star"] = pd.to_numeric(out.tau_star, errors="coerce")
+    out["shifted_lag"] = pd.to_numeric(out.shifted_lag, errors="coerce")
+    if out[["delta_frames", "tau_star", "shifted_lag"]].isna().any().any():
+        raise AnalysisOutputError("population lag fields must be numeric")
+    if not (out.shifted_lag == out.tau_star + out.delta_frames).all():
+        raise AnalysisOutputError("population shifted_lag does not reconcile with tau_star + delta_frames")
+    for column in ("delta_frames", "delta_ms", "reference_error", "shifted_error", "difference"):
+        out[column] = pd.to_numeric(out[column], errors="coerce")
+    bool_evaluable = _as_bool(out.evaluable)
+    bool_support = _as_bool(out.same_support)
+    if bool_evaluable.isna().any() or bool_support.isna().any():
+        raise AnalysisOutputError("population evaluable and same_support must be boolean")
+    out["evaluable"] = bool_evaluable
+    out["same_support"] = bool_support
+    if out.duplicated(["subject_id", "edge_id", "delta_frames"]).any():
+        raise AnalysisOutputError("population contains duplicate edge/subject/delta rows")
+    if not np.allclose(
+        out.loc[out.evaluable, "difference"],
+        out.loc[out.evaluable, "shifted_error"] - out.loc[out.evaluable, "reference_error"],
+        rtol=1e-9,
+        atol=1e-12,
+    ):
+        raise AnalysisOutputError("population difference does not reconcile")
+    deltas = sorted(out.delta_frames.astype(int).unique().tolist())
+    if 0 not in deltas or deltas != sorted(set(deltas) | {-d for d in deltas}):
+        raise AnalysisOutputError("population delta grid must be symmetric and include 0")
+    unit_rows: list[pd.DataFrame] = []
+    for _, group in out.groupby(["subject_id", "edge_id"], sort=True):
+        complete = (
+            group.evaluable.all()
+            and group.same_support.all()
+            and sorted(group.delta_frames.astype(int).tolist()) == deltas
+            and len(group) == len(deltas)
+        )
+        group = group.copy()
+        group["population_evaluable"] = bool(complete)
+        group["exclusion_reason"] = "" if complete else "incomplete_or_unsupported_delta_grid"
+        if complete and not np.allclose(
+            group.loc[group.delta_frames == 0, "difference"].to_numpy(dtype=float), 0.0,
+            rtol=1e-9, atol=1e-12,
+        ):
+            raise AnalysisOutputError("population reference delta must have zero difference")
+        unit_rows.append(group)
+    out = pd.concat(unit_rows, ignore_index=True)
+    eligible = out[out.population_evaluable].copy()
+    if eligible.empty:
+        raise AnalysisOutputError("population has no complete edge/subject delta grid")
+    edge_subject = eligible.groupby(["subject_id", "delta_frames"], as_index=False).agg(
+        difference=("difference", "median"), edge_count=("edge_id", "nunique"), delta_ms=("delta_ms", "median")
+    )
+    n_resamples, seed, method = _statistics_config(config)
+    rows: list[dict[str, object]] = []
+    for delta, group in edge_subject.groupby("delta_frames", sort=True):
+        median, low, high = _bootstrap_median(
+            group.difference, n_resamples=n_resamples, seed=seed, method=method
+        )
+        rows.append({
+            "delta_frames": int(delta),
+            "delta_ms": float(group.delta_ms.iloc[0]),
+            "median_edge_subject_difference": median,
+            "mean_edge_subject_difference": float(group.difference.mean()),
+            "ci_low": low,
+            "ci_high": high,
+            "confidence_level": 0.95,
+            "n_subjects": int(group.subject_id.nunique()),
+            "n_edges": int(group.edge_count.sum()),
+            "n_edge_subject_units": int(len(group)),
+            "reference_delta": 0,
+            "aggregation_id": "edge_median_then_subject_median",
+        })
+    summary = pd.DataFrame(rows).sort_values("delta_frames", kind="stable").reset_index(drop=True)
+    if not np.allclose(summary.loc[summary.delta_frames == 0, "median_edge_subject_difference"], 0.0):
+        raise AnalysisOutputError("population summary at reference delta must be zero")
+    return out.sort_values(["subject_id", "edge_id", "delta_frames"], kind="stable").reset_index(drop=True), summary
 
 
 def _import_pyplot():
