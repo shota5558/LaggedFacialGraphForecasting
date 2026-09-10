@@ -1,0 +1,53 @@
+task_id: H
+task_name: Runner Core
+status: PASS
+
+implemented:
+  - H-00 config loader
+  - H-01 fold runner
+  - H-02 artifact registry
+  - H-03 experiment manifest
+  - H-04 deterministic seed registry
+  - H-05 hash-verified resume
+  - H-06 failure-safe atomic artifact publication
+
+reused:
+  - existing V0 MinimalFoldRunner remains the single fold-runner backbone
+  - frozen P0A scientific config and ExperimentConfig remain authoritative
+  - existing ExperimentArtifact registry and manifest formats are reused for resume provenance
+
+tests:
+  latest_workflow: tests
+  latest_run_id: 34150836080
+  latest_job_id: 101832601019
+  latest_head_sha: 9803a34265a53b34aab718ef357c990479ae8fbf
+  latest_result: 257 passed in 2.17s
+  covered:
+    - frozen Primary config validation
+    - outer-test lock until freeze and single final evaluation
+    - content-addressed Primary artifact registration
+    - deterministic experiment manifest and software-version provenance
+    - deterministic named seed derivation
+    - exact-config and SHA-256 verified resume
+    - failed/incomplete artifact publication cannot become a final registered artifact
+
+scientific_checks:
+  - Primary remains pcmci_plus + parcorr + ridge with h=1
+  - subject-level SplitManifest remains authoritative
+  - outer-test remains unavailable to fitting/selection before explicit freeze
+  - runner provenance cannot redirect Primary artifacts into Sensitivity output space
+  - resume and failure handling do not change scientific settings after observing outcomes
+  - no Sensitivity method or optional extension is introduced
+
+artifacts:
+  - artifacts/setup/H-00/task_result.yaml
+  - artifacts/setup/H-01/task_result.yaml
+  - artifacts/setup/H-02/task_result.yaml
+  - artifacts/setup/H-03/task_result.yaml
+  - artifacts/setup/H-04/task_result.yaml
+  - artifacts/setup/H-05/task_result.yaml
+  - artifacts/setup/H-06/task_result.yaml
+  - artifacts/setup/H/task_result.yaml
+
+remaining_issue: none
+next_task: I1

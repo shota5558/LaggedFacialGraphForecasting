@@ -1,0 +1,50 @@
+task_id: A-13
+task_name: Interpolation policy
+status: PASS
+
+implemented:
+  - added explicit schema-versioned interpolation policy contract in src/lagged_facial_graph_forecasting/interpolation_policy.py
+  - Primary supports only method='none' because no concrete interpolation/imputation rule is frozen in the research specification
+  - preserves A-12 values and valid_mask exactly and emits an immutable all-false interpolated_mask
+  - rejects unfrozen interpolation methods such as linear, nearest, and spline rather than choosing them from data or prediction performance
+  - removed all parallel duplicate interpolation implementations before final PASS
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/interpolation_policy.py
+  - tests/test_interpolation_policy.py
+  - artifacts/setup/A-13/task_result.yaml
+
+source_commits:
+  canonical_policy: e40a9d2423174341d18f4aec959adfece7266224
+  tests: 7eb2cbf09efa90d5ad716b98aff3b00f5787976e
+  unfrozen_duplicate_removal: e4f13c6bb43ea317a0a508c7069cdc41b342b1e8
+  final_duplicate_removal: e8992c0dc90b081bc8ece5d2241b0da2ff82ddec
+
+tests:
+  workflow: tests
+  run_id: 34153491468
+  job_id: 101840402576
+  head_sha: e8992c0dc90b081bc8ece5d2241b0da2ff82ddec
+  result: success
+  cases:
+    - none policy preserves values and validity exactly
+    - invalid observations remain invalid and unfilled
+    - unfrozen interpolation methods are rejected
+    - schema_version is explicit and validated
+    - policy must be an explicit InterpolationPolicy object
+    - outputs are immutable and inputs unchanged
+
+scientific_checks:
+  - no interpolation rule, gap threshold, smoothing parameter, or imputation parameter is estimated from any data split
+  - outer-test cannot influence missing-value repair because Primary performs no repair
+  - A-11 quality-invalid and A-12 missing observations remain explicit invalid evidence downstream
+  - observed time support is not resampled or synthesized
+  - adding interpolation later requires an explicit scientific/config migration and tests rather than silent behavior change
+  - Primary scientific freeze remains PCMCI+ + ParCorr + Ridge, h=1
+  - no Sensitivity path is introduced
+
+artifacts:
+  - artifacts/setup/A-13/task_result.yaml
+
+remaining_issue: none
+next_task: A-14

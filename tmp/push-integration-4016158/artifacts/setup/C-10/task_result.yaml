@@ -1,0 +1,43 @@
+task_id: C-10
+task_name: Train/test feature consistency
+status: PASS
+
+implemented:
+  - reused FittedRidgeForecaster feature_names and feature_lags as the frozen training feature contract
+  - prediction rejects any test DesignMatrix whose feature_names differ from training
+  - prediction rejects any test DesignMatrix whose feature_lags differ from training
+  - deterministic DesignMatrix builders preserve condition-specific feature ordering so matching frozen inputs produce matching train/test columns
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/forecaster.py
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - tests/test_ridge_forecaster_prediction.py
+  - tests/test_design_matrix_feature_provenance.py
+
+requirements_verified:
+  train_test_feature_names_identical: enforced
+  train_test_feature_lags_identical: enforced
+  feature_order_drift: rejected
+  lag_order_drift: rejected
+  prediction_row_provenance_preserved: true
+
+tests:
+  workflow: tests
+  run_id: 34148619208
+  job_id: 101825925196
+  head_sha: 953a54b7cd0fb84aee4e0cd991149089d8677d95
+  python: 3.11.16
+  result: 185 passed in 1.56s
+  direct_cases:
+    - test_prediction_rejects_feature_name_drift
+    - test_prediction_rejects_feature_lag_drift
+    - Persistence/Self/Full/PCMCI feature provenance audits
+
+scientific_checks:
+  - outer-test cannot silently alter the feature identity or lag contract learned/frozen on outer-train
+  - no test-side feature or lag reselection is performed
+  - ParentSet-derived PCMCI inputs retain frozen parent ordering
+  - Primary h=1 and target-relative lag semantics remain unchanged
+
+remaining_issue: none
+next_task: C-11

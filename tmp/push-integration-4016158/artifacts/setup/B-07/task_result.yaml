@@ -1,0 +1,31 @@
+task_id: B-07
+task_name: Split manifest reader
+status: PASS
+
+implemented:
+  - strict versioned SplitManifest JSON reader
+  - exact root and inner-fold key validation
+  - schema-version validation
+  - reconstruction through InnerFold and SplitManifest contracts
+  - rejection of malformed JSON and tampered leakage-bearing artifacts
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/split_manifest_io.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_split_manifest_io.py
+  - artifacts/setup/B-07/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34147035784
+  head_sha: bde7a3ba22aedd9f7a792e52cf615d5ecefb89c5
+  result: success
+
+scientific_checks:
+  - loaded split artifacts are never trusted without contract revalidation
+  - outer-test leakage into inner folds is rejected on read
+  - unknown artifact schema drift is rejected
+  - reader does not recompute or select splits
+
+remaining_issue: none
+next_task: B-08

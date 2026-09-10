@@ -1,0 +1,52 @@
+task_id: A-12
+task_name: Missing frame handling
+status: PASS
+
+implemented:
+  - added canonical missingness.py preserve-and-flag handling for observed facial frames
+  - preserves the full observed value tensor and elementwise valid_mask without dropping or filling rows
+  - derives immutable frame_has_missing and frame_fully_missing summaries from the frozen elementwise mask
+  - rejects any non-finite numeric value that is incorrectly marked valid
+  - allows finite low-quality values to remain explicitly invalid, preserving A-11 quality semantics
+  - does not infer absent timestamps from irregular gaps because no nominal cadence is frozen by A-01
+  - performs no interpolation, extrapolation, smoothing, resampling, imputation, or population-level fitting
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/missingness.py
+  - tests/test_missing_frame_handling.py
+  - artifacts/setup/A-12/task_result.yaml
+
+source_commits:
+  implementation: 094fae2ffb8095845bf9368307bd7e589fa45716
+  tests: c22f19fc222e3c32eb46f02392bfc2f5ef781ab0
+
+tests:
+  workflow: tests
+  run_id: 34153240378
+  job_id: 101839660189
+  head_sha: c22f19fc222e3c32eb46f02392bfc2f5ef781ab0
+  result: success
+  python: 3.11.16
+  suite_result: 361 passed in 2.62s
+  cases:
+    - partial and fully missing observed frames are distinguished without repair
+    - finite low-quality elements may remain explicitly invalid
+    - non-finite elements cannot be marked valid
+    - valid_mask shape and dtype are enforced
+    - malformed/non-numeric value tensors are rejected
+    - outputs are immutable and inputs remain unchanged
+
+scientific_checks:
+  - A-12 preserves observed time support; no sample is silently deleted or synthesized
+  - missingness handling is separated from A-13 interpolation policy
+  - irregular positive timestamp spacing from A-01 is not reinterpreted as a missing frame without an explicit nominal cadence
+  - A-11 quality-invalid finite values remain invalid and are not repaired implicitly
+  - no preprocessing statistic is fitted and outer-test outcomes cannot influence this deterministic helper
+  - no PCMCI+, Null, Sensitivity, GPDC, LPCMCI, GRU, GNN, or h>1 execution path is introduced
+  - Primary scientific freeze remains unchanged
+
+artifacts:
+  - artifacts/setup/A-12/task_result.yaml
+
+remaining_issue: none
+next_task: A-13

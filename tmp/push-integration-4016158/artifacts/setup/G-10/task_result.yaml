@@ -1,0 +1,28 @@
+task_id: G-10
+task_name: Position RMSE
+status: BLOCKED
+
+implemented:
+  - no estimator implementation added because the current Primary artifact contract does not carry position-state provenance required to distinguish position targets from motion-feature targets
+
+scientific_checks:
+  research_plan_metric_semantics_present: PASS
+  exact_operational_definition_frozen: FAIL
+  primary_motion_feature_choice_frozen: FAIL
+  position_reconstruction_contract_available: FAIL
+  outer_test_accessed: false
+
+root_cause:
+  - the research plan defines Position RMSE semantically as position reconstruction error but does not freeze the exact position target/reconstruction contract
+  - current Primary preflight still reports displacement-vs-velocity feature choice as unfrozen
+  - PredictionArtifact does not contain the forecast-origin position needed to reconstruct position from a velocity/displacement prediction without adding a new contract
+
+minimal_fix_required_before_retry:
+  - freeze the Primary motion-feature representation
+  - define whether Position RMSE consumes direct position predictions or reconstructs position from motion predictions
+  - if reconstruction is used, freeze the origin-position provenance and units
+  - add contract and numerical tests before enabling G-10
+
+scientific_specification_changed: false
+outer_test_accessed: false
+primary_results_generated: false

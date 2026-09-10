@@ -292,7 +292,7 @@ Mandatory provenance:
 
 ```text
 is_synthetic=True
-synthetic_notice=FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS
+synthetic_notice=MOCK DATA / NOT A SCIENTIFIC RESULT
 ```
 
 - [x] Reserved `MOCK_S*` subject IDs.

@@ -1,0 +1,44 @@
+task_id: E-04
+task_name: Score aggregation
+status: PASS
+
+implemented:
+  - added RidgeAlphaScore for deterministic per-alpha aggregate evidence
+  - added aggregate_ridge_inner_cv_scores
+  - aggregates validation RMSE as an equal-weight arithmetic mean across inner folds
+  - retains fold_count and total_val_valid as audit metadata without using row count as a weight
+  - requires every alpha candidate to cover the identical unique inner-fold index set
+  - returns candidates in deterministic ascending-alpha order
+  - does not select lambda in this task
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/ridge_tuning.py
+  - tests/test_ridge_score_aggregation.py
+  - artifacts/setup/E-04/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34149245771
+  job_id: 101827819069
+  head_sha: a618f743165b5169e6e1908303089741ae7c1447
+  python: 3.11.16
+  result: 204 passed in 1.83s
+  cases:
+    - equal-weight fold mean is used even when validation row counts differ
+    - aggregate ordering is independent of input score ordering
+    - duplicate alpha/fold score is rejected
+    - unequal fold coverage across candidates is rejected
+    - empty score input is rejected
+
+scientific_checks:
+  - aggregation consumes only inner-validation scores generated inside outer-train
+  - all lambda candidates are compared on exactly the same inner-fold partition set
+  - outer-test row count and outcomes cannot affect aggregation
+  - no lambda selection occurs before E-05
+  - Primary estimator and h=1 constraints remain unchanged
+
+artifacts:
+  - artifacts/setup/E-04/task_result.yaml
+
+remaining_issue: none
+next_task: E-05

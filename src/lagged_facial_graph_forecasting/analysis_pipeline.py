@@ -23,10 +23,16 @@ from .sensitivity_execution import (
     validate_primary_freeze_manifest,
 )
 from .landscape import CandidateGrid, LandscapeCandidate, validate_candidate_grid_coverage
+from .population_response import (
+    EdgeLagResponseObservation,
+    PopulationResponseContractError,
+    aggregate_edge_lag_response,
+)
 
 ANALYSIS_SCHEMA_VERSION = 3
 ANALYSIS_CODE_VERSION = "issue23-analysis-v3"
-SYNTHETIC_NOTICE = "FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS"
+SYNTHETIC_NOTICE = "MOCK DATA / NOT A SCIENTIFIC RESULT"
+LEGACY_SYNTHETIC_NOTICES = frozenset({"FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS"})
 PRIMARY_CONDITIONS = ("persistence", "self", "full", "pcmci")
 LAG_GRID = (-2, -1, 0, 1, 2)
 REFERENCE_DELTA = 0
@@ -161,7 +167,7 @@ def _synthetic_status(frame: pd.DataFrame, name: str) -> bool:
     synthetic = bool(flags.iloc[0])
     if synthetic:
         _require_columns(frame, ("synthetic_notice",), name)
-        if not (frame.synthetic_notice.astype(str) == SYNTHETIC_NOTICE).all():
+        if not frame.synthetic_notice.astype(str).isin({SYNTHETIC_NOTICE, *LEGACY_SYNTHETIC_NOTICES}).all():
             raise AnalysisOutputError(f"{name} has invalid synthetic_notice")
         if "subject_id" in frame.columns:
             ids = frame.subject_id.dropna().astype(str)
@@ -330,8 +336,26 @@ def _write_table(
 
 
 def _exact_pair(metrics: pd.DataFrame, reference: str, comparison: str, metric: str) -> pd.DataFrame:
-    keys = ["outer_fold", "subject_id", "region_id", "metric_name", "metric_direction"]
-    subset = metrics[metrics.metric_name == metric]
+    _require_columns(metrics, ("n_valid",), "metrics")
+    keys = ["outer_fold", "subject_id", "region_id", "metric_name", "metric_direction", "n_valid"]
+    support_keys = [
+        column for column in ("support_sha256", "evaluation_support_sha256", "support_digest", "support_id")
+        if column in metrics.columns
+    ]
+    if not support_keys:
+        raise AnalysisOutputError(
+            "exact pairing requires an evaluation support digest or support ID"
+        )
+    keys.extend(support_keys)
+    subset = metrics[metrics.metric_name == metric].copy()
+    subset["n_valid"] = pd.to_numeric(subset["n_valid"], errors="coerce")
+    if subset.n_valid.isna().any() or (subset.n_valid < 1).any() or (subset.n_valid % 1 != 0).any():
+        raise AnalysisOutputError("metrics.n_valid must be a positive integer")
+    for column in support_keys:
+        if subset[column].isna().any() or subset[column].astype(str).str.strip().eq("").any():
+            raise AnalysisOutputError(f"metrics.{column} must be present for exact pairing")
+        if column.endswith("sha256"):
+            _validate_sha256_column(subset, column, "metrics")
     left = subset[subset.condition == reference][keys + ["value"]].rename(columns={"value": "reference_value"})
     right = subset[subset.condition == comparison][keys + ["value"]].rename(columns={"value": "comparison_value"})
     if left.duplicated(keys).any() or right.duplicated(keys).any():
@@ -907,9 +931,17 @@ def landscape_source(
         "source_region", "target_region", "lag", "source_dimension", "target_dimension", "feature_unit"
     )
     candidates = [
-        LandscapeCandidate(**{column: row[column] for column in candidate_columns})
+        LandscapeCandidate(
+            source_region=str(row.source_region),
+            target_region=str(row.target_region),
+            lag=int(row.lag),
+            source_dimension=str(row.source_dimension),
+            target_dimension=str(row.target_dimension),
+            feature_unit=str(row.feature_unit),
+        )
         for _, row in out.iterrows()
     ]
+    candidate_by_index = dict(zip(out.index, candidates))
     if out.duplicated(["subject_id", *candidate_columns]).any():
         raise AnalysisOutputError("landscape contains duplicate subject/candidate cells")
     unit_keys = ["subject_id"]
@@ -917,7 +949,7 @@ def landscape_source(
         if key in out.columns:
             unit_keys.append(key)
     for _, group in out.groupby(unit_keys, sort=False, dropna=False):
-        observed = [candidates[index] for index in group.index]
+        observed = [candidate_by_index[index] for index in group.index]
         try:
             validate_candidate_grid_coverage(candidate_grid, observed)
         except ValueError as exc:
@@ -974,6 +1006,21 @@ def landscape_aggregate_sources(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return source→target and lag-band summaries from validated cell gains."""
 
+    landscape_config = _mapping(config.get("landscape"), "landscape")
+    aggregation_id = landscape_config.get("aggregation_id")
+    if aggregation_id != "cell_mean_then_subject_median":
+        raise AnalysisOutputError(
+            "landscape.aggregation_id must explicitly select cell_mean_then_subject_median"
+        )
+    ci_method = landscape_config.get("ci_method")
+    if ci_method != "subject_percentile":
+        raise AnalysisOutputError(
+            "landscape.ci_method must explicitly select subject_percentile"
+        )
+    if "lag_bands" not in landscape_config:
+        raise AnalysisOutputError(
+            "landscape.lag_bands must be explicit before landscape aggregation"
+        )
     evaluable = source[source.status == "evaluable"].copy()
     bands = _landscape_lag_bands(config, evaluable.lag.astype(int).tolist())
     def label_for(lag: int) -> str | None:
@@ -1002,7 +1049,8 @@ def landscape_aggregate_sources(
             row = dict(zip(keys, labels))
             row.update({
                 "metric": "cell_gain",
-                "aggregation_id": "cell_mean_then_subject_median",
+                "aggregation_id": aggregation_id,
+                "ci_method": ci_method,
                 "median_gain": median,
                 "mean_gain": float(values.gain.mean()),
                 "ci_low": low,
@@ -1029,6 +1077,18 @@ def enrichment_sources(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Validate repeat-level enrichment and summarize it by subject."""
 
+    enrichment_config = _mapping(config.get("enrichment"), "enrichment")
+    repeat_summary_aggregation = enrichment_config.get("repeat_summary_aggregation")
+    if repeat_summary_aggregation != "mean_over_matched_repeats":
+        raise AnalysisOutputError(
+            "enrichment.repeat_summary_aggregation must explicitly select "
+            "mean_over_matched_repeats"
+        )
+    ci_method = enrichment_config.get("ci_method")
+    if ci_method != "subject_percentile":
+        raise AnalysisOutputError(
+            "enrichment.ci_method must explicitly select subject_percentile"
+        )
     required = (
         "subject_id", "target_region", "repeat_id", "seed", "selected_aggregate",
         "matched_aggregate", "difference_selected_minus_matched", "status", "estimand_id",
@@ -1079,6 +1139,8 @@ def enrichment_sources(
             "n_repeats": int(len(group)),
             "estimand_id": str(group.estimand_id.iloc[0]),
             "aggregation_id": str(group.aggregation_id.iloc[0]),
+            "repeat_summary_aggregation": repeat_summary_aggregation,
+            "ci_method": ci_method,
             "candidate_grid_sha256": str(group.candidate_grid_sha256.iloc[0]).lower(),
             "support_sha256": str(group.support_sha256.iloc[0]).lower(),
         })
@@ -1107,92 +1169,163 @@ def enrichment_sources(
 
 
 def population_sources(population: pd.DataFrame, config: Mapping[str, object]) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Validate edge-centered response rows and compute population summaries."""
+    """Validate canonical edge responses and summarize an explicitly approved grid."""
+
+    population_config = _mapping(config.get("population"), "population")
+    raw_deltas = population_config.get("delta_frames", population_config.get("deltas"))
+    if not isinstance(raw_deltas, (list, tuple)) or not raw_deltas:
+        raise AnalysisOutputError("population.delta_frames must explicitly define a grid")
+    try:
+        deltas = tuple(
+            int(delta)
+            for delta in raw_deltas
+            if not isinstance(delta, bool)
+        )
+    except (TypeError, ValueError) as exc:
+        raise AnalysisOutputError("population.delta_frames must contain integers") from exc
+    if len(deltas) != len(raw_deltas) or any(
+        not isinstance(raw, (int, float)) or float(raw) != delta
+        for raw, delta in zip(raw_deltas, deltas)
+    ):
+        raise AnalysisOutputError("population.delta_frames must contain integer values")
+    if len(set(deltas)) != len(deltas) or 0 not in deltas or set(deltas) != {-delta for delta in deltas}:
+        raise AnalysisOutputError("population.delta_frames must be a unique symmetric grid including 0")
+    aggregation_id = population_config.get("aggregation_id")
+    aggregators = {
+        "median_edge_subject": np.median,
+        "mean_edge_subject": np.mean,
+    }
+    if aggregation_id not in aggregators:
+        raise AnalysisOutputError(
+            "population.aggregation_id must explicitly select median_edge_subject or mean_edge_subject"
+        )
+    ci_method = population_config.get("ci_method")
+    if ci_method != "subject_cluster_percentile":
+        raise AnalysisOutputError(
+            "population.ci_method must explicitly select subject_cluster_percentile"
+        )
 
     required = (
-        "subject_id", "edge_id", "source_region", "target_region", "source_dimension",
-        "target_dimension", "tau_star", "delta_frames", "delta_ms", "shifted_lag",
-        "reference_error", "shifted_error", "difference", "evaluable", "same_support",
-        "support_sha256",
+        "outer_fold", "edge_id", "subject_id", "source_region", "target_region",
+        "source_dimension", "target_dimension", "context_id", "tau_star", "delta",
+        "shifted_lag", "sampling_rate_hz", "reference_error", "shifted_error",
+        "reference_support_sha256", "shifted_support_sha256",
     )
     _require_columns(population, required, "population")
     out = population.copy()
-    _validate_sha256_column(out, "support_sha256", "population")
-    out["delta_frames"] = pd.to_numeric(out.delta_frames, errors="coerce")
-    out["tau_star"] = pd.to_numeric(out.tau_star, errors="coerce")
-    out["shifted_lag"] = pd.to_numeric(out.shifted_lag, errors="coerce")
-    if out[["delta_frames", "tau_star", "shifted_lag"]].isna().any().any():
-        raise AnalysisOutputError("population lag fields must be numeric")
-    if not (out.shifted_lag == out.tau_star + out.delta_frames).all():
-        raise AnalysisOutputError("population shifted_lag does not reconcile with tau_star + delta_frames")
-    for column in ("delta_frames", "delta_ms", "reference_error", "shifted_error", "difference"):
-        out[column] = pd.to_numeric(out[column], errors="coerce")
-    bool_evaluable = _as_bool(out.evaluable)
-    bool_support = _as_bool(out.same_support)
-    if bool_evaluable.isna().any() or bool_support.isna().any():
-        raise AnalysisOutputError("population evaluable and same_support must be boolean")
-    out["evaluable"] = bool_evaluable
-    out["same_support"] = bool_support
-    if out.duplicated(["subject_id", "edge_id", "delta_frames"]).any():
-        raise AnalysisOutputError("population contains duplicate edge/subject/delta rows")
-    if not np.allclose(
-        out.loc[out.evaluable, "difference"],
-        out.loc[out.evaluable, "shifted_error"] - out.loc[out.evaluable, "reference_error"],
-        rtol=1e-9,
-        atol=1e-12,
-    ):
-        raise AnalysisOutputError("population difference does not reconcile")
-    deltas = sorted(out.delta_frames.astype(int).unique().tolist())
-    if 0 not in deltas or deltas != sorted(set(deltas) | {-d for d in deltas}):
-        raise AnalysisOutputError("population delta grid must be symmetric and include 0")
-    unit_rows: list[pd.DataFrame] = []
-    for _, group in out.groupby(["subject_id", "edge_id"], sort=True):
-        complete = (
-            group.evaluable.all()
-            and group.same_support.all()
-            and sorted(group.delta_frames.astype(int).tolist()) == deltas
-            and len(group) == len(deltas)
-        )
-        group = group.copy()
-        group["population_evaluable"] = bool(complete)
-        group["exclusion_reason"] = "" if complete else "incomplete_or_unsupported_delta_grid"
-        if complete and not np.allclose(
-            group.loc[group.delta_frames == 0, "difference"].to_numpy(dtype=float), 0.0,
-            rtol=1e-9, atol=1e-12,
-        ):
-            raise AnalysisOutputError("population reference delta must have zero difference")
-        unit_rows.append(group)
-    out = pd.concat(unit_rows, ignore_index=True)
-    eligible = out[out.population_evaluable].copy()
-    if eligible.empty:
-        raise AnalysisOutputError("population has no complete edge/subject delta grid")
-    edge_subject = eligible.groupby(["subject_id", "delta_frames"], as_index=False).agg(
-        difference=("difference", "median"), edge_count=("edge_id", "nunique"), delta_ms=("delta_ms", "median")
+    text_columns = (
+        "edge_id", "subject_id", "source_region", "target_region", "source_dimension",
+        "target_dimension", "context_id",
     )
+    if out[list(text_columns)].isna().any().any():
+        raise AnalysisOutputError("population identity fields must not be missing")
+    for column in ("reference_support_sha256", "shifted_support_sha256"):
+        _validate_sha256_column(out, column, "population")
+    if out.duplicated(["outer_fold", "edge_id", "subject_id", "delta"]).any():
+        raise AnalysisOutputError("population contains duplicate edge/subject/delta rows")
+
+    def make_observation(row: object) -> EdgeLagResponseObservation:
+        record = row._asdict() if hasattr(row, "_asdict") else row
+        try:
+            return EdgeLagResponseObservation(
+                outer_fold=int(record["outer_fold"]),
+                edge_id=str(record["edge_id"]),
+                subject_id=str(record["subject_id"]),
+                source_region=str(record["source_region"]),
+                target_region=str(record["target_region"]),
+                source_dimension=str(record["source_dimension"]),
+                target_dimension=str(record["target_dimension"]),
+                context_id=str(record["context_id"]),
+                tau_star=int(record["tau_star"]),
+                delta=int(record["delta"]),
+                shifted_lag=int(record["shifted_lag"]),
+                sampling_rate_hz=float(record["sampling_rate_hz"]),
+                reference_error=float(record["reference_error"]),
+                shifted_error=float(record["shifted_error"]),
+                reference_support_sha256=str(record["reference_support_sha256"]),
+                shifted_support_sha256=str(record["shifted_support_sha256"]),
+            )
+        except (TypeError, ValueError, OverflowError, PopulationResponseContractError) as exc:
+            raise AnalysisOutputError("population row violates the edge-lag response contract") from exc
+
+    observations = tuple(make_observation(row) for row in out.itertuples(index=False))
+    if not observations:
+        raise AnalysisOutputError("population has no response rows")
+    if len({item.context_id for item in observations}) != 1:
+        raise AnalysisOutputError("population must contain exactly one edge-response context")
+    observed_deltas = {item.delta for item in observations}
+    if not observed_deltas.issubset(set(deltas)):
+        raise AnalysisOutputError("population contains delta values outside the configured grid")
+    if len({item.sampling_rate_hz for item in observations}) != 1:
+        raise AnalysisOutputError("population requires one sampling_rate_hz for frame/ms output")
+
+    by_unit: dict[tuple[int, str, str], list[EdgeLagResponseObservation]] = {}
+    for item in observations:
+        by_unit.setdefault(item.unit_key, []).append(item)
+    unit_status: dict[tuple[int, str, str], tuple[bool, str]] = {}
+    eligible_observations: list[EdgeLagResponseObservation] = []
+    for unit_key, unit in by_unit.items():
+        unit_deltas = {item.delta for item in unit}
+        complete = unit_deltas == set(deltas) and len(unit) == len(deltas)
+        reason = "" if complete else "incomplete_delta_grid"
+        unit_status[unit_key] = (complete, reason)
+        if complete:
+            eligible_observations.extend(unit)
+    if not eligible_observations:
+        raise AnalysisOutputError("population has no complete edge/subject delta grid")
+
+    try:
+        aggregates = aggregate_edge_lag_response(
+            eligible_observations,
+            deltas=deltas,
+            aggregate=lambda values: aggregators[aggregation_id](values),
+            aggregation_id=str(aggregation_id),
+        )
+    except (TypeError, ValueError, PopulationResponseContractError) as exc:
+        raise AnalysisOutputError("population response rows violate complete-unit identity/support rules") from exc
+
+    out["delta_frames"] = out["delta"].astype(int)
+    sampling_rate = float(eligible_observations[0].sampling_rate_hz)
+    out["delta_ms"] = 1000.0 * out["delta_frames"] / sampling_rate
+    out["difference"] = [item.difference for item in observations]
+    out["support_sha256"] = [item.support_sha256 for item in observations]
+    out["population_evaluable"] = [unit_status[item.unit_key][0] for item in observations]
+    out["exclusion_reason"] = [unit_status[item.unit_key][1] for item in observations]
+
     n_resamples, seed, method = _statistics_config(config)
+    eligible = out[out.population_evaluable].copy()
     rows: list[dict[str, object]] = []
-    for delta, group in edge_subject.groupby("delta_frames", sort=True):
+    for aggregate in aggregates:
+        subject_values = (
+            eligible[eligible.delta_frames == aggregate.delta]
+            .groupby("subject_id", sort=True)
+            .difference.median()
+        )
         median, low, high = _bootstrap_median(
-            group.difference, n_resamples=n_resamples, seed=seed, method=method
+            subject_values, n_resamples=n_resamples, seed=seed, method=method
         )
         rows.append({
-            "delta_frames": int(delta),
-            "delta_ms": float(group.delta_ms.iloc[0]),
-            "median_edge_subject_difference": median,
-            "mean_edge_subject_difference": float(group.difference.mean()),
+            "delta_frames": aggregate.delta,
+            "delta_ms": 1000.0 * aggregate.delta / sampling_rate,
+            "median_edge_subject_difference": aggregate.value,
+            "mean_edge_subject_difference": float(eligible.loc[eligible.delta_frames == aggregate.delta, "difference"].mean()),
             "ci_low": low,
             "ci_high": high,
             "confidence_level": 0.95,
-            "n_subjects": int(group.subject_id.nunique()),
-            "n_edges": int(group.edge_count.sum()),
-            "n_edge_subject_units": int(len(group)),
+            "n_subjects": aggregate.n_subjects,
+            "n_edges": aggregate.n_edges,
+            "n_edge_subject_units": aggregate.n_edge_subject,
             "reference_delta": 0,
-            "aggregation_id": "edge_median_then_subject_median",
+            "context_id": aggregate.context_id,
+            "aggregation_id": aggregate.aggregation_id,
+            "ci_method": ci_method,
         })
     summary = pd.DataFrame(rows).sort_values("delta_frames", kind="stable").reset_index(drop=True)
     if not np.allclose(summary.loc[summary.delta_frames == 0, "median_edge_subject_difference"], 0.0):
         raise AnalysisOutputError("population summary at reference delta must be zero")
-    return out.sort_values(["subject_id", "edge_id", "delta_frames"], kind="stable").reset_index(drop=True), summary
+    return out.sort_values(
+        ["outer_fold", "subject_id", "edge_id", "delta_frames"], kind="stable"
+    ).reset_index(drop=True), summary
 
 
 def _import_pyplot():
@@ -1525,6 +1658,7 @@ def generate_analysis_outputs(
             synthetic=synthetic,
         )
         register(paths, "LANDSCAPE", ["LANDSCAPE_cell_gain_source.csv"], primary_metric, "source_target_subject")
+        pair_summary = pd.read_csv(tables / "LANDSCAPE_source_target_summary.csv")
         paths = _write_table(
             band_summary,
             tables / "LANDSCAPE_lag_band_summary.csv",
@@ -1532,6 +1666,7 @@ def generate_analysis_outputs(
             synthetic=synthetic,
         )
         register(paths, "LANDSCAPE", ["LANDSCAPE_cell_gain_source.csv"], primary_metric, "source_target_lag_band_subject")
+        band_summary = pd.read_csv(tables / "LANDSCAPE_lag_band_summary.csv")
         paths = _plot_landscape(
             band_summary,
             figures / "LANDSCAPE_gain_heatmap.png",
@@ -1549,6 +1684,7 @@ def generate_analysis_outputs(
             synthetic=synthetic,
         )
         register(paths, "ENRICHMENT", source_names("enrichment"), primary_metric, "subject_matched_repeat")
+        enrichment_distribution = pd.read_csv(tables / "ENRICHMENT_distribution_source.csv")
         paths = _write_table(
             enrichment_summary,
             tables / "ENRICHMENT_subject_summary.csv",
@@ -1556,6 +1692,7 @@ def generate_analysis_outputs(
             synthetic=synthetic,
         )
         register(paths, "ENRICHMENT", ["ENRICHMENT_distribution_source.csv"], primary_metric, "target_subject")
+        enrichment_summary = pd.read_csv(tables / "ENRICHMENT_subject_summary.csv")
         paths = _plot_enrichment(
             enrichment_distribution,
             figures / "ENRICHMENT_selected_vs_matched.png",
@@ -1573,6 +1710,7 @@ def generate_analysis_outputs(
             synthetic=synthetic,
         )
         register(paths, "POPULATION", source_names("population"), primary_metric, "edge_subject_delta")
+        population_source_frame = pd.read_csv(tables / "POPULATION_edge_subject_response_source.csv")
         paths = _write_table(
             population_summary,
             tables / "POPULATION_response_summary.csv",
@@ -1580,6 +1718,7 @@ def generate_analysis_outputs(
             synthetic=synthetic,
         )
         register(paths, "POPULATION", ["POPULATION_edge_subject_response_source.csv"], primary_metric, "subject_edge_delta")
+        population_summary = pd.read_csv(tables / "POPULATION_response_summary.csv")
         paths = _plot_population(
             population_summary,
             figures / "POPULATION_edge_centered_response.png",

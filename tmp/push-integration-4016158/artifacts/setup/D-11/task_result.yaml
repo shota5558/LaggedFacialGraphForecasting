@@ -1,0 +1,51 @@
+task_id: D-11
+task_name: ParentSet serialization
+status: PASS
+
+implemented:
+  - reused the existing Core Contract v3 deterministic JSON serializer/deserializer instead of creating a second ParentSet wire format
+  - verified D-10-generated ParentSet round-trip equality through dumps_core_contract()/loads_core_contract()
+  - verified deterministic JSON representation
+  - verified exact source/target component and lag provenance is serialized
+  - verified Tigramite-only diagnostics such as p_value, test_statistic, node indices, and link marks do not cross the canonical ParentSet boundary
+  - verified empty ParentSet round-trip without special-case code
+
+files_changed:
+  - tests/test_pcmci_parent_set_serialization.py
+  - artifacts/setup/D-11/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/core_contract_io.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+  - src/lagged_facial_graph_forecasting/pcmci_parent_set.py
+
+no_new_serialization_implementation:
+  reason: existing Core Contract I/O already provides strict versioned ParentSet JSON serialization and migration behavior
+
+tests:
+  workflow: tests
+  run_id: 34162196098
+  job_id: 101866132995
+  head_sha: c76a3b08324a793f8f697e8ba1aa4b96fdf6a5e5
+  conclusion: success
+  regression_scope: prior 501-test suite plus 3 D-11 targeted tests
+  targeted_checks:
+    - D-10 ParentSet deterministic JSON round trip
+    - canonical wire format excludes Tigramite-only diagnostics
+    - empty ParentSet round trip
+
+scientific_checks:
+  - ParentSet remains the canonical Tigramite-independent boundary between discovery and forecasting
+  - exact region-dimension and lag provenance survives serialization/reload
+  - no outer-test values, predictions, or tuning outcomes enter serialization
+  - no Primary/Sensitivity contamination is introduced
+  - no duplicate serializer or PCMCI implementation is introduced
+  - D-12 bootstrap discovery is not implemented prematurely
+
+artifacts:
+  - artifacts/setup/D-11/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: D-12

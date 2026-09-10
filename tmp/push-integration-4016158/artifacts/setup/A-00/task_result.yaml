@@ -1,0 +1,46 @@
+task_id: A-00
+task_name: Landmark reader
+status: PASS
+
+implemented:
+  - added an extractor-neutral reader for already-extracted landmark arrays
+  - supports .npy landmark arrays and .npz containers with a required landmark key and optional timestamp key
+  - loads NumPy containers with allow_pickle=false
+  - returns immutable RawLandmarkSequence arrays plus source-path provenance
+  - supports explicit custom NPZ landmark/timestamp keys
+  - deliberately defers timestamp semantics, landmark shape semantics, missingness, region definitions, and normalization to later Lane-A tasks
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/landmark_io.py
+  - tests/test_landmark_reader.py
+  - artifacts/setup/A-00/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34151246707
+  job_id: 101833820331
+  head_sha: fe28ead012b3f5409271e4f176835bd0cca50fa3
+  python: 3.11.16
+  result: success
+  suite_result: 265 passed in 2.06s
+  cases:
+    - .npy arrays are read without adding shape assumptions
+    - .npz landmarks and optional timestamps are read losslessly
+    - custom NPZ keys are supported
+    - missing required landmark key is rejected
+    - unsupported extension and missing file are rejected
+    - pickle-backed object arrays are not loaded
+
+scientific_checks:
+  - landmark extraction itself is not reimplemented; the boundary consumes already-extracted landmarks
+  - reader performs no data-dependent fitting and therefore cannot leak outer-test information into preprocessing parameters
+  - no timestamp ordering policy is introduced before A-01
+  - no landmark shape or coordinate-dimensionality policy is introduced before A-02
+  - no region, normalization, displacement, velocity, missingness, or interpolation policy is introduced early
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-00/task_result.yaml
+
+remaining_issue: none
+next_task: A-01

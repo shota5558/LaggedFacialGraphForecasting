@@ -1,0 +1,38 @@
+task_id: S-IMPL-02
+task_name: PCMCI+ + GPDC adapter
+status: PASS
+implemented:
+  - Tigramite GPDC dependency via dcor
+  - deterministic GPDC factory with explicit seed
+  - PCMCI+ adapter reusing frozen Primary tau_max and pc_alpha kwargs
+  - canonical outer-train Tigramite DataFrame and leakage guard reuse
+  - shared CI-agnostic ParentSet conversion with explicit discovery provenance
+  - canonical ParentSet serialization round-trip test
+  - synthetic nonlinear dependence test
+  - Primary ParentSet fail-closed error contract preserved after regression fix
+files_changed:
+  - pyproject.toml
+  - src/lagged_facial_graph_forecasting/pcmci_parent_set.py
+  - src/lagged_facial_graph_forecasting/sensitivity_gpdc.py
+  - tests/test_sensitivity_gpdc.py
+tests:
+  initial_workflow_run_id: 34212274730
+  initial_result: FAIL
+  initial_summary: 2 failed, 697 passed, 1 warning
+  fail_type: contract mismatch
+  root_cause: shared converter changed the existing Primary error-message contract
+  fix_commit: 6068cffa221b1ac3c05417e756b447de3d0794a9
+  regression_workflow_run_id: 34212459562
+  regression_result: success
+scientific_checks:
+  real_facial_data_used: false
+  outer_test_discovery_allowed: false
+  primary_discovery_changed: false
+  primary_ci_test_changed: false
+  sensitivity_artifact_namespace_only: true
+provenance:
+  implementation_commit: c78e54309a86250cdd5f9ed28d7fb11ac1b15e89
+  fix_commit: 6068cffa221b1ac3c05417e756b447de3d0794a9
+  branch: dev
+remaining_issue: none
+next_task: S-IMPL-03

@@ -1,0 +1,33 @@
+task_id: S-IMPL-09
+task_name: Synthetic sensitivity integration gate
+status: PASS
+implemented:
+  - GPDC synthetic end-to-end integration through ParentSet, Ridge, PredictionArtifact, metric, and Sensitivity serialization
+  - LPCMCI synthetic end-to-end integration through graph artifact, ParentSet, Ridge, PredictionArtifact, metric, and Sensitivity serialization
+  - phase-shuffle synthetic end-to-end integration with deterministic repeated artifact check
+  - circular-shift synthetic end-to-end integration with deterministic repeated artifact check
+  - h>1 synthetic end-to-end integration with horizon provenance
+  - GRU synthetic end-to-end integration through canonical PredictionArtifact and Sensitivity result serialization
+  - dedicated CPU PyTorch Gate kept separate from the lightweight Primary regression dependency path
+files_changed:
+  - tests/test_sensitivity_integration.py
+  - tests/test_sensitivity_integration_torch.py
+  - .github/workflows/sensitivity-torch-test.yml
+tests:
+  regression_workflow_run_id: 34215707345
+  regression_result: success
+  torch_integration_workflow_run_id: 34215707352
+  torch_integration_result: success
+scientific_checks:
+  synthetic_only: true
+  real_facial_data_used: false
+  primary_semantics_changed: false
+  primary_artifact_written: false
+  sensitivity_namespace_serialization_reached: true
+  deterministic_repeated_artifacts_checked: true
+provenance:
+  implementation_commit: 2b9f1b6133f711a92c9d5b4f89ee21eac6a0eb9b
+  branch: dev
+remaining_issue:
+  - none
+next_task: S-IMPL-10

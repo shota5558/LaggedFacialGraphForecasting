@@ -10,6 +10,7 @@ selection. They exist only to exercise the analysis table/figure pipeline.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -18,13 +19,18 @@ import numpy as np
 import pandas as pd
 
 SEED = 20260908
-NOTICE = "FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS"
+NOTICE = "MOCK DATA / NOT A SCIENTIFIC RESULT"
 SUBJECTS = tuple(f"MOCK_S{i:02d}" for i in range(1, 9))
 REGIONS = ("mouth", "jaw", "left_cheek", "right_cheek")
 
 
 def _common() -> dict[str, object]:
     return {"is_synthetic": True, "synthetic_notice": NOTICE}
+
+
+def _evaluation_support_sha256(outer_fold: int, subject_id: str, region_id: str) -> str:
+    payload = f"mock-evaluation-support|{outer_fold}|{subject_id}|{region_id}|240"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _metrics(rng: np.random.Generator) -> pd.DataFrame:
@@ -60,6 +66,9 @@ def _metrics(rng: np.random.Generator) -> pd.DataFrame:
                         "metric_direction": direction,
                         "value": round(float(value), 6),
                         "n_valid": 240,
+                        "evaluation_support_sha256": _evaluation_support_sha256(
+                            fold, subject, region
+                        ),
                     })
     return pd.DataFrame(rows)
 

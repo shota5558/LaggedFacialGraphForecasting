@@ -1,0 +1,51 @@
+task_id: F-30
+task_name: Matched sparsity mapping contract
+status: PASS
+
+implemented:
+  - adds a thin matched-sparsity NullMapping constructor for already-selected ParentLinks
+  - enforces exact cardinality equality with the PCMCI ParentSet
+  - rejects duplicate sampled ParentLinks
+  - records condition=matched-sparsity and the frozen SplitManifest seed
+  - retains outer-train-only Null construction guard
+  - intentionally performs no candidate-space construction, sampling, or repeated sampling; those remain F-31/F-32/F-33
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/null_matched_sparsity.py
+  - tests/test_null_matched_sparsity.py
+  - artifacts/setup/F-30/task_result.yaml
+
+implementation_commit:
+  sha: 14a0632c2c26723e3a54e4cd6a9a6e0e46e87af5
+  message: F-30: add matched-sparsity mapping contract
+
+tests:
+  workflow: tests
+  run_id: 34164372388
+  job_id: 101872385178
+  head_sha: 14a0632c2c26723e3a54e4cd6a9a6e0e46e87af5
+  result: 562 passed, 1 warning in 4.60s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-30
+  targeted_checks:
+    - equal-cardinality preselected mapping freezes successfully
+    - cardinality mismatch fails closed
+    - duplicate sampled ParentLinks fail closed
+    - outer-test construction scope fails closed
+    - ParentSet/manifest fold mismatch fails closed
+
+scientific_checks:
+  outer_test_leakage: PASS
+  exact_sparsity_cardinality_contract: PASS
+  duplicate_feature_guard: PASS
+  deterministic_seed_recorded: PASS
+  candidate_selection_not_implemented_early: PASS
+  sampling_not_implemented_early: PASS
+  sensitivity_contamination: PASS
+
+artifacts:
+  - artifacts/setup/F-30/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-31

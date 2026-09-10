@@ -1,0 +1,35 @@
+task_id: S-IMPL-07
+task_name: GRU forecaster adapter
+status: PASS
+implemented:
+  - Sensitivity-only PyTorch adapter using torch.nn.GRU and torch.nn.Linear
+  - deterministic CPU fitting with explicit seed
+  - Standardization fitted on inner-train only
+  - exact selected inner-train / inner-validation subject scope guards
+  - outer-test-only final prediction scope guard
+  - deterministic sequence-window construction from canonical DesignMatrix rows
+  - canonical PredictionArtifact conversion
+  - isolated official CPU PyTorch smoke workflow so Primary regression dependencies remain lightweight
+files_changed:
+  - src/lagged_facial_graph_forecasting/sensitivity_gru.py
+  - tests/test_sensitivity_gru.py
+  - pyproject.toml
+  - .github/workflows/sensitivity-torch-test.yml
+tests:
+  regression_workflow_run_id: 34214822241
+  regression_result: success
+  torch_smoke_workflow_run_id: 34214822342
+  torch_smoke_result: success
+scientific_checks:
+  primary_forecaster_changed: false
+  primary_dependency_path_imports_torch: false
+  outer_test_used_for_fit: false
+  validation_used_for_fit: false
+  deterministic_seed_handling: true
+  real_facial_data_used: false
+provenance:
+  implementation_commit: b3ea2d7cbb0e0f2a7fe5a156f672d45af71206b3
+  branch: dev
+remaining_issue:
+  - S-IMPL-10 remains responsible for complete Primary Freeze manifest validation at real Sensitivity execution entrypoints
+next_task: S-IMPL-08

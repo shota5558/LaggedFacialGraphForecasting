@@ -1,0 +1,46 @@
+task_id: E-03
+task_name: Inner CV
+status: PASS
+
+implemented:
+  - added evaluate_ridge_inner_cv for subject-isolated Ridge validation inside outer-train
+  - added RidgeInnerFoldScore for per-alpha/per-inner-fold validation evidence
+  - tuning input rejects any outer-test subject before estimator fitting begins
+  - tuning input rejects subjects outside SplitManifest outer-train
+  - each inner fold slices DesignMatrix by inner_train_subject_ids and inner_val_subject_ids
+  - StandardScaler + Ridge are fit together only on inner-train via fit_ridge_forecaster
+  - inner-validation is prediction/evaluation only; no refit or scaler fitting occurs on validation rows
+  - no score aggregation or lambda selection is performed yet
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/ridge_tuning.py
+  - tests/test_ridge_inner_cv.py
+  - artifacts/setup/E-03/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34149114552
+  job_id: 101827418121
+  head_sha: 69357a980329e332c99f66b5612fb981ba3f0735
+  python: 3.11.16
+  result: 199 passed in 1.50s
+  cases:
+    - scaler statistics prove fit scope is exactly each inner-train subject set
+    - inner validation yields finite RMSE and expected train/validation counts
+    - outer-test contamination is rejected before any fit call
+    - subjects outside the outer-train manifest are rejected
+
+scientific_checks:
+  - forbidden outer-train-wide scaler fit before inner CV is not used
+  - scaler and Ridge share the inner-train-only fit scope
+  - outer-test cannot enter lambda tuning through the DesignMatrix input
+  - subject independence is inherited from SplitManifest inner folds
+  - feature/lag provenance is unchanged during tuning
+  - Primary estimator remains scikit-learn Ridge
+  - no Sensitivity method or h>1 path is introduced
+
+artifacts:
+  - artifacts/setup/E-03/task_result.yaml
+
+remaining_issue: none
+next_task: E-04

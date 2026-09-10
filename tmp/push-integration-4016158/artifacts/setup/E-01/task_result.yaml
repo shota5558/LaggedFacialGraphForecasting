@@ -1,0 +1,39 @@
+task_id: E-01
+task_name: Scaler pipeline
+status: PASS
+
+implemented:
+  - reused the existing scikit-learn Pipeline with StandardScaler followed by Ridge
+  - scaler and Ridge are fit together on the same valid training rows
+  - no standalone pre-fit scaler state is introduced
+  - fitted feature provenance is retained alongside the pipeline
+
+files_changed:
+  - artifacts/setup/E-01/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/forecaster.py
+  - tests/test_ridge_forecaster_fit.py
+
+tests:
+  workflow: tests
+  run_id: 34148712365
+  job_id: 101826210417
+  head_sha: 78bade3f4274b732931323ca8221bf5282fc91af
+  result: 185 passed in 1.16s
+  direct_cases:
+    - fitted pipeline contains StandardScaler then Ridge
+    - scaler statistics use only valid training rows
+    - pipeline fit is deterministic for fixed input and alpha
+
+scientific_checks:
+  - scaler fitting is coupled to the estimator fit scope rather than global preprocessing
+  - no outer-test data is required or consumed by the scaler wrapper
+  - this task does not yet perform hyperparameter tuning; inner-CV isolation is enforced in E-03
+  - Primary forecaster remains Ridge and no Sensitivity model is introduced
+
+artifacts:
+  - artifacts/setup/E-01/task_result.yaml
+
+remaining_issue: none
+next_task: E-02

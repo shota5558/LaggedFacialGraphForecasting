@@ -1,0 +1,34 @@
+task_id: B-04
+task_name: Grouped K-fold implementation
+status: PASS
+
+implemented:
+  - build_grouped_kfold_split_manifests constructs deterministic subject-level K-fold outer partitions
+  - each subject is assigned to outer-test exactly once across folds
+  - each outer-train partition contains only subjects outside its test fold
+  - existing inner-fold construction is applied only inside each outer-train partition
+  - grouped K-fold builder is exported from the package API
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/splits.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_subject_split_builder.py
+  - artifacts/setup/B-04/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34146746223
+  head_sha: c2df2dc51dae0ce69c87896d6247cfa5e69e85c5
+  result: success
+
+scientific_checks:
+  - split unit remains subject
+  - outer-test assignment depends only on validated subject IDs and seed
+  - outer-train and outer-test are subject-disjoint in every fold
+  - each subject appears in outer-test exactly once across grouped K-fold manifests
+  - inner folds contain outer-train subjects only
+  - no preprocessing fitting, PCMCI+ discovery, Ridge tuning, feature/lag selection, Null construction, or Sensitivity logic is introduced
+  - Primary/Sensitivity scientific freeze is unchanged
+
+remaining_issue: none
+next_task: B-05

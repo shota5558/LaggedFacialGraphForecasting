@@ -1,0 +1,55 @@
+task_id: G-02
+task_name: Subject-level paired difference
+status: PASS
+
+implemented:
+  - adds frozen PairedMetricDifference records for one outer-fold subject-region-metric pair
+  - defines difference as reference_value - comparison_value so Self vs PCMCI equals the preregistered Incremental Gain Error_Self - Error_PCMCI
+  - pairs strictly on outer_fold, subject_id, region_id, and metric_name
+  - requires exactly one distinct condition on each side
+  - requires identical paired support and identical n_valid before computing a difference
+  - rejects duplicate paired keys and mismatched supports instead of silently dropping observations
+  - performs no cross-subject aggregation; G-03 remains a separate task
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/statistics.py
+  - tests/test_subject_level_paired_difference.py
+  - artifacts/setup/G-02/task_result.yaml
+
+implementation_commits:
+  - sha: 2f94654160beb49dd9ecd16220e7ca870a9247de
+    message: G-02: add subject-level paired metric differences
+  - sha: 00645146daf437c6f87f00c1acc32bc452c44e88
+    message: G-02: test subject-level paired metric differences
+
+tests:
+  workflow: tests
+  run_id: 34166240860
+  job_id: 101877715954
+  head_sha: 00645146daf437c6f87f00c1acc32bc452c44e88
+  result: 649 passed, 1 warning in 5.21s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to G-02
+  targeted_checks:
+    - Self minus PCMCI sign matches Incremental Gain
+    - fold/subject/region/metric/condition provenance is preserved
+    - different paired support fails closed
+    - n_valid mismatch fails closed
+    - duplicate paired keys fail closed
+    - mixed or identical comparison conditions fail closed
+
+scientific_checks:
+  subject_level_pairing: PASS
+  incremental_gain_direction: PASS
+  identical_evaluation_support_required: PASS
+  outer_fold_provenance_preserved: PASS
+  region_provenance_preserved: PASS
+  no_outer_test_selection_or_tuning: PASS
+  primary_sensitivity_separation: PASS
+
+artifacts:
+  - artifacts/setup/G-02/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: G-03

@@ -1,0 +1,330 @@
+{
+  "repository": "shota5558/LaggedFacialGraphForecasting",
+  "governing_url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/24",
+  "created": [
+    {
+      "id": "R-01",
+      "number": 25,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/25",
+      "title": "[R-01] 新計画とv6の差分をIssue・migration planへ確定"
+    },
+    {
+      "id": "R-02",
+      "number": 26,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/26",
+      "title": "[R-02] データ・split・前処理の科学決定"
+    },
+    {
+      "id": "R-03",
+      "number": 27,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/27",
+      "title": "[R-03] 推論・安定性の科学契約を確定"
+    },
+    {
+      "id": "R-04",
+      "number": 28,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/28",
+      "title": "[R-04] data manifestと承認protocolのenforcement"
+    },
+    {
+      "id": "R-05",
+      "number": 29,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/29",
+      "title": "[R-05] 同一評価supportをraw predictionまで強制"
+    },
+    {
+      "id": "R-06",
+      "number": 30,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/30",
+      "title": "[R-06] 解析とScientific Freezeの統計契約を統一"
+    },
+    {
+      "id": "R-07a",
+      "number": 31,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/31",
+      "title": "[R-07a] real Sensitivity解析のmanifest barrier"
+    },
+    {
+      "id": "R-07b",
+      "number": 32,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/32",
+      "title": "[R-07b] Primary-only解析の独立入力"
+    },
+    {
+      "id": "R-17",
+      "number": 33,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/33",
+      "title": "[R-17] 固定候補全体のpredictive gain landscape"
+    },
+    {
+      "id": "R-18",
+      "number": 34,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/34",
+      "title": "[R-18] PCMCI selection enrichment"
+    },
+    {
+      "id": "R-19",
+      "number": 35,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/35",
+      "title": "[R-19] Edge-centered population lag response"
+    },
+    {
+      "id": "R-08",
+      "number": 36,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/36",
+      "title": "[R-08] raw scientific artifactからanalysis入力を生成"
+    },
+    {
+      "id": "R-09",
+      "number": 37,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/37",
+      "title": "[R-09] 全Primary条件のproduction runner"
+    },
+    {
+      "id": "R-10",
+      "number": 38,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/38",
+      "title": "[R-10] 実行protocolのDRY / I4受入"
+    },
+    {
+      "id": "R-13",
+      "number": 39,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/39",
+      "title": "[R-13] PRIMARY FREEZE作成・検証"
+    },
+    {
+      "id": "R-15-G10",
+      "number": 40,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/40",
+      "title": "[R-15-G10] Position RMSEの仕様確定と指標実装"
+    },
+    {
+      "id": "R-15-G11",
+      "number": 41,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/41",
+      "title": "[R-15-G11] Acceleration RMSEの仕様確定と指標実装"
+    },
+    {
+      "id": "R-15-G12",
+      "number": 42,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/42",
+      "title": "[R-15-G12] Temporal correlationの仕様確定と指標実装"
+    },
+    {
+      "id": "R-15-G13",
+      "number": 43,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/43",
+      "title": "[R-15-G13] Peak timingの仕様確定と指標実装"
+    },
+    {
+      "id": "R-15-G14",
+      "number": 44,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/44",
+      "title": "[R-15-G14] Onset timingの仕様確定と指標実装"
+    },
+    {
+      "id": "R-15-G15",
+      "number": 45,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/45",
+      "title": "[R-15-G15] Lag preservationの仕様確定と指標実装"
+    },
+    {
+      "id": "R-14-GPDC",
+      "number": 46,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/46",
+      "title": "[R-14-GPDC] PCMCI+ + GPDCの本番接続・独立実行・受入"
+    },
+    {
+      "id": "R-14-LPCMCI",
+      "number": 47,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/47",
+      "title": "[R-14-LPCMCI] LPCMCIの本番接続・独立実行・受入"
+    },
+    {
+      "id": "R-14-phase",
+      "number": 48,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/48",
+      "title": "[R-14-phase] Phase-shuffled surrogateの本番接続・独立実行・受入"
+    },
+    {
+      "id": "R-14-circular",
+      "number": 49,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/49",
+      "title": "[R-14-circular] Circular-shift surrogateの本番接続・独立実行・受入"
+    },
+    {
+      "id": "R-14-horizon",
+      "number": 50,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/50",
+      "title": "[R-14-horizon] h > 1の本番接続・独立実行・受入"
+    },
+    {
+      "id": "R-16-T01",
+      "number": 51,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/51",
+      "title": "[R-16-T01] T01：dataset summaryの実成果生成・検算"
+    },
+    {
+      "id": "R-16-T02",
+      "number": 52,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/52",
+      "title": "[R-16-T02] T02：config tableの実成果生成・検算"
+    },
+    {
+      "id": "R-16-T03",
+      "number": 53,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/53",
+      "title": "[R-16-T03] T03：4条件表の実成果生成・検算"
+    },
+    {
+      "id": "R-16-T04",
+      "number": 54,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/54",
+      "title": "[R-16-T04] T04：Self−PCMCIの実成果生成・検算"
+    },
+    {
+      "id": "R-16-T05",
+      "number": 55,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/55",
+      "title": "[R-16-T05] T05：sparsityの実成果生成・検算"
+    },
+    {
+      "id": "R-16-T06",
+      "number": 56,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/56",
+      "title": "[R-16-T06] T06：region表の実成果生成・検算"
+    },
+    {
+      "id": "R-16-T07",
+      "number": 57,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/57",
+      "title": "[R-16-T07] T07：Null表/分布の実成果生成・検算"
+    },
+    {
+      "id": "R-16-T08",
+      "number": 58,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/58",
+      "title": "[R-16-T08] T08：stabilityの実成果生成・検算"
+    },
+    {
+      "id": "R-16-T09",
+      "number": 59,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/59",
+      "title": "[R-16-T09] T09：summaryの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F01",
+      "number": 60,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/60",
+      "title": "[R-16-F01] F01：condition plotの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F02",
+      "number": 61,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/61",
+      "title": "[R-16-F02] F02：paired effectの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F03",
+      "number": 62,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/62",
+      "title": "[R-16-F03] F03：region effectsの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F04",
+      "number": 63,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/63",
+      "title": "[R-16-F04] F04：curveの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F05",
+      "number": 64,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/64",
+      "title": "[R-16-F05] F05：Null効果の実成果生成・検算"
+    },
+    {
+      "id": "R-16-F06",
+      "number": 65,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/65",
+      "title": "[R-16-F06] F06：sparsity plotの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F07",
+      "number": 66,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/66",
+      "title": "[R-16-F07] F07：region heatmapの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F08",
+      "number": 67,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/67",
+      "title": "[R-16-F08] F08：heatmapの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F09",
+      "number": 68,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/68",
+      "title": "[R-16-F09] F09：fold分布の実成果生成・検算"
+    },
+    {
+      "id": "R-16-F10",
+      "number": 69,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/69",
+      "title": "[R-16-F10] F10：forestの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F11",
+      "number": 70,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/70",
+      "title": "[R-16-F11] F11：exampleの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F12",
+      "number": 71,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/71",
+      "title": "[R-16-F12] F12：diagnosticsの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F13",
+      "number": 72,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/72",
+      "title": "[R-16-F13] F13：distributionの実成果生成・検算"
+    },
+    {
+      "id": "R-16-F14",
+      "number": 73,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/73",
+      "title": "[R-16-F14] F14：concordanceの実成果生成・検算"
+    },
+    {
+      "id": "R-16-LANDSCAPE",
+      "number": 74,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/74",
+      "title": "[R-16-LANDSCAPE] landscapeの新図表生成と実成果受入"
+    },
+    {
+      "id": "R-16-ENRICHMENT",
+      "number": 75,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/75",
+      "title": "[R-16-ENRICHMENT] enrichmentの新図表生成と実成果受入"
+    },
+    {
+      "id": "R-16-POPULATION",
+      "number": 76,
+      "url": "https://github.com/shota5558/LaggedFacialGraphForecasting/issues/76",
+      "title": "[R-16-POPULATION] populationの新図表生成と実成果受入"
+    }
+  ],
+  "updated_existing": [
+    16,
+    17,
+    18,
+    19,
+    20,
+    21
+  ],
+  "verification": {
+    "checked": 59,
+    "mismatch": []
+  }
+}

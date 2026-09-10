@@ -1,0 +1,111 @@
+schema_version: 3
+status: frozen_after_target_component_provenance_migration
+serialization:
+  format: json
+  envelope:
+    required_fields:
+      - schema_version
+      - contract_type
+      - payload
+    additional_fields: forbidden
+  implementation: lagged_facial_graph_forecasting.core_contract_io
+  compatibility_policy:
+    unknown_schema_version: reject
+    unknown_contract_type: reject
+    missing_payload_field: reject
+    additional_payload_field: reject
+contracts:
+  FaceTimeSeries:
+    implementation: lagged_facial_graph_forecasting.contracts.FaceTimeSeries
+    schema_version: 3
+  SplitManifest:
+    implementation: lagged_facial_graph_forecasting.contracts.SplitManifest
+    schema_version: 3
+  ParentSet:
+    implementation: lagged_facial_graph_forecasting.core_contracts.ParentSet
+    schema_version: 3
+    parent_link_fields:
+      - source_region
+      - lag
+      - source_dimension
+      - target_dimension
+  DesignMatrix:
+    implementation: lagged_facial_graph_forecasting.contracts.DesignMatrix
+    schema_version: 3
+    target_provenance_fields:
+      - region_id
+      - target_dimensions
+  PredictionArtifact:
+    implementation: lagged_facial_graph_forecasting.contracts.PredictionArtifact
+    schema_version: 3
+    target_provenance_fields:
+      - region_id
+      - target_dimensions
+  NullMapping:
+    implementation: lagged_facial_graph_forecasting.core_contracts.NullMapping
+    schema_version: 3
+    parent_link_fields:
+      - source_region
+      - lag
+      - source_dimension
+      - target_dimension
+  MetricsResult:
+    implementation: lagged_facial_graph_forecasting.core_contracts.MetricsResult
+    schema_version: 3
+  ExperimentArtifact:
+    implementation: lagged_facial_graph_forecasting.core_contracts.ExperimentArtifact
+    schema_version: 3
+  ExperimentConfig:
+    implementation: lagged_facial_graph_forecasting.core_contracts.ExperimentConfig
+    schema_version: 3
+migration_policy:
+  required_on_change:
+    - reason
+    - impact_scope
+    - migration
+    - tests
+migration_from_v1:
+  reason: >-
+    Scientific Freeze v2 defines PCMCI+ ParCorr discovery nodes as region_dimension
+    scalar components and requires forecasting to use the exact selected component.
+    The v1 ParentLink stored only source_region and lag and therefore could not
+    preserve discovery provenance for D greater than 1.
+  impact_scope:
+    - ParentLink
+    - ParentSet
+    - NullMapping
+    - PCMCI link extraction
+    - PCMCI DesignMatrix construction
+    - Null generators
+  migration: >-
+    v1 ParentSet and NullMapping artifacts first migrate to v2 only when their source
+    representation is certified D=1 and the true scalar dimension label is supplied.
+    Multicomponent v1 discovery artifacts must be regenerated. A resulting v2
+    envelope must then be migrated explicitly to v3.
+  tests:
+    - component provenance round trip
+    - duplicate component-link rejection
+    - v1 scalar migration succeeds only with explicit dimension
+    - v1 multicomponent or unspecified migration fails closed
+migration_from_v2:
+  reason: >-
+    v2 preserved component identity in ParentLink but DesignMatrix and
+    PredictionArtifact still identified only the target region. Scalar target
+    forecasts therefore could not prove whether an artifact represented vx, vy,
+    or another target component after serialization.
+  impact_scope:
+    - DesignMatrix
+    - PredictionArtifact
+    - forecasting artifact serialization
+    - Ridge prediction provenance
+  migration: >-
+    v2 DesignMatrix and PredictionArtifact artifacts may migrate only when certified
+    target dimension labels are supplied and their count exactly matches the target
+    output dimension. Other v2 contracts are structurally unchanged and receive an
+    explicit envelope version migration. Target dimension identity must never be
+    inferred from region identity, feature names, or array position alone.
+  tests:
+    - DesignMatrix target_dimensions round trip
+    - PredictionArtifact target_dimensions round trip
+    - v2 migration fails without certified target dimensions
+    - v2 migration rejects target dimension count mismatch

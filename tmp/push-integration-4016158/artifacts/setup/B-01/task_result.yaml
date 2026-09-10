@@ -1,0 +1,40 @@
+task_id: B-01
+task_name: Subject ID validation
+status: PASS
+
+implemented:
+  - reused the B-00 subject metadata loader without duplicating parsing logic
+  - added explicit validation for required subject_id values
+  - rejects empty or whitespace-only subject IDs
+  - rejects leading/trailing whitespace rather than silently normalizing identities
+  - rejects duplicate subject IDs
+  - preserves validated subject order and returns IDs without constructing a split
+  - exported subject-ID validation through the package API
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/subject_metadata.py
+  - tests/test_subject_metadata_loader.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - artifacts/setup/B-01/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34146342551
+  job_id: 101819094314
+  head_sha: 90c2bee877d40e8b951cff7f6e4b53ba0a73397b
+  python: 3.11.16
+  result: 125 passed in 1.67s
+  workflow_conclusion: success
+
+scientific_checks:
+  - validation performs no subject splitting and therefore does not create a competing split authority
+  - subject identities are preserved exactly; no trimming or normalization can accidentally merge subjects
+  - no outer-test information is consulted for ID validation
+  - no preprocessing fitting, PCMCI+ discovery, Ridge tuning, feature/lag selection, Null construction, or Sensitivity logic is introduced
+  - existing Scientific Freeze and Core Contract Freeze remain unchanged
+
+artifacts:
+  - artifacts/setup/B-01/task_result.yaml
+
+remaining_issue: none
+next_task: B-02

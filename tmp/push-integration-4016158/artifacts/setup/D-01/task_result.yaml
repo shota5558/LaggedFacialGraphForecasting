@@ -1,0 +1,90 @@
+task_id: D-01
+task_name: Tigramite dataframe converter
+status: PASS
+
+implemented:
+  - discovery-facing conversion remains restricted to SplitManifest outer-train subjects
+  - subjects remain separate Tigramite datasets in analysis_mode='multiple'
+  - D=2 region motion states are exposed to Primary ParCorr as scalar region-dimension nodes by identity decomposition
+  - Tigramite variable provenance retains exact (region, dimension) identity
+  - time_index and sampling_rate provenance are preserved
+  - canonical valid_mask is converted to Tigramite invalid-mask semantics
+  - invalid non-finite values are replaced only under the corresponding mask
+  - component-aware ParentLink/ParentSet Core Contract v2 preserves source_dimension and target_dimension
+  - PCMCI forecasting consumes only the exact selected source component for the requested target component
+  - fixed Self history remains the same target-region history block used by the Self baseline
+  - mixed target components cannot be silently unioned; target_dimension must be explicit when ambiguous
+  - legacy component label 'value' fails closed for multicomponent FaceTimeSeries
+
+files_changed:
+  - configs/scientific_freeze.yaml
+  - src/lagged_facial_graph_forecasting/scientific_config.py
+  - schemas/scientific_freeze.schema.json
+  - src/lagged_facial_graph_forecasting/tigramite_adapter.py
+  - tests/test_tigramite_dataframe_converter.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+  - src/lagged_facial_graph_forecasting/core_contract_io.py
+  - schemas/core_contracts_v2.yaml
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - tests/test_pcmci_parent_design_matrix.py
+  - tests/test_design_matrix_feature_provenance.py
+  - tests/test_primary_condition_alignment.py
+  - tests/test_ridge_empty_parent.py
+  - artifacts/setup/D-01/task_result.yaml
+
+test_evidence:
+  workflow: tests
+  run_id: 34158214701
+  job_id: 101854348812
+  head_sha: 263c7fe6b74216aa677a4a9bf06ff68e647cabb0
+  result: success
+  pytest: 408 passed, 1 warning
+  warning: Tigramite warns when analysis_mode='multiple' is exercised with a one-subject test fixture; this does not affect the converter contract
+
+migration:
+  reason:
+    - FaceTimeSeries Primary motion state is vector-valued per region, e.g. [vx, vy], while Tigramite ParCorr operates on scalar variables
+    - the former region-only ParentSet lost component identity and caused a scientific contract mismatch
+  scientific_config:
+    from_schema_version: 1
+    to_schema_version: 2
+    frozen_rule:
+      node_unit: region_dimension
+      component_mapping: identity
+      forecasting_feature_rule: exact_selected_component
+      reporting_projection: region_lag
+  core_contracts:
+    from_schema_version: 1
+    to_schema_version: 2
+    impact_scope:
+      - ParentLink component identity
+      - ParentSet serialization
+      - NullMapping serialization
+      - PCMCI DesignMatrix construction
+      - component-specific target semantics
+    compatibility:
+      - historical v1 registry is retained as migration history
+      - ambiguous legacy component defaults are rejected for D>1 instead of silently scalarized
+
+scientific_checks:
+  - Primary remains PCMCI+ + ParCorr + Ridge with h=1
+  - D=2 [vx, vy] / [dx, dy] representation is preserved; no magnitude, coordinate dropping, PCA, learned projection, or region-level union is introduced
+  - discovery input is outer-train only and reuses the canonical discovery leakage guard
+  - no outer-test leakage is introduced
+  - no Primary/Sensitivity contamination is introduced
+  - source/target component identity and lag provenance are preserved through discovery-to-forecast boundary
+  - subject boundaries remain separate in Tigramite multiple-dataset mode
+  - PCMCI+ and ParCorr are provided by Tigramite and are not reimplemented
+
+commits:
+  - 010abd78c993f13efba14b72248821d17bf66ba6
+  - dc78cbd2e4bcb3a607b689311efdf35c0273113e
+  - 5accf6ec143f2ac6dd94d736f3f32843b6c8ff7b
+  - component-aware Core Contract v2 and regression-fixture migrations were also integrated by intervening dev commits before the final green head 263c7fe6b74216aa677a4a9bf06ff68e647cabb0
+
+artifacts:
+  - artifacts/setup/D-01/task_result.yaml
+  - schemas/core_contracts_v2.yaml
+
+remaining_issue: none
+next_task: D-02

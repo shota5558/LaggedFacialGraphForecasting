@@ -1,0 +1,25 @@
+task_id: S-IMPL-01
+task_name: Sensitivity execution boundary / namespace
+status: PASS
+implemented:
+  - sensitivity config namespace separated from Primary
+  - sensitivity artifact root fixed to artifacts/sensitivity
+  - synthetic and real execution modes explicitly separated
+  - real execution fails closed while the Primary Freeze manifest is absent
+  - sensitivity output paths are confined to the sensitivity namespace
+  - Primary core contracts and Primary runner semantics left unchanged
+tests:
+  workflow: tests
+  workflow_run_id: 34211818901
+  conclusion: success
+scientific_checks:
+  primary_semantics_changed: false
+  primary_artifact_write_allowed: false
+  real_sensitivity_before_primary_freeze_allowed: false
+  synthetic_preimplementation_allowed: true
+provenance:
+  implementation_commit: 8dbe104335a0ba5a6477c4b2c5943746962186d3
+  branch: dev
+remaining_issue:
+  - S-IMPL-10 will harden the stage-one manifest-existence barrier into complete freeze-manifest validation
+next_task: S-IMPL-02

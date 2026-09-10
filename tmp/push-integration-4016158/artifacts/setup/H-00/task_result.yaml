@@ -1,0 +1,47 @@
+task_id: H-00
+task_name: Config loader
+status: PASS
+
+implemented:
+  - added one canonical Primary runtime config loader in runner_config.py
+  - runtime config is materialized as the frozen ExperimentConfig contract
+  - runner config delegates scientific validation to the strict P0A scientific loader instead of redefining Primary settings
+  - canonical configs/primary_run.yaml records experiment identity, scientific config path, self path, Primary artifact root, and seed
+  - removed the duplicate run_config.py implementation before PASS
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/runner_config.py
+  - configs/primary_run.yaml
+  - tests/test_runner_config.py
+  - artifacts/setup/H-00/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/scientific_config.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+
+tests:
+  workflow: tests
+  run_id: 34150160759
+  job_id: 101830578037
+  head_sha: 932f04494107ce48f91527ecc73995e19f00f773
+  result: success
+  cases:
+    - repository Primary run descriptor loads as ExperimentConfig
+    - sensitivity artifact root is rejected
+    - modified scientific freeze is rejected
+    - run_config_path must identify the loaded descriptor exactly
+
+scientific_checks:
+  - P0A scientific freeze remains authoritative
+  - Primary remains pcmci_plus + parcorr + ridge with h=1
+  - runtime config cannot redirect Primary output to the Sensitivity artifact root
+  - seed and config provenance are explicit and machine-readable
+  - duplicate runtime loader was removed before PASS
+  - no Sensitivity execution path is introduced
+
+artifacts:
+  - configs/primary_run.yaml
+  - artifacts/setup/H-00/task_result.yaml
+
+remaining_issue: none
+next_task: H-01

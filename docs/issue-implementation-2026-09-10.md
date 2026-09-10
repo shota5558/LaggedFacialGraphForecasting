@@ -63,6 +63,14 @@ Validation: `.venv\Scripts\python.exe -m pytest --basetemp tmp\pytest-r18 -q tes
 
 Validation: `.venv\Scripts\python.exe -m pytest --basetemp tmp\pytest-r19 -q tests\test_population_response.py tests\test_lag_response_statistics.py` — passed. This is contract/reducer software only; it does not construct edge-centered predictions or produce real population results.
 
+## Executed locally: audit corrections and optional output lanes
+
+- T04/T05/T06/F09 exact metric pairing now requires positive `n_valid` and an evaluation-support digest or support ID; mismatched counts or digests are rejected instead of being silently paired. The mock metric fixture and generator carry a deterministic synthetic support digest.
+- Mock inputs, the mock generator, and generated analysis tables/figures use `MOCK DATA / NOT A SCIENTIFIC RESULT`. The loader retains compatibility with the former notice only for already-existing legacy inputs.
+- `scripts/generate_analysis_outputs.py --include-extended` can render independent `LANDSCAPE`, `ENRICHMENT`, and `POPULATION` tables/figures from canonical source CSVs. Extended lanes require explicit aggregation, lag-grid, lag-band, context, common-support, and CI settings; they do not silently resolve the still-open R-17/R-18/R-19 scientific decisions or overwrite T/F outputs.
+
+Validation: `.venv\Scripts\python.exe -m pytest --basetemp tmp\pytest-final -q` — passed; the run emitted only the existing Tigramite single-dataset warnings and a local pytest cache permission warning. This remains software/mock verification; no real experiment or scientific result was produced.
+
 The untracked decision record `adopted_decisions_2026-09-10.md` changes the planned main representation/metric and several aggregation/null rules. Neither those decisions nor provisional numerical candidates have been silently written into the frozen v6 protocol.
 
 R-01/R-02/R-03 still require migration and resolution of the dataset, extractor/landmark topology, calibration/QC thresholds, usable time, candidate/history ranges, component projection and inferential rules. R-06 remains software-complete only until those approved aggregation and migration decisions are connected to the real protocol. Implementations that depend on those choices and real runs (#16–21, #33–39 and real table/figure acceptance) must retain their respective prerequisites. Existing software-only and mock evidence is not promoted to experimental completion. No GitHub Issue was closed and no PR or result was published by this change.

@@ -1,0 +1,53 @@
+task_id: D-13
+task_name: PCMCI+ bootstrap selection frequency
+status: PASS
+
+implemented:
+  - aggregates exact source-region/source-component -> target-region/target-component selection frequency for each Primary lag tau=1..10 from D-12 raw Tigramite bootstrap graphs
+  - returns zero-frequency rows explicitly rather than encoding absence by missing rows
+  - keeps contemporaneous tau=0 outside the direct h=1 selection-frequency contract
+  - accepts only empty or canonical '-->' marks at positive lag and fails closed otherwise
+  - ignores Tigramite summary/majority output so bootstrap aggregation cannot redefine the frozen Primary ParentSet
+  - reports counts and frequencies descriptively only; no threshold is introduced
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/pcmci_selection_frequency.py
+  - tests/test_pcmci_selection_frequency.py
+  - artifacts/setup/D-13/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/pcmci_bootstrap.py
+  - src/lagged_facial_graph_forecasting/tigramite_adapter.py
+  - src/lagged_facial_graph_forecasting/pcmci_lagged_filter.py
+
+tests:
+  workflow: tests
+  run_id: 34162683980
+  job_id: 101867555206
+  head_sha: 9a5c13fbaa07dfb0cee8ce319e404fc0d1680fe7
+  python: 3.11.16
+  result: 535 passed, 1 warning in 3.67s
+  targeted_checks:
+    - exact component/lag selected_count and frequency
+    - explicit zero-frequency rows
+    - tau=0 excluded from direct h=1 frequency output
+    - unexpected positive-lag Tigramite marks rejected fail-closed
+    - malformed graph shape rejected
+    - summary majority cannot influence raw-bootstrap frequency
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to D-13
+
+scientific_checks:
+  - D-13 is descriptive stability analysis only
+  - no selection-frequency threshold is used to alter Primary ParentSet
+  - no outer-test values or outcomes are consumed
+  - lag/component provenance is preserved exactly
+  - Primary remains PCMCI+ + ParCorr + Ridge with h=1, tau_max=10, pc_alpha=0.01
+  - no Sensitivity method is introduced
+
+artifacts:
+  - artifacts/setup/D-13/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-10

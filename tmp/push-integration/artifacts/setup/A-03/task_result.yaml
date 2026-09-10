@@ -1,0 +1,47 @@
+task_id: A-03
+task_name: Region definition
+status: PASS
+
+implemented:
+  - added an immutable ordered RegionDefinition mapping region IDs to raw landmark indices
+  - preserves region order as part of downstream feature provenance
+  - keeps the contract extractor-neutral and does not hard-code MediaPipe, 478 landmarks, or fixed anatomical region names
+  - validates non-empty unique region IDs and non-empty unique non-negative landmark indices within each region
+  - rejects cross-region landmark overlap by default; overlap is permitted only when explicitly frozen with allow_overlap=true
+  - validates landmark-index bounds only when the raw landmark count is explicitly known
+  - provides an ordered mapping copy suitable for later config/artifact serialization
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/regions.py
+  - tests/test_region_definition.py
+  - artifacts/setup/A-03/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34151623664
+  job_id: 101834923993
+  head_sha: 8b190b6c9c3ccc25b521cefc2cdedaf879b22304
+  python: 3.11.16
+  result: success
+  suite_result: 299 passed in 2.06s
+  cases:
+    - ordered extractor-neutral mapping is preserved
+    - no landmark count or region name is hard-coded
+    - explicit landmark-count bounds are enforced
+    - invalid landmark_count is rejected
+    - duplicate/invalid region IDs are rejected
+    - empty, duplicate, negative, and boolean landmark indices are rejected
+    - cross-region overlap is rejected unless explicitly frozen
+
+scientific_checks:
+  - region identity and region order are explicit deterministic inputs rather than data-selected outputs
+  - no outer-test outcome is inspected to define or alter regions
+  - no aggregation, normalization, displacement, velocity, missingness, or interpolation policy is introduced early
+  - extractor-specific topology remains external to the generic contract
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-03/task_result.yaml
+
+remaining_issue: none
+next_task: A-04

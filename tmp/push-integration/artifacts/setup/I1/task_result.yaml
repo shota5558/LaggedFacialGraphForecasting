@@ -1,0 +1,64 @@
+task_id: I1
+task_name: Baseline End-to-End Gate
+status: PASS
+
+implemented:
+  - integrated synthetic FaceTimeSeries -> subject SplitManifest -> baseline DesignMatrix -> nested Ridge tuning -> frozen outer-train refit -> outer-test PredictionArtifact -> Velocity RMSE -> atomic result artifact
+  - executes Persistence, Self, and Full through the same Ridge tuning/refit/prediction functions
+  - uses the same target alignment across all three baseline conditions
+  - materializes outer-test DesignMatrix only after alpha selection and frozen outer-train refit
+  - registers one content-addressed result artifact per baseline condition
+  - repeats the complete gate twice and requires identical split, selected alpha, predictions, metrics, artifact hashes, and serialized bytes
+  - adds an explicit negative leakage test proving Ridge inner CV rejects a DesignMatrix containing outer-test subject rows
+
+files_changed:
+  - tests/test_baseline_end_to_end.py
+  - artifacts/setup/I1/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/synthetic.py
+  - src/lagged_facial_graph_forecasting/splits.py
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/ridge_tuning.py
+  - src/lagged_facial_graph_forecasting/forecaster.py
+  - src/lagged_facial_graph_forecasting/metrics.py
+  - src/lagged_facial_graph_forecasting/artifacts.py
+  - src/lagged_facial_graph_forecasting/artifact_registry.py
+  - src/lagged_facial_graph_forecasting/failure_handling.py
+
+tests:
+  workflow: tests
+  run_id: 34151033792
+  job_id: 101833186224
+  head_sha: 18abdc0f11c6c8cd80a176fd046f8b06a4b8e972
+  python: 3.11.16
+  result: 259 passed in 1.96s
+  checks:
+    persistence: PASS
+    self: PASS
+    full: PASS
+    no_outer_test_leakage: PASS
+    deterministic: PASS
+    artifacts_complete: PASS
+    feature_provenance_complete: PASS
+    same_ridge_pipeline: PASS
+
+scientific_checks:
+  - PCMCI+ is not imported or executed by the I1 baseline gate
+  - Primary horizon remains h=1
+  - SplitManifest is the sole source of outer-train, outer-test, and inner-fold subject membership
+  - outer-test subjects are absent from all tuning/refit matrices and leaked rows are rejected by the tuning API
+  - StandardScaler and Ridge retain inner-train / inner-val isolation through the existing E lane implementation
+  - alpha selection and complete outer-train refit finish before outer-test DesignMatrix materialization
+  - result serialization verifies fitted feature_names and feature_lags against the evaluated DesignMatrix and preserves them in feature_provenance
+  - synthetic FaceTimeSeries is already contract-level normalized input for this pre-Lane-A gate; no learned real-data preprocessing parameter is fitted
+  - no Sensitivity method or h>1 path is introduced
+
+artifacts:
+  - artifacts/primary/i1/persistence.json (created and verified inside the integration test sandbox)
+  - artifacts/primary/i1/self.json (created and verified inside the integration test sandbox)
+  - artifacts/primary/i1/full.json (created and verified inside the integration test sandbox)
+  - artifacts/setup/I1/task_result.yaml
+
+remaining_issue: none
+next_task: A-00

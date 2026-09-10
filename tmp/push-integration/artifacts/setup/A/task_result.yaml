@@ -1,0 +1,89 @@
+task_id: A
+task_name: Lane A Completion Gate — Real Data / Preprocessing
+status: PASS
+
+validated_tasks:
+  - A-00 landmark file reader
+  - A-01 frame timestamp validation
+  - A-02 landmark shape validation
+  - A-03 region index definition
+  - A-04 region aggregation
+  - A-05 translation normalization
+  - A-06 scale normalization
+  - A-07 rotation normalization
+  - A-08 displacement
+  - A-09 velocity
+  - A-10 acceleration optional
+  - A-11 quality flag
+  - A-12 missing frame handling
+  - A-13 interpolation policy
+  - A-14 subject sequence assembly
+  - A-15 serialization
+  - A-16 Lane A unit tests
+  - A-17 synthetic motion validation
+
+implementation_evidence:
+  - artifacts/setup/A-00/task_result.yaml
+  - artifacts/setup/A-01/task_result.yaml
+  - artifacts/setup/A-02/task_result.yaml
+  - artifacts/setup/A-03/task_result.yaml
+  - artifacts/setup/A-04/task_result.yaml
+  - artifacts/setup/A-05/task_result.yaml
+  - artifacts/setup/A-06/task_result.yaml
+  - artifacts/setup/A-07/task_result.yaml
+  - artifacts/setup/A-08/task_result.yaml
+  - artifacts/setup/A-09/task_result.yaml
+  - artifacts/setup/A-10/task_result.yaml
+  - artifacts/setup/A-11/task_result.yaml
+  - artifacts/setup/A-12/task_result.yaml
+  - artifacts/setup/A-13/task_result.yaml
+  - artifacts/setup/A-14/task_result.yaml
+  - artifacts/setup/A-15/task_result.yaml
+  - artifacts/setup/A-16/task_result.yaml
+  - artifacts/setup/A-17/task_result.yaml
+
+provenance_closure:
+  implementation_commits:
+    - 2003dc256b05d03d84382768ca56a660f064143d
+    - 48abb7331fff606d30434f2a308480c6d3dbf760
+  files:
+    - src/lagged_facial_graph_forecasting/preprocessing_provenance.py
+    - src/lagged_facial_graph_forecasting/experiment_manifest.py
+    - src/lagged_facial_graph_forecasting/resume.py
+    - tests/test_preprocessing_provenance.py
+    - tests/test_experiment_manifest.py
+    - tests/test_resume.py
+  guarantees:
+    - every experiment manifest requires ordered region-to-landmark provenance
+    - every experiment manifest requires explicit feature name, component dimensions, method, units, and timestamp basis
+    - D=2 facial motion semantics such as [v_x, v_y] are preserved without region-level scalarization
+    - manifest schema v2 makes the new mandatory provenance field explicit
+    - resume strictly reconstructs and validates preprocessing provenance before accepting a run
+
+tests:
+  workflow: tests
+  baseline_run_id: 34157536447
+  baseline_job_id: 101852358656
+  baseline_head_sha: 48abb7331fff606d30434f2a308480c6d3dbf760
+  python: 3.11.16
+  baseline_result: success
+  baseline_suite_result: 398 passed, 1 warning in 1.92s
+  gate_commit_ci_required: true
+
+scientific_checks:
+  - preprocessing operations that require no population fit remain deterministic and cannot consume outer-test outcomes
+  - Primary interpolation policy remains none; invalid and missing observations remain explicit under valid_mask
+  - region order and landmark membership are immutable scientific provenance
+  - feature semantics record the full component dimension labels rather than collapsing each region to one scalar
+  - the downstream component-aware ParentSet migration is compatible with the preserved D=2 FaceTimeSeries semantics
+  - acceleration remains optional and is not a Primary blocker
+  - no landmark extractor, PCMCI+, conditional-independence test, Ridge optimizer, or other generic OSS component is reimplemented in Lane A
+  - Primary remains PCMCI+ + ParCorr + Ridge with h=1
+  - outer-test remains reserved for frozen final evaluation
+  - Sensitivity remains after Primary freeze
+
+artifacts:
+  - artifacts/setup/A/task_result.yaml
+
+remaining_issue: none
+downstream_status: core/discovery component-node migration already in progress

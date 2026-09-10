@@ -1,0 +1,13 @@
+# Lagged Facial Graph Forecasting
+
+PCMCI+ と Ridge を用いて、顔部位間の遅延予測構造を held-out 被験者で評価する研究実装です。
+
+## 現在の基準
+
+- [研究計画](docs/experimental_plan.md)
+- [詳細設計](docs/detailed_design.md)
+- [原典レジストリと移行計画](docs/protocol_authority_and_migration.md)
+- [要求トレーサビリティ](docs/requirement-matrix.md)
+- [Issue 実装記録](docs/issue-implementation-2026-09-10.md)
+
+実行用 Scientific Freeze は旧 protocol v6 のままです。新計画の科学判断が未確定な項目は候補値を採用値として扱わず、R-02/R-03 の完了後に versioned migration します。mock の成功は実データ成果や publication-ready の証拠ではありません。

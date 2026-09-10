@@ -1,0 +1,90 @@
+task_id: I4
+task_name: Scientific Audit
+status: PASS
+
+implemented:
+  - retains the previously audited DRY mechanical evidence and explicit fail-closed ScientificAuditSnapshot contract for Gate 4 evidence
+  - rejects any outer-test subject in preprocessing fitting, PCMCI+ discovery, Ridge tuning, or Null construction scope
+  - rejects subjects outside the frozen outer-train set in every selection scope
+  - requires fold freeze before outer-test access and exactly one dry-run outer-test evaluation
+  - compares two same-config/same-seed executions at the scientific artifact boundary
+  - fails closed on any mismatch in scientific config digest, seed, SplitManifest digest, ParentSet digest, Ridge selection digest, NullMapping digests, prediction digests, or metric digests
+  - revalidated Gate I4 after Scientific Freeze migration v5 -> v6
+  - confirms the v6 additions freeze matched-sparsity repeat count and bootstrap settings without changing leakage boundaries or Primary/Sensitivity separation
+  - does not rerun or alter discovery/forecasting logic and does not introduce any Sensitivity method
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/scientific_audit.py
+  - tests/test_scientific_audit_gate.py
+  - artifacts/setup/I4/task_result.yaml
+
+implementation_commits:
+  - sha: e1905f8c92601dfb83f9e4537b003fa5bb56a713
+    message: I4: add fail-closed scientific audit contract
+  - sha: 7c91dc153f546a5f4191bfc27fb8b91842b512d1
+    message: I4: test leakage and reproducibility audit gate
+  - sha: 117331fde69a86bd36981d0660ed65749e0c261c
+    message: P0A-M06: freeze Primary null and bootstrap settings
+    disposition: scientific-config migration requiring Gate I4 revalidation
+
+tests:
+  original_workflow_run_id: 34167289543
+  original_job_id: 101880739269
+  original_head_sha: 7c91dc153f546a5f4191bfc27fb8b91842b512d1
+  original_result: 676 passed, 1 warning in 8.66s
+  revalidation_workflow_run_id: 34167771170
+  revalidation_job_id: 101882124026
+  revalidation_head_sha: a9f211cb35edee0e6350869a700dc907bab32eb0
+  revalidation_result: 681 passed, 1 warning in 9.02s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to I4
+  direct_gate_checks:
+    - outer-test subject in preprocessing fit => rejected
+    - outer-test subject in PCMCI discovery => rejected
+    - outer-test subject in Ridge tuning => rejected
+    - outer-test subject in Null construction => rejected
+    - subject outside outer-train in selection scope => rejected
+    - changed scientific config digest => rejected
+    - changed seed => rejected
+    - changed SplitManifest digest => rejected
+    - changed ParentSet digest => rejected
+    - changed Ridge selection digest => rejected
+    - changed NullMapping digest set => rejected
+    - changed prediction digest set => rejected
+    - changed metrics digest set => rejected
+    - outer-test before fold freeze => rejected
+    - repeated dry-run outer-test evaluation => rejected
+  inherited_dry_run_checks:
+    - actual PCMCI+ + ParCorr discovery is outer-train only
+    - same config/seed yields same SplitManifest, ParentSet, selected alphas, serialized NullMappings, predictions, metrics, and artifact bytes
+
+scientific_checks:
+  scientific_freeze_schema_v6: PASS
+  outer_test_not_in_preprocessing_fit: PASS
+  outer_test_not_in_pcmci_discovery: PASS
+  outer_test_not_in_ridge_tuning: PASS
+  outer_test_not_in_null_construction: PASS
+  same_scientific_config: PASS
+  same_seed: PASS
+  same_split_manifest: PASS
+  same_parent_set: PASS
+  same_ridge_lambda_selection: PASS
+  same_null_mappings: PASS
+  same_predictions: PASS
+  same_metrics: PASS
+  fold_freeze_before_outer_test: PASS
+  subject_independence: PASS
+  lag_horizon_semantics: PASS
+  matched_sparsity_repeat_count_pre_frozen: PASS
+  bootstrap_settings_pre_frozen: PASS
+  primary_sensitivity_separation: PASS
+
+artifacts:
+  - artifacts/setup/I4/task_result.yaml
+  - artifacts/setup/DRY/task_result.yaml
+  - artifacts/setup/P0A-M06/task_result.yaml
+
+remaining_issue:
+  - none for Gate I4
+  - PR-01 remains separately blocked by data/topology-dependent Primary protocol values and the immutable Primary data manifest identified by its preflight artifact
+
+next_task: PR-01

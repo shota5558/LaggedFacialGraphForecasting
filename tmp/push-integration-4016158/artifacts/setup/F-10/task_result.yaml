@@ -1,0 +1,51 @@
+task_id: F-10
+task_name: Lag-shift mapping
+status: PASS
+
+implemented:
+  - added an outer-train-only lag-shift NullMapping constructor
+  - shifts every selected ParentLink by one common non-zero delta
+  - preserves source region, source component, target component, target region, and feature count exactly
+  - keeps Primary condition label fixed to lag-shift
+  - uses SplitManifest seed as deterministic mapping provenance
+  - rejects outer-test construction scope and outer-fold mismatch
+  - does not inspect predictions, metrics, or outer-test values
+  - leaves explicit tau boundary policy to F-11
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/null_lag_shift.py
+  - tests/test_null_lag_shift.py
+  - artifacts/setup/F-10/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+  - src/lagged_facial_graph_forecasting/leakage_guard.py
+
+tests:
+  workflow: tests
+  run_id: 34162683051
+  job_id: 101867552581
+  head_sha: cc356b1b8049960e8545c8b5cc3c520553b14cc7
+  conclusion: success
+  targeted_checks:
+    - lag changes while region/component provenance is invariant
+    - source/mapped feature counts are equal
+    - outer-test construction scope fails closed
+    - zero-shift Null request is rejected
+    - ParentSet/SplitManifest outer-fold mismatch is rejected
+
+scientific_checks:
+  - mapping construction is outer-train only
+  - region identity is held fixed while lag identity is perturbed
+  - no clipping or result-dependent lag choice is introduced
+  - no outer-test data or outcome enters mapping construction
+  - no Sensitivity surrogate is introduced
+  - Primary PCMCI+ + ParCorr + Ridge, h=1, tau_max=10, pc_alpha=0.01 remain unchanged
+
+artifacts:
+  - artifacts/setup/F-10/task_result.yaml
+
+remaining_issue:
+  - explicit Primary lag boundary handling is deferred to F-11
+
+next_task: F-11

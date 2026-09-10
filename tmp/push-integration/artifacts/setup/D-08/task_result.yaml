@@ -1,0 +1,55 @@
+task_id: D-08
+task_name: PCMCI+ contemporaneous link handling
+status: PASS
+
+implemented:
+  - froze Primary contemporaneous policy as preserve_audit_exclude_direct_h1_forecasting
+  - tau = 0 links are preserved as discovery/audit evidence
+  - tau = 0 links are excluded from Primary direct h = 1 forecasting candidates
+  - strictly lagged links pass through unchanged for D-09
+  - policy, horizon h = 1, and schema are immutable/fail-closed
+  - caller cannot override policy or horizon at runtime
+  - negative lag and noncanonical link inputs are rejected
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/pcmci_contemporaneous.py
+  - tests/test_pcmci_contemporaneous.py
+  - artifacts/setup/D-08/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/pcmci_link_extraction.py
+
+tests:
+  workflow: tests
+  run_id: 34161761955
+  job_id: 101864870635
+  head_sha: e3b783eaedc1a509251c11601146e1ec186d67cd
+  python: 3.11.16
+  tigramite: 5.2.10.1
+  result: 478 passed, 1 warning in 2.86s
+  targeted_checks:
+    - tau0 preserved audit-only and excluded from h1 forecasting
+    - reciprocal contemporaneous marks preserved audit-only
+    - lagged candidates pass through without reordering
+    - no runtime horizon/policy override in API
+    - negative lag rejection
+    - non-link input rejection
+    - disposition bucket invariant checks
+    - policy/horizon/schema drift rejection
+  warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; known and unrelated to D-08
+
+scientific_checks:
+  - Primary direct forecast remains h = 1
+  - forecast-origin availability condition tau >= h is respected
+  - contemporaneous discovery evidence is not destroyed or misreported
+  - tau0 data cannot leak future X[t+1] into prediction of Y[t+1]
+  - D-09 lagged-link mark/filter semantics are not implemented prematurely
+  - Primary tau_max = 10 and pc_alpha = 0.01 remain unchanged
+
+artifacts:
+  - artifacts/setup/D-08/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: D-09

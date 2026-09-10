@@ -1,0 +1,32 @@
+task_id: S-IMPL-08
+task_name: Sensitivity result / statistics schema
+status: PASS
+implemented:
+  - Sensitivity-only result envelope without changing frozen Core MetricsResult
+  - explicit sensitivity method identifier
+  - required source Primary Freeze manifest reference
+  - outer-fold / subject / region / horizon provenance
+  - paired-statistics compatibility through unchanged MetricsResult reuse
+  - independent config / seed / software-version provenance
+  - strict sensitivity namespace and artifact-type separation from Primary result serialization
+  - strict JSON serialization / deserialization round trip
+files_changed:
+  - src/lagged_facial_graph_forecasting/sensitivity_results.py
+  - tests/test_sensitivity_results.py
+tests:
+  workflow: tests
+  workflow_run_id: 34215215384
+  conclusion: success
+scientific_checks:
+  core_metrics_schema_changed: false
+  primary_result_namespace_reused: false
+  sensitivity_primary_mix_allowed: false
+  primary_freeze_reference_required: true
+  paired_comparison_compatible: true
+  real_facial_data_used: false
+provenance:
+  implementation_commit: 19ba4f9cef1fe1d0c98da8bf376cdb34c684bed3
+  branch: dev
+remaining_issue:
+  - S-IMPL-10 will validate completeness and integrity of the referenced Primary Freeze manifest for real-data execution
+next_task: S-IMPL-09

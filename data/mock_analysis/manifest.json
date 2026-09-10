@@ -1,6 +1,6 @@
 {
   "is_synthetic": true,
-  "synthetic_notice": "FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS",
+  "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT",
   "purpose": "software verification only",
   "seed": 20260908,
   "generator": "scripts/generate_mock_analysis_data.py",

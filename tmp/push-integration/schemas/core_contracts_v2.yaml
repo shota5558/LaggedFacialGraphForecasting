@@ -1,0 +1,83 @@
+schema_version: 2
+status: frozen_after_scientific_freeze_v2
+serialization:
+  format: json
+  envelope:
+    required_fields:
+      - schema_version
+      - contract_type
+      - payload
+    additional_fields: forbidden
+  implementation: lagged_facial_graph_forecasting.core_contract_io
+  compatibility_policy:
+    unknown_schema_version: reject
+    unknown_contract_type: reject
+    missing_payload_field: reject
+    additional_payload_field: reject
+contracts:
+  FaceTimeSeries:
+    implementation: lagged_facial_graph_forecasting.contracts.FaceTimeSeries
+    schema_version: 2
+  SplitManifest:
+    implementation: lagged_facial_graph_forecasting.contracts.SplitManifest
+    schema_version: 2
+  ParentSet:
+    implementation: lagged_facial_graph_forecasting.core_contracts.ParentSet
+    schema_version: 2
+    parent_link_fields:
+      - source_region
+      - lag
+      - source_dimension
+      - target_dimension
+  DesignMatrix:
+    implementation: lagged_facial_graph_forecasting.contracts.DesignMatrix
+    schema_version: 2
+  PredictionArtifact:
+    implementation: lagged_facial_graph_forecasting.contracts.PredictionArtifact
+    schema_version: 2
+  NullMapping:
+    implementation: lagged_facial_graph_forecasting.core_contracts.NullMapping
+    schema_version: 2
+    parent_link_fields:
+      - source_region
+      - lag
+      - source_dimension
+      - target_dimension
+  MetricsResult:
+    implementation: lagged_facial_graph_forecasting.core_contracts.MetricsResult
+    schema_version: 2
+  ExperimentArtifact:
+    implementation: lagged_facial_graph_forecasting.core_contracts.ExperimentArtifact
+    schema_version: 2
+  ExperimentConfig:
+    implementation: lagged_facial_graph_forecasting.core_contracts.ExperimentConfig
+    schema_version: 2
+migration_policy:
+  required_on_change:
+    - reason
+    - impact_scope
+    - migration
+    - tests
+migration_from_v1:
+  reason: >-
+    Scientific Freeze v2 defines PCMCI+ ParCorr discovery nodes as region_dimension
+    scalar components and requires forecasting to use the exact selected component.
+    The v1 ParentLink stored only source_region and lag and therefore could not
+    preserve discovery provenance for D greater than 1.
+  impact_scope:
+    - ParentLink
+    - ParentSet
+    - NullMapping
+    - PCMCI link extraction
+    - PCMCI DesignMatrix construction
+    - Null generators
+  migration: >-
+    v1 ParentSet and NullMapping artifacts may be migrated only when their source
+    representation is certified D=1 and the true scalar dimension label is supplied
+    explicitly to migrate_core_contract_v1_to_v2. Multicomponent v1 discovery
+    artifacts must be regenerated; component identity must never be guessed.
+  tests:
+    - component provenance round trip
+    - duplicate component-link rejection
+    - v1 scalar migration succeeds only with explicit dimension
+    - v1 multicomponent/unspecified migration fails closed

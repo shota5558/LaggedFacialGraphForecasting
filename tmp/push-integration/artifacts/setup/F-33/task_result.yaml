@@ -1,0 +1,58 @@
+task_id: F-33
+task_name: Matched sparsity repeated samples
+status: PASS
+
+implemented:
+  - adds caller-specified repeat_count with no scientific default
+  - derives deterministic repeat-index RNG streams from SplitManifest.seed
+  - preserves the exact F-32 single sample at repeat index zero
+  - applies the F-32 without-replacement, equal-size-per-target-component sampling law independently to every repeat
+  - guarantees deterministic ordering and prefix stability for a fixed root seed
+  - allows overlap or exact coincidence across repeats instead of biasing the Null through global uniqueness rejection
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/null_matched_sparsity.py
+  - tests/test_null_matched_sparsity_repeats.py
+  - artifacts/setup/F-33/task_result.yaml
+
+implementation_commits:
+  - sha: 48b44af56d72e96ec37ea97afcc62190ca73bfe7
+    message: F-33: add repeated matched-sparsity sampling
+  - sha: efb073342dd9f362273d8e0fee0b67c79390b48f
+    message: F-33: test repeated matched-sparsity sampling
+
+tests:
+  workflow: tests
+  run_id: 34164823979
+  job_id: 101873685759
+  head_sha: efb073342dd9f362273d8e0fee0b67c79390b48f
+  result: 591 passed, 1 warning in 4.78s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-33
+  targeted_checks:
+    - requested repeat count returned exactly
+    - every repeat preserves total and per-target_dimension feature count
+    - sampling is without replacement within each repeat
+    - repeat zero exactly matches the F-32 single sample
+    - repeated samples are deterministic and candidate-order invariant
+    - repeat prefixes are stable when repeat_count is increased
+    - cross-repeat overlap and coincidence are permitted
+    - invalid repeat_count fails closed
+    - outer-test construction scope fails closed
+    - ParentSet/manifest fold mismatch fails closed
+
+scientific_checks:
+  outer_test_leakage: PASS
+  no_unfrozen_repeat_count_default: PASS
+  matched_per_target_component_capacity: PASS
+  deterministic_repeat_index_derivation: PASS
+  repeat_zero_backward_compatibility: PASS
+  null_distribution_not_conditioned_on_cross_repeat_uniqueness: PASS
+  sensitivity_contamination: PASS
+
+artifacts:
+  - artifacts/setup/F-33/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-40

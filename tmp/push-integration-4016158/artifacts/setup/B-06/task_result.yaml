@@ -1,0 +1,30 @@
+task_id: B-06
+task_name: Split manifest writer
+status: PASS
+
+implemented:
+  - versioned SplitManifest JSON payload
+  - deterministic UTF-8 serialization with stable key ordering
+  - explicit outer-fold, seed, outer train/test IDs, and inner-fold provenance
+  - writer performs serialization only and does not recompute any split
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/split_manifest_io.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_split_manifest_io.py
+  - artifacts/setup/B-06/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34146907402
+  head_sha: f7ed4a75ce37a625bd9f6bb6f47a3ab6e2cc64eb
+  result: success
+
+scientific_checks:
+  - serialized artifact preserves the canonical subject split exactly
+  - serialization cannot introduce or select subjects
+  - no outer-test data values are read
+  - no preprocessing fitting, discovery, tuning, Null construction, or Sensitivity logic is introduced
+
+remaining_issue: none
+next_task: B-07

@@ -10,7 +10,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 MOCK_DIR = ROOT / "data" / "mock_analysis"
-NOTICE = "FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS"
+NOTICE = "MOCK DATA / NOT A SCIENTIFIC RESULT"
 
 
 def _csv_rows(name: str) -> list[dict[str, str]]:

@@ -1,0 +1,52 @@
+task_id: P0B-04
+task_name: PredictionArtifact
+status: PASS
+audit_type: existing_implementation_revalidation
+
+implemented:
+  - existing PredictionArtifact contract reused without duplication
+  - outer_fold provenance
+  - row-level subject_id and region_id provenance
+  - explicit target_dimensions provenance for scalar/vector predictions
+  - condition identifier
+  - forecast_origin and target_time alignment metadata
+  - y_true and y_pred shape/type consistency
+  - row-level boolean valid_mask
+  - finite-value enforcement for valid prediction rows
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/contracts.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_prediction_artifact.py
+
+files_changed_in_revalidation:
+  - tests/test_prediction_artifact.py
+  - artifacts/setup/P0B-04/task_result.yaml
+
+tests:
+  workflow: p0b-contract-audit
+  run_id: 34158938838
+  job_id: 101856505968
+  head_sha: b6beb23a5acec52a874faad02d960781dbd5cc7e
+  python: 3.11.16
+  result: 43 passed in 1.38s
+  scope:
+    - tests/test_face_time_series.py
+    - tests/test_split_manifest.py
+    - tests/test_design_matrix.py
+    - tests/test_prediction_artifact.py
+
+scientific_checks:
+  - prediction rows retain subject, target-region, and target-dimension provenance
+  - outer_fold is explicit and validated
+  - forecast origin and target time are retained and ordered
+  - y_true and y_pred are row-aligned with identical shape
+  - missing prediction rows cannot silently enter evaluation through valid_mask
+  - condition is recorded without introducing Sensitivity execution logic
+  - no split, discovery, tuning, Null, or outer-test selection path was added
+
+artifacts:
+  - artifacts/setup/P0B-04/task_result.yaml
+
+remaining_issue: none
+next_task: P0B phase gate

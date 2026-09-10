@@ -1,0 +1,39 @@
+task_id: D-00
+task_name: Tigramite dependency
+status: PASS
+
+implemented:
+  - reused the existing pyproject.toml dependency declaration tigramite>=5.2.10.1,<5.3
+  - added a targeted dependency-surface test for Tigramite DataFrame, PCMCI, ParCorr, and PCMCI.run_pcmciplus
+  - did not implement or wrap the PCMCI+ algorithm in this task
+
+files_changed:
+  - tests/test_tigramite_dependency.py
+  - artifacts/setup/D-00/task_result.yaml
+
+reused_files:
+  - pyproject.toml
+
+tests:
+  workflow: tests
+  run_id: 34154033724
+  job_id: 101842010804
+  head_sha: b2371948abeccfd4977a353d49493651237d8390
+  result: success
+  cases:
+    - tigramite.data_processing.DataFrame is importable
+    - tigramite.pcmci.PCMCI is importable
+    - tigramite.independence_tests.parcorr.ParCorr is importable
+    - PCMCI.run_pcmciplus is present and callable
+
+scientific_checks:
+  - uses Tigramite as the OSS measurement implementation; PCMCI+ and ParCorr are not reimplemented
+  - no data, split, outer-test, discovery result, Ridge tuning, feature selection, lag selection, or Null mapping is touched
+  - Primary remains PCMCI+ + ParCorr + Ridge with h=1
+  - no Sensitivity path is introduced
+
+artifacts:
+  - artifacts/setup/D-00/task_result.yaml
+
+remaining_issue: none
+next_task: D-01

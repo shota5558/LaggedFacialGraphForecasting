@@ -1,0 +1,39 @@
+task_id: V0-02
+task_name: Subject split
+status: PASS
+
+implemented:
+  - existing deterministic subject split builder reused without duplication
+  - canonical SplitManifest output
+  - outer subject train/test partition
+  - grouped inner folds contained in outer-train
+  - deterministic seed handling
+  - validation coverage across outer-train subjects
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/splits.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_subject_split_builder.py
+
+tests:
+  workflow: tests
+  run_id: 34144692731
+  job_id: 101814048463
+  head_sha: c3ca5c8b1c50fb87aa06c62e3c4580136317febd
+  python: 3.11.16
+  result: 66 passed in 0.23s
+
+scientific_checks:
+  - split unit is subject
+  - outer train/test subject overlap is absent
+  - every inner fold is restricted to outer-train subjects
+  - outer-test subjects cannot enter inner tuning through the split builder
+  - all downstream consumers receive a SplitManifest rather than constructing private splits
+  - seed is explicit and deterministic
+  - no preprocessing fit, discovery, Ridge tuning, Null, or Sensitivity execution was introduced
+
+artifacts:
+  - artifacts/setup/V0-02/task_result.yaml
+
+remaining_issue: none
+next_task: V0-03

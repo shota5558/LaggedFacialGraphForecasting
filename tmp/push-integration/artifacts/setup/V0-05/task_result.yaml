@@ -1,0 +1,49 @@
+task_id: V0-05
+task_name: Scaler + Ridge wrapper
+status: PASS
+audit_type: existing_implementation_contract_migration_revalidation
+
+implemented:
+  - existing StandardScaler + scikit-learn Ridge wrapper reused without duplication
+  - fixed alpha for V0; no hyperparameter tuning introduced
+  - fit restricted to DesignMatrix valid rows
+  - fitted feature-name, lag, and target-dimension provenance retained
+  - stale V0-05 DesignMatrix test fixture migrated to the current target_dimensions contract
+  - deterministic fit verified for identical data and alpha
+
+files_changed:
+  - tests/test_ridge_forecaster_fit.py
+  - artifacts/setup/V0-05/task_result.yaml
+
+files_confirmed:
+  - pyproject.toml
+  - src/lagged_facial_graph_forecasting/forecaster.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_ridge_forecaster_fit.py
+
+tests:
+  workflow: tests
+  run_id: 34159135203
+  job_id: 101857091303
+  head_sha: 49b992287011c73b822ab22f41ed63c77d3d6853
+  python: 3.11.16
+  relevant_result: tests/test_ridge_forecaster_fit.py has no failures
+  regression_result: 384 passed, 30 failed, 1 warning
+  regression_note: >-
+    Remaining failures are in later V0/Lane E/H fixtures and schema-version migration,
+    not V0-05. Sequential execution therefore advances only to V0-06.
+
+scientific_checks:
+  - scikit-learn StandardScaler and Ridge are reused; no optimizer reimplementation
+  - invalid rows do not enter scaler or Ridge fitting
+  - V0 uses fixed alpha and does not perform selection or tuning
+  - no outer-test-specific access path exists in this estimator wrapper
+  - feature, lag, and target-dimension provenance are frozen with the fitted estimator
+  - no PCMCI+, Null, real-data preprocessing, or Sensitivity logic introduced
+  - Primary scientific freeze remains unchanged
+
+artifacts:
+  - artifacts/setup/V0-05/task_result.yaml
+
+remaining_issue: none
+next_task: V0-06

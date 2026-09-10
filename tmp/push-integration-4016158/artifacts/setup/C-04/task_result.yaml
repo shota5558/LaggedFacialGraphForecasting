@@ -1,0 +1,32 @@
+task_id: C-04
+task_name: Self-history matrix
+status: PASS
+
+implemented:
+  - reused build_self_history_design_matrix from the V0 vertical slice
+  - features are restricted to the target facial region
+  - arbitrary unique positive target-relative lag sets are supported within Primary h=1
+  - all lags share one common target/forecast-origin alignment based on max lag
+  - feature name and feature lag provenance are preserved column-by-column
+
+files_changed:
+  - artifacts/setup/C-04/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - tests/test_self_history_design_matrix.py
+
+tests:
+  workflow: tests
+  run_id: 34147857476
+  head_sha: 638d4f517f22a0073089828778b3289870455f11
+  result: success
+
+scientific_checks:
+  - Self condition cannot use other facial regions
+  - target-relative lag semantics remain source = target - tau
+  - Primary h=1 remains enforced
+  - source and target missingness propagate into row validity
+
+remaining_issue: none
+next_task: C-05

@@ -1,0 +1,54 @@
+task_id: G-03
+task_name: Median aggregation
+status: PASS
+
+implemented:
+  - adds MedianPairedDifference for region/metric/condition-specific aggregation of G-02 subject-level differences
+  - uses the standard unweighted median so each held-out subject contributes one statistical unit regardless of frame count
+  - preserves the exact subject_ids and aligned outer_folds supporting each aggregate
+  - keeps regions, metrics, and condition comparisons in separate aggregation groups
+  - rejects duplicate subject contributions within an aggregation group instead of silently pooling repeated observations
+  - leaves bootstrap inference to G-04
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/statistics.py
+  - tests/test_median_paired_difference.py
+  - artifacts/setup/G-03/task_result.yaml
+
+implementation_commits:
+  - sha: 23b7edb369331d90d99b0cbe573aeeb05f2260e7
+    message: G-03: add median paired-difference aggregation
+  - sha: 325084f3d55708679a3ece00017e7ee32da09e16
+    message: G-03: test median paired-difference aggregation
+
+tests:
+  workflow: tests
+  run_id: 34166346845
+  job_id: 101878021958
+  head_sha: 325084f3d55708679a3ece00017e7ee32da09e16
+  result: 654 passed, 1 warning in 4.85s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to G-03
+  targeted_checks:
+    - one unweighted paired value per subject
+    - odd and even subject-count medians use standard median semantics
+    - region and condition comparisons remain separate
+    - subject and outer-fold provenance retained in each summary
+    - duplicate subject contributions fail closed
+    - empty/non-paired inputs fail closed
+
+scientific_checks:
+  subject_is_statistical_unit: PASS
+  median_aggregation: PASS
+  no_frame_count_weighting: PASS
+  region_decomposition_preserved: PASS
+  fold_subject_provenance_preserved: PASS
+  no_outer_test_selection_or_tuning: PASS
+  primary_sensitivity_separation: PASS
+
+artifacts:
+  - artifacts/setup/G-03/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: G-04

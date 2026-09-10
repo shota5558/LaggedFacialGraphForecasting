@@ -1,0 +1,61 @@
+task_id: V0-08
+task_name: Result serialization
+status: PASS
+audit_type: existing_implementation_contract_migration_revalidation
+
+implemented:
+  - existing deterministic V0 JSON serialization reused without duplication
+  - schema_version 2 records feature and target-dimension provenance
+  - outer_fold, condition, model provenance, metric, and row provenance serialized
+  - invalid numeric values serialized as JSON null with allow_nan disabled
+  - valid_mask booleans preserved as JSON booleans
+  - byte-deterministic output enforced through sorted keys and stable formatting
+
+files_changed:
+  - tests/test_v0_result_serialization.py
+  - artifacts/setup/V0-08/task_result.yaml
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/artifacts.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_v0_result_serialization.py
+
+failure_history:
+  fail_type: contract mismatch
+  failed_workflow: v0-vertical-slice-audit
+  failed_run_id: 34159270688
+  failed_job_id: 101857492278
+  failed_result: 60 passed, 2 failed
+  root_cause: >-
+    The serializer had already migrated to schema_version 2 to preserve
+    target_dimensions provenance, while the V0-08 acceptance assertion still
+    expected schema_version 1.
+  minimal_fix: >-
+    Migrate the V0-08 serialization assertion to schema_version 2 and assert
+    target_provenance.target_dimensions explicitly. No serializer behavior or
+    scientific specification was weakened.
+  fix_commit: 653709fd0012ec4ecf964b154a6360dd090640e4
+
+revalidation:
+  workflow: v0-vertical-slice-audit
+  run_id: 34159344096
+  job_id: 101857698650
+  head_sha: f5dc91210d50f33af46c70fa2e6c0cc83829287d
+  python: 3.11.16
+  result: 62 passed in 1.37s
+  relevant_result: tests/test_v0_result_serialization.py PASS
+
+scientific_checks:
+  - serialized result preserves subject, region, forecast_origin, target_time, feature names, feature lags, and target dimensions
+  - fitted model feature and target provenance must match the DesignMatrix before serialization
+  - serialization performs no fitting, tuning, discovery, Null construction, or evaluation-dependent configuration change
+  - invalid rows remain explicit through valid_mask and null-valued predictions/targets
+  - deterministic serialization supports reproducible artifact comparison
+  - no outer-test feedback path, Sensitivity path, or real-data path was introduced
+  - Primary scientific freeze remains unchanged
+
+artifacts:
+  - artifacts/setup/V0-08/task_result.yaml
+
+remaining_issue: none
+next_task: V0-09

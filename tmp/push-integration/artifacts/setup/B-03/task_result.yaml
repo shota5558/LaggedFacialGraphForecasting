@@ -1,0 +1,34 @@
+task_id: B-03
+task_name: LOSO implementation
+status: PASS
+
+implemented:
+  - build_loso_split_manifests enumerates one outer fold per validated subject
+  - each subject is held out exactly once as the sole outer-test subject
+  - each outer-train partition contains all remaining subjects
+  - inner folds are constructed only from the corresponding outer-train partition
+  - LOSO builder is exported from the package API
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/splits.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_subject_split_builder.py
+  - artifacts/setup/B-03/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34146582819
+  head_sha: 835600f474dc6dd22001f54077fe6aac9d91e5c4
+  result: success
+
+scientific_checks:
+  - split unit remains subject
+  - every subject appears in outer-test exactly once across LOSO folds
+  - outer-train and outer-test are subject-disjoint in every fold
+  - inner folds contain outer-train subjects only
+  - no outcome or measurement values influence split construction
+  - no preprocessing fitting, PCMCI+ discovery, Ridge tuning, feature/lag selection, Null construction, or Sensitivity logic is introduced
+  - Primary/Sensitivity scientific freeze is unchanged
+
+remaining_issue: none
+next_task: B-04
