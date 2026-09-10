@@ -882,12 +882,14 @@ def _validate_sha256_column(frame: pd.DataFrame, column: str, name: str) -> None
 def _load_candidate_grid(path: Path) -> CandidateGrid:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("candidate grid must be a JSON object")
         payload = payload.get("payload", payload)
         candidates = tuple(
             LandscapeCandidate(
                 source_region=item["source_region"],
                 target_region=item["target_region"],
-                lag=int(item["lag"]),
+                lag=item["lag"],
                 source_dimension=item["source_dimension"],
                 target_dimension=item["target_dimension"],
                 feature_unit=item["feature_unit"],

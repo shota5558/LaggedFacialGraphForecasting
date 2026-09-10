@@ -270,7 +270,7 @@ def test_landscape_reference_is_scoped_to_subject_and_target_component() -> None
     frame.index = [0] * len(frame)
     actual = landscape_source(frame, grid)
     pd.testing.assert_frame_equal(actual, expected)
-    assert actual.gain.tolist() == pytest.approx(expected.gain.tolist())
+    assert actual.gain.tolist() == pytest.approx([0.1 * i for i in range(1, 9)] * 4)
 
 
 def test_landscape_unevaluable_cells_do_not_supply_a_self_reference() -> None:

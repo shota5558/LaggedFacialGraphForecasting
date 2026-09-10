@@ -1,5 +1,18 @@
 # Issue implementation — 2026-09-10
 
+## Candidate-grid JSON identity — 2026-09-11 (#33 / R-17)
+
+- Removed integer coercion from candidate-grid loading. The existing `LandscapeCandidate` contract now validates the original JSON lag; fractional numbers, booleans and numeric strings cannot silently become another frozen candidate.
+- Non-object JSON roots now produce `AnalysisOutputError` rather than an incidental attribute error. Direct and payload-wrapped valid grids preserve candidate identity and digest.
+- Validation: candidate-grid input and landscape tests — 20 passed; extended analysis output tests — 47 passed, including synthetic table/figure generation. Commands used `.venv/Scripts/python.exe -m pytest` with `-o addopts='' -q -p no:cacheprovider` and isolated temporary directories. This is input correctness only; no runner changes, scientific decisions or real experiment.
+
+## Landscape shared-reference validation — 2026-09-11 (#33 / R-17)
+
+- The individual landscape source validator now requires the same Self error and evaluation-support digest across evaluable candidates for each subject/target component and supplied fold/horizon/analysis identity. Correct per-cell subtraction alone no longer permits a changing baseline.
+- Different subject/component references remain valid; failed/unevaluable cells remain accounted for without contributing reference errors or gains. DataFrame index labels are reset before candidate coverage checks so concatenated input cannot overwrite candidate identities.
+- Regression fixtures cover reconciled-but-inconsistent Self errors, support drift, distinct target-component references, duplicate DataFrame indices, and unevaluable cells. This is software validation only; model fitting, scientific aggregation decisions and real-run acceptance remain open. No runner changes.
+- Validation: `.venv/Scripts/python.exe -m pytest tests/test_extended_analysis_outputs.py tests/test_landscape.py tests/test_analysis_pipeline.py tests/test_enrichment.py -o addopts='' -q -p no:cacheprovider --basetemp tmp/pytest-landscape-final` — 84 passed, including concurrent enrichment changes present in the shared workspace. `git diff --check` passed.
+
 ## Enrichment CSV aggregation guards — 2026-09-11 (#34 / R-18)
 
 - Reject missing/blank identifiers before pandas grouping, repeat-level changes in status/estimand/aggregation/grid/support, and mixed estimands or cell aggregation rules within a target's subject summary.
