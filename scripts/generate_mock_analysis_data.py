@@ -290,6 +290,11 @@ def _primary_config() -> dict[str, object]:
             "pc_alpha": 0.01,
             "forecaster": "ridge",
             "horizon": 1,
+            "matched_sparsity": {
+                "repeat_count": 1,
+                "seed_source": "split_manifest_seed",
+                "repeat_aggregation": "median_error_across_repeats_per_subject_region",
+            },
         },
         "evaluation": {"primary_metric": "velocity_rmse"},
         "lag_response": {

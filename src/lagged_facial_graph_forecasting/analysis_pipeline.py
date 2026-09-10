@@ -31,6 +31,8 @@ LAG_GRID = (-2, -1, 0, 1, 2)
 REFERENCE_DELTA = 0
 TAU_MAX = 10
 PRIMARY_PC_ALPHA = 0.01
+PRIMARY_METRIC = "velocity_rmse"
+MATCHED_REPEAT_AGGREGATION = "median_error_across_repeats_per_subject_region"
 SENSITIVITY_ORDER = (
     "primary_parcorr_ridge",
     "gpdc_ridge",
@@ -181,6 +183,26 @@ def validate_primary_config(config: Mapping[str, object]) -> None:
                 f"Primary {key} must remain frozen at {expected_value!r}; got {primary.get(key)!r}"
             )
 
+    matched = _mapping(primary.get("matched_sparsity"), "primary.matched_sparsity")
+    repeat_count = matched.get("repeat_count")
+    if (
+        not isinstance(repeat_count, int)
+        or isinstance(repeat_count, bool)
+        or repeat_count < 1
+    ):
+        raise AnalysisOutputError(
+            "Primary matched_sparsity.repeat_count must be a positive integer"
+        )
+    if matched.get("seed_source") != "split_manifest_seed":
+        raise AnalysisOutputError(
+            "Primary matched_sparsity.seed_source must remain 'split_manifest_seed'"
+        )
+    if matched.get("repeat_aggregation") != MATCHED_REPEAT_AGGREGATION:
+        raise AnalysisOutputError(
+            "Primary matched_sparsity.repeat_aggregation must remain "
+            f"{MATCHED_REPEAT_AGGREGATION!r}"
+        )
+
     lag = _mapping(config.get("lag_response", {}), "lag_response")
     if tuple(int(x) for x in lag.get("delta_frames", ())) != LAG_GRID:
         raise AnalysisOutputError("Primary lag-response grid must be [-2,-1,0,1,2]")
@@ -208,32 +230,26 @@ def validate_primary_config(config: Mapping[str, object]) -> None:
 def _statistics_config(config: Mapping[str, object]) -> tuple[int, int, str]:
     validate_primary_config(config)
     stats = _mapping(config["statistics"], "statistics")
-    return int(stats["bootstrap_n_resamples"]), int(config.get("seed", 0)), str(stats["bootstrap_method"])
+    seed = config.get("seed")
+    if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
+        raise AnalysisOutputError("analysis config seed must be an explicit non-negative integer")
+    return int(stats["bootstrap_n_resamples"]), seed, str(stats["bootstrap_method"])
 
 
 def _primary_metric(metrics: pd.DataFrame, config: Mapping[str, object]) -> str:
-    evaluation = config.get("evaluation", {})
-    configured = evaluation.get("primary_metric") if isinstance(evaluation, Mapping) else None
+    evaluation = _mapping(config.get("evaluation"), "evaluation")
+    configured = evaluation.get("primary_metric")
+    if configured != PRIMARY_METRIC:
+        raise AnalysisOutputError(
+            f"Primary primary_metric must be explicitly frozen as {PRIMARY_METRIC!r}"
+        )
     available = set(metrics.metric_name.astype(str))
-    if configured is not None:
-        configured = str(configured)
-        if configured not in available:
-            raise AnalysisOutputError(f"configured primary_metric absent from metrics: {configured}")
-        directions = set(metrics.loc[metrics.metric_name == configured, "metric_direction"].astype(str))
-        if directions != {"lower_is_better"}:
-            raise AnalysisOutputError("Primary effect metric must be a lower-is-better error metric")
-        return configured
-    if "velocity_rmse" in available:
-        return "velocity_rmse"
-    candidates = sorted(
-        metric
-        for metric in available
-        if set(metrics.loc[metrics.metric_name == metric, "metric_direction"].astype(str))
-        == {"lower_is_better"}
-    )
-    if not candidates:
-        raise AnalysisOutputError("no lower-is-better metric available for Primary paired effect")
-    return candidates[0]
+    if PRIMARY_METRIC not in available:
+        raise AnalysisOutputError(f"configured primary_metric absent from metrics: {PRIMARY_METRIC}")
+    directions = set(metrics.loc[metrics.metric_name == PRIMARY_METRIC, "metric_direction"].astype(str))
+    if directions != {"lower_is_better"}:
+        raise AnalysisOutputError("Primary effect metric must be a lower-is-better error metric")
+    return PRIMARY_METRIC
 
 
 def _bootstrap_median(
@@ -520,6 +536,20 @@ def null_distribution_source(metrics: pd.DataFrame, nulls: pd.DataFrame, config:
     selected = nulls[nulls.metric_name == metric].copy()
     if selected.empty:
         raise AnalysisOutputError(f"null_metrics has no rows for Primary metric {metric}")
+    values = pd.to_numeric(selected.value, errors="coerce")
+    if not np.isfinite(values).all():
+        raise AnalysisOutputError("Null metric values must be finite")
+    seeds = pd.to_numeric(selected.seed, errors="coerce")
+    if (
+        seeds.isna().any()
+        or not np.isfinite(seeds).all()
+        or (seeds < 0).any()
+        or (seeds % 1 != 0).any()
+    ):
+        raise AnalysisOutputError("Null replicate seed must be an explicit non-negative integer")
+    replicate_ids = selected.replicate_id.astype("string")
+    if replicate_ids.isna().any() or replicate_ids.str.strip().eq("").any():
+        raise AnalysisOutputError("Null replicate_id must be non-empty")
     if not (selected.mapping_scope.astype(str) == "outer_train_only").all():
         raise AnalysisOutputError("Null mapping provenance must be outer_train_only")
     if not _as_bool(selected.input_count_preserved).all():
@@ -540,6 +570,29 @@ def null_distribution_source(metrics: pd.DataFrame, nulls: pd.DataFrame, config:
     base = metrics[(metrics.condition == "pcmci") & (metrics.metric_name == metric)][keys + ["value"]].rename(columns={"value": "pcmci_error"})
     if base.duplicated(keys).any():
         raise AnalysisOutputError("PCMCI baseline contains duplicate exact units")
+    if base.empty:
+        raise AnalysisOutputError("PCMCI baseline is required for every Null condition")
+    base_units = set(base[keys].itertuples(index=False, name=None))
+    for condition, group in selected.groupby("condition", sort=False):
+        condition_units = set(group[keys].itertuples(index=False, name=None))
+        if condition_units != base_units:
+            raise AnalysisOutputError(
+                "Null conditions must cover the exact PCMCI evaluation units: "
+                f"condition={condition!r}"
+            )
+    matched_repeat_count = _mapping(config["primary"], "primary")["matched_sparsity"]["repeat_count"]
+    matched_counts = matched.groupby(["outer_fold", "subject_id", "region_id"]).agg(
+        unique_repeats=("replicate_id", "nunique"),
+        rows=("replicate_id", "size"),
+    )
+    if (
+        (matched_counts.unique_repeats != matched_repeat_count).any()
+        or (matched_counts.rows != matched_repeat_count).any()
+    ):
+        raise AnalysisOutputError(
+            "matched_sparsity must contain exactly "
+            f"{matched_repeat_count} unique repeats for every evaluation unit"
+        )
     joined = selected.merge(base, on=keys, how="left", validate="many_to_one")
     if joined.pcmci_error.isna().any():
         raise AnalysisOutputError("Null condition lacks matched PCMCI outer-test support")
@@ -556,9 +609,14 @@ def table_t07(metrics: pd.DataFrame, nulls: pd.DataFrame, config: Mapping[str, o
     n_resamples, seed, method = _statistics_config(config)
     rows = []
     for condition, group in distribution.groupby("condition", sort=True):
-        subject = group.groupby("subject_id", as_index=False).agg(
-            effect=("null_minus_pcmci", "mean"),
+        subject_region = group.groupby(["subject_id", "region_id"], as_index=False).agg(
+            effect=("null_minus_pcmci", "median"),
             replicate_observations=("replicate_id", "size"),
+        )
+        subject = subject_region.groupby("subject_id", as_index=False).agg(
+            effect=("effect", "mean"),
+            replicate_observations=("replicate_observations", "sum"),
+            region_count=("region_id", "nunique"),
         )
         median, low, high = _bootstrap_median(subject.effect, n_resamples=n_resamples, seed=seed, method=method)
         rows.append({
@@ -576,6 +634,8 @@ def table_t07(metrics: pd.DataFrame, nulls: pd.DataFrame, config: Mapping[str, o
             "replicate_count": int(group.replicate_id.nunique()),
             "seed_count": int(group.seed.nunique()),
             "mapping_scope": "outer_train_only",
+            "repeat_aggregation": MATCHED_REPEAT_AGGREGATION,
+            "region_aggregation": "mean_after_subject_region_repeat_aggregation",
         })
     return pd.DataFrame(rows).sort_values("null_condition", kind="stable"), distribution
 
