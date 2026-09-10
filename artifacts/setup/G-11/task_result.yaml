@@ -1,0 +1,27 @@
+task_id: G-11
+task_name: Acceleration RMSE
+status: BLOCKED
+
+implemented:
+  - no metric implementation added because acceleration derivation semantics and units are not frozen for the current Primary prediction representation
+
+scientific_checks:
+  research_plan_metric_semantics_present: PASS
+  exact_operational_definition_frozen: FAIL
+  primary_motion_feature_choice_frozen: FAIL
+  acceleration_units_and_differencing_rule_frozen: FAIL
+  outer_test_accessed: false
+
+root_cause:
+  - the research plan defines Acceleration RMSE semantically as sensitivity to fine motion-change onset, but does not specify whether acceleration is the first difference of velocity or second difference of position
+  - time-base/units and boundary handling for the derivative are not frozen
+  - the Primary motion-feature representation is still unresolved by the real-data preflight
+
+minimal_fix_required_before_retry:
+  - freeze the Primary motion-feature representation and time units
+  - freeze the acceleration derivation rule, alignment, and boundary handling
+  - add subject-region numerical and missingness tests before enabling G-11
+
+scientific_specification_changed: false
+outer_test_accessed: false
+primary_results_generated: false

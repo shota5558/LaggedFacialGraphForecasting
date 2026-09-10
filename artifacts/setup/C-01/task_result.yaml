@@ -1,0 +1,52 @@
+task_id: C-01
+task_name: Target alignment
+status: PASS
+
+revalidation:
+  fail_type: scientific specification risk
+  risk: condition-specific maximum lags can otherwise yield different forecast-origin/target row support across Persistence, Self, Full, and PCMCI
+  resolution: added alignment_lag as a support-only parameter; it truncates every Primary condition to the same frozen support without adding a predictor
+
+implemented:
+  - reused aligned_indices target alignment contract
+  - target index remains forecast_origin + h
+  - added a shared alignment_lag capability to Persistence, Self, Full, and PCMCI builders
+  - alignment_lag must be an integer and cannot be smaller than any actually used feature lag
+  - alignment_lag changes row support only; it never appears in feature_names or feature_lags
+  - Primary callers can therefore use the same frozen tau_max as common row support across all conditions
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - tests/test_primary_condition_alignment.py
+  - artifacts/setup/C-01/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/alignment.py
+  - tests/test_alignment.py
+
+tests:
+  workflow: tests
+  run_id: 34149284888
+  job_id: 101827938902
+  head_sha: c9d5ab310f8f69dd5fc38a0fdb10e7f7a4682e1e
+  python: 3.11.16
+  result: 210 passed in 1.26s
+  direct_cases:
+    - Persistence, Self, Full, and PCMCI share exact forecast_origin, target_time, y, subject, and region support when given the same alignment_lag
+    - alignment_lag does not add a predictor
+    - alignment_lag smaller than a used feature lag is rejected
+    - non-integer alignment_lag is rejected
+
+scientific_checks:
+  - Primary h=1 remains unchanged
+  - target-relative lag semantics remain unchanged
+  - condition comparisons can be made on identical time support rather than condition-specific rows
+  - common support is fixed independently of outcomes and outer-test performance
+  - no feature or lag selection is performed by alignment_lag
+  - no Sensitivity path is introduced
+
+artifacts:
+  - artifacts/setup/C-01/task_result.yaml
+
+remaining_issue: none
+next_task: C-02

@@ -1,0 +1,17 @@
+is_synthetic,synthetic_notice,outer_fold,subject_id,region_id,condition,metric_name,metric_direction,value,n_valid
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,persistence,velocity_rmse,lower_is_better,1.30,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,self,velocity_rmse,lower_is_better,1.15,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,full,velocity_rmse,lower_is_better,1.04,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,pcmci,velocity_rmse,lower_is_better,1.01,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,1,MOCK_S02,mouth,persistence,velocity_rmse,lower_is_better,1.34,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,1,MOCK_S02,mouth,self,velocity_rmse,lower_is_better,1.18,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,1,MOCK_S02,mouth,full,velocity_rmse,lower_is_better,1.07,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,1,MOCK_S02,mouth,pcmci,velocity_rmse,lower_is_better,1.05,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,2,MOCK_S03,mouth,persistence,velocity_rmse,lower_is_better,1.28,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,2,MOCK_S03,mouth,self,velocity_rmse,lower_is_better,1.13,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,2,MOCK_S03,mouth,full,velocity_rmse,lower_is_better,1.02,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,2,MOCK_S03,mouth,pcmci,velocity_rmse,lower_is_better,1.00,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S04,mouth,persistence,velocity_rmse,lower_is_better,1.32,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S04,mouth,self,velocity_rmse,lower_is_better,1.17,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S04,mouth,full,velocity_rmse,lower_is_better,1.05,120
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S04,mouth,pcmci,velocity_rmse,lower_is_better,1.03,120

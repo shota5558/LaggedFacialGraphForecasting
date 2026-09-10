@@ -1,0 +1,52 @@
+task_id: G-01
+task_name: Velocity RMSE
+status: PASS
+
+implemented:
+  - reuses the V0 Velocity RMSE numerical definition without changing the Primary metric estimand
+  - factors the RMSE arithmetic into a private primitive shared by scalar V0 evaluation and subject-region Primary statistics
+  - adds velocity_rmse_by_subject_region() on top of the G-00 metric interface
+  - returns versioned MetricsResult records preserving outer_fold, subject_id, region_id, condition, metric_name, value, and n_valid
+  - excludes invalid rows before RMSE computation and fails closed when no valid prediction rows exist
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/metrics.py
+  - tests/test_velocity_rmse_primary_metric.py
+  - artifacts/setup/G-01/task_result.yaml
+
+implementation_commits:
+  - sha: 17e949d37ac5defaf1dc66c853a827924170ab2e
+    message: G-01: expose subject-region Velocity RMSE
+  - sha: b7f8c3ba07236347c952c958c0853c7bc0f82404
+    message: G-01: test subject-region Velocity RMSE
+
+tests:
+  workflow: tests
+  run_id: 34166067158
+  job_id: 101877223185
+  head_sha: b7f8c3ba07236347c952c958c0853c7bc0f82404
+  result: 644 passed, 1 warning in 5.15s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to G-01
+  targeted_checks:
+    - subject-region Velocity RMSE matches the frozen RMSE definition across D=2 velocity components
+    - V0 scalar Velocity RMSE semantics are preserved
+    - invalid rows do not contribute to RMSE or n_valid
+    - fold/subject/region/condition/metric provenance is preserved
+    - no-valid-row evaluation fails closed
+
+scientific_checks:
+  primary_metric_velocity_rmse: PASS
+  subject_level_provenance_preserved: PASS
+  region_provenance_preserved: PASS
+  invalid_support_excluded: PASS
+  outer_test_evaluation_only: PASS
+  no_discovery_or_selection_in_metric_layer: PASS
+  primary_sensitivity_separation: PASS
+
+artifacts:
+  - artifacts/setup/G-01/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: G-02

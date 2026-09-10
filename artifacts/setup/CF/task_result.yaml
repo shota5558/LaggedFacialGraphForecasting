@@ -1,0 +1,128 @@
+task_id: CF
+task_name: Core Contract Freeze
+status: PASS
+
+implemented:
+  - retained the V0-proven FaceTimeSeries and SplitManifest implementations without duplication
+  - retained component-aware ParentLink source_dimension and target_dimension introduced for Scientific Freeze v2
+  - completed the core contract migration to schema v3 so DesignMatrix and PredictionArtifact preserve target_dimensions as canonical output provenance
+  - propagated target_dimensions through Self, Persistence, Full, and component-level PCMCI DesignMatrix builders
+  - preserved target_dimensions when DesignMatrices are concatenated or sliced for fold execution and inner CV
+  - froze target_dimensions in FittedRidgeForecaster and reject prediction when fitted and evaluation target dimensions differ
+  - propagated target_dimensions into PredictionArtifact and deterministic V0 result artifacts
+  - retained ParentSet as the Tigramite-independent discovery/forecasting boundary with source region, source component, target region, target component, and lag provenance
+  - retained NullMapping component provenance without changing Null algorithms
+  - migrated deterministic core-contract JSON serialization to v3
+  - retained explicit v1-to-v2 migration for certified scalar ParentSet and NullMapping artifacts
+  - added explicit v2-to-v3 migration for DesignMatrix and PredictionArtifact that requires certified target dimension labels and fails closed rather than inferring component identity
+  - migrated Primary run descriptor and runner-config fixtures to schema v3
+  - retained schemas/core_contracts_v1.yaml and schemas/core_contracts_v2.yaml as migration history and added schemas/core_contracts_v3.yaml
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/contracts.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+  - src/lagged_facial_graph_forecasting/core_contract_io.py
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/forecaster.py
+  - src/lagged_facial_graph_forecasting/runner.py
+  - src/lagged_facial_graph_forecasting/ridge_tuning.py
+  - src/lagged_facial_graph_forecasting/artifacts.py
+  - schemas/core_contracts_v3.yaml
+  - configs/primary_run.yaml
+  - tests/test_core_contract_freeze.py
+  - tests/test_core_contract_io.py
+  - tests/test_runner_config.py
+  - tests/test_ridge_coefficient_export.py
+  - tests/test_ridge_determinism.py
+  - tests/test_ridge_forecaster_prediction.py
+  - tests/test_ridge_frozen_refit.py
+  - tests/test_ridge_inner_cv.py
+  - tests/test_ridge_prediction.py
+  - tests/test_v0_end_to_end.py
+  - tests/test_v0_result_serialization.py
+  - tests/test_velocity_rmse.py
+  - artifacts/setup/CF/task_result.yaml
+
+tests:
+  full_regression:
+    workflow: tests
+    run_id: 34159308274
+    job_id: 101857596846
+    validated_head_sha: 653709fd0012ec4ecf964b154a6360dd090640e4
+    python: 3.11.16
+    result: 415 passed, 1 warning in 1.85s
+  v0_regression:
+    workflow: v0-vertical-slice-audit
+    run_id: 34159308266
+    job_id: 101857596706
+    validated_head_sha: 653709fd0012ec4ecf964b154a6360dd090640e4
+    result: success
+  warning:
+    - Tigramite warns that analysis_mode multiple contains one dataset in one converter test; this is non-failing and unrelated to contract correctness
+  migration_coverage:
+    - source and target ParentLink component provenance round trip
+    - DesignMatrix target_dimensions round trip
+    - PredictionArtifact target_dimensions round trip
+    - fitted Ridge target-dimension drift rejected
+    - concatenation and inner-CV slicing preserve target_dimensions
+    - non-current schema versions rejected
+    - v1 ParentSet and NullMapping migration requires explicit certified scalar dimension
+    - v2 DesignMatrix and PredictionArtifact migration requires explicit certified target dimensions
+    - certified target dimension count must match serialized target output count
+    - component identity is never inferred from region identity, feature name, or array position
+
+scientific_checks:
+  - Scientific Freeze v2 discovery node_unit remains region_dimension
+  - forecasting_feature_rule remains exact_selected_component
+  - PCMCI forecasting is target-component specific and an inter-regional selected component is not expanded to every dimension of its source region
+  - target component identity remains traceable through DesignMatrix, fitted Ridge, PredictionArtifact, and result serialization
+  - no outer-test information is introduced by the contract migration
+  - subject-level split and outer-test lock semantics are unchanged
+  - no Primary or Sensitivity algorithm choice changed
+  - Primary remains PCMCI+ plus ParCorr plus Ridge with horizon 1
+  - Sensitivity remains excluded before PRIMARY FREEZE
+  - migration reason, impact scope, migration behavior, and tests are documented
+  - scientifically lossy legacy artifacts fail closed instead of receiving guessed component labels
+
+fail_history:
+  initial_status: FAIL
+  fail_types:
+    - contract mismatch
+    - scientific specification conflict
+  root_cause: >-
+    Scientific Freeze v2 defines scalar region_dimension PCMCI nodes and exact
+    selected-component forecasting. Core contract v2 preserved component identity
+    in ParentLink but DesignMatrix and PredictionArtifact still exposed only target
+    region and target array values. A serialized scalar target therefore could not
+    prove whether it represented vx, vy, or another component.
+  minimal_fix: >-
+    Version the core contracts to v3, add target_dimensions to DesignMatrix and
+    PredictionArtifact, propagate that provenance through matrix construction,
+    CV slicing, runner concatenation, fitted Ridge, prediction, and artifact
+    serialization, and require explicit certified labels for v2-to-v3 migration.
+  regression_history:
+    - initial partial v3 migration exposed constructor and schema-version residues in CI
+    - production propagation paths were repaired before fixture migration
+    - legacy unit fixtures were migrated using known target labels only
+    - regression reduced from 41 failures to 21 failures and then to 415 passing tests
+
+source_commits:
+  target_contract_v3: c9d7381385bec909fce92802543172cb6e8b8e20
+  design_matrix_target_provenance: 1d901bf917f493f104f4237d389d0f69d5b24c1e
+  prediction_target_provenance: 71a02c3afeef811770afa7d5d578fcd853d547a4
+  schema_version_v3: 105fd76e6f1c32dbe337e4cc0e5326b1880a70e4
+  wire_format_v3: fbc10a4fc6eae9783e4f00dd3ba01e76d57a867c
+  runner_target_provenance: b53e73095f01207a3b1c48a46cae82e6256710ff
+  ridge_cv_target_provenance: 205a6ade4a87c2587cf5649bf3d03a5e495f79c6
+  ridge_fitted_target_freeze: ee239c25a41ea4b5ec54a88a61b95055a5a50a46
+  v0_artifact_target_provenance: f454881fccbe4eac1fa63a488f4993c4b33815a8
+  schema_registry_v3: 9439cacb91a5ea33a3de601b2a243ca6b2ce49cd
+
+artifacts:
+  - schemas/core_contracts_v1.yaml
+  - schemas/core_contracts_v2.yaml
+  - schemas/core_contracts_v3.yaml
+  - artifacts/setup/CF/task_result.yaml
+
+remaining_issue: none
+next_task: B-00

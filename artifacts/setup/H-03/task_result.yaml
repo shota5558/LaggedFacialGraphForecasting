@@ -1,0 +1,39 @@
+task_id: H-03
+task_name: Experiment manifest
+status: PASS
+
+implemented:
+  - added deterministic experiment manifest construction and JSON serialization
+  - manifest embeds the frozen ExperimentConfig and registered ExperimentArtifact entries through core-contract serialization
+  - artifact entries are deterministically sorted by repository-relative path
+  - software version provenance is mandatory and deterministically ordered
+  - artifacts from another experiment or outside the configured Primary artifact root are rejected
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/experiment_manifest.py
+  - tests/test_experiment_manifest.py
+  - artifacts/setup/H-03/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34150447256
+  job_id: 101831440399
+  head_sha: d3084ae2b043fa7f337bea19738ad7a6d795a08f
+  result: success
+  cases:
+    - manifest bytes are identical regardless of artifact/software mapping input order
+    - foreign experiment artifacts are rejected
+    - artifacts outside Primary artifact_root are rejected
+    - software version provenance is mandatory
+
+scientific_checks:
+  - manifest records exact frozen config and content-addressed artifact provenance
+  - Primary artifact-root separation is enforced again at manifest assembly
+  - manifest construction is downstream bookkeeping and cannot alter tuning/discovery/predictions
+  - no outer-test feedback or Sensitivity execution is introduced
+
+artifacts:
+  - artifacts/setup/H-03/task_result.yaml
+
+remaining_issue: none
+next_task: H-04

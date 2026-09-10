@@ -1,0 +1,53 @@
+task_id: I3
+task_name: Null Integration
+status: PASS
+
+implemented:
+  - integrates PCMCI, lag-shift, random-region, matched-sparsity, and time-shuffle conditions through the existing canonical DesignMatrix and Ridge prediction backbone
+  - converts structural NullMapping.mapped_parents back to canonical ParentSet input for the existing PCMCI DesignMatrix builder
+  - applies time-shuffle only after building the same PCMCI-selected DesignMatrix
+  - fixes alignment_lag=10 across all conditions so every condition evaluates identical target rows despite changed mapped lags
+  - fits every condition with the same StandardScaler -> sklearn Ridge pipeline and the same fixed alpha in this integration test
+  - produces PredictionArtifact outputs for all five conditions on held-out test-subject rows
+  - verifies matched feature capacity and identical outer-test row/target/valid support across conditions
+
+files_changed:
+  - tests/test_null_integration.py
+  - artifacts/setup/I3/task_result.yaml
+
+implementation_commits:
+  - sha: 9dc0c4ee133497bd495344358286685e6cceddcb
+    message: I3: integrate Primary Nulls through Ridge predictions
+
+tests:
+  workflow: tests
+  run_id: 34165795888
+  job_id: 101876459896
+  head_sha: 9dc0c4ee133497bd495344358286685e6cceddcb
+  result: success
+  targeted_checks:
+    - PCMCI/lag-shift/random-region/matched-sparsity/time-shuffle all reach PredictionArtifact
+    - all conditions use StandardScaler -> Ridge with identical alpha
+    - common alignment_lag=10 preserves the same outer-test sample support
+    - y_true, forecast_origin, target_time, valid_mask, target region/component, and held-out subject support are identical across conditions
+    - all valid predictions are finite
+    - structural Nulls preserve matched feature count while exposing mapped region/lag provenance
+    - time-shuffle preserves exact feature provenance and changes only cross-region row correspondence
+
+scientific_checks:
+  outer_test_used_for_null_construction: PASS
+  held_out_subject_evaluation_only: PASS
+  same_ridge_pipeline_across_conditions: PASS
+  same_evaluation_units_across_conditions: PASS
+  lag_horizon_semantics_h1: PASS
+  parentset_is_canonical_discovery_forecast_interface: PASS
+  null_specific_information_change_only: PASS
+  sensitivity_contamination: PASS
+
+artifacts:
+  - artifacts/setup/I3/task_result.yaml
+
+remaining_issue:
+  - matched-sparsity repeat_count is still intentionally not frozen; I3 validates one representative deterministic F-32 sample only and does not define the eventual Primary repeat count
+
+next_task: G-00

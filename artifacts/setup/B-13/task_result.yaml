@@ -1,0 +1,34 @@
+task_id: B-13
+task_name: Deterministic split test
+status: PASS
+
+implemented:
+  - reused direct deterministic tests already covering every supported subject split strategy
+  - basic grouped outer split returns the same SplitManifest for the same inputs and seed
+  - LOSO returns the same ordered manifest sequence for the same subject order and seed
+  - grouped K-fold returns the same manifest sequence for the same inputs and seed
+
+files_changed:
+  - artifacts/setup/B-13/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/splits.py
+  - tests/test_subject_split_builder.py
+
+tests:
+  workflow: tests
+  run_id: 34147524791
+  head_sha: d1dfa4e76dfc76136e049fae752b69f5899d6596
+  result: success
+  direct_tests:
+    - test_subject_split_is_deterministic_for_same_seed
+    - test_loso_is_deterministic_for_same_subject_order_and_seed
+    - test_grouped_kfold_is_deterministic_for_same_seed
+
+scientific_checks:
+  - split determinism depends only on validated subject IDs, configured fold counts, subject order where explicitly part of LOSO semantics, and seed
+  - no outcomes, facial measurements, preprocessing results, discovery results, tuning results, Null results, or outer-test values influence split assignment
+  - canonical SplitManifest remains the sole downstream split authority
+
+remaining_issue: none
+next_task: lane_b_completion_gate

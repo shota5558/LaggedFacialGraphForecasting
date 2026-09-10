@@ -1,0 +1,58 @@
+task_id: D-06
+task_name: Tigramite run_pcmciplus execution
+status: PASS
+
+implemented:
+  - added a thin Primary run_primary_pcmciplus(manifest, bundle) execution boundary
+  - discovery subject scope is revalidated at the execution API before the OSS call
+  - D-03 static config, D-04 tau_max = 10, and D-05 pc_alpha = 0.01 are merged without runtime override inputs
+  - delegates exactly once to Tigramite PCMCI.run_pcmciplus
+  - returns the raw Tigramite result dictionary for downstream D-07 extraction
+  - no link extraction or ParentSet conversion is implemented early
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/pcmci_runner.py
+  - tests/test_pcmci_runner.py
+  - artifacts/setup/D-06/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/tigramite_adapter.py
+  - src/lagged_facial_graph_forecasting/pcmci_plus_factory.py
+  - src/lagged_facial_graph_forecasting/pcmci_plus_config.py
+  - src/lagged_facial_graph_forecasting/pcmci_tau_max.py
+  - src/lagged_facial_graph_forecasting/pcmci_pc_alpha.py
+  - src/lagged_facial_graph_forecasting/leakage_guard.py
+
+tests:
+  workflow: tests
+  run_id: 34161364289
+  job_id: 101863713505
+  head_sha: 57a9db2c98b5cdcacbdb89e1ab268990bbd2c8e8
+  python: 3.11.16
+  tigramite: 5.2.10.1
+  result: 459 passed, 1 warning in 2.44s
+  targeted_checks:
+    - exact frozen D-03/D-04/D-05 kwargs
+    - immutable run kwargs
+    - no runtime scientific-parameter override in API signature
+    - exact-once delegation to Tigramite
+    - execution-boundary outer-test leakage rejection
+    - noncanonical bundle rejection
+    - real Tigramite PCMCI+ smoke run with graph/p_matrix/val_matrix shape checks
+  warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; known and unrelated to D-06
+
+scientific_checks:
+  - discovery is outer-train only and is checked immediately before PCMCI+ execution
+  - Primary remains PCMCI+ plus ParCorr plus Ridge with horizon 1
+  - tau_max = 10 and pc_alpha = 0.01 cannot be supplied or tuned by the caller
+  - no outer-test or Sensitivity outcomes enter discovery configuration
+  - Tigramite PCMCI+ and ParCorr are reused without algorithm reimplementation
+  - D-07/D-08/D-09 semantics are not implemented prematurely
+
+artifacts:
+  - artifacts/setup/D-06/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: D-07

@@ -1,0 +1,43 @@
+task_id: C-08
+task_name: tau >= h availability guard
+status: PASS
+
+implemented:
+  - reused aligned_indices as the single target-relative lag/horizon availability guard
+  - direct-observation forecasting rejects lag < horizon before indices are constructed
+  - Primary horizon remains hard-frozen to h=1
+  - aligned source indices are asserted never to occur after forecast origin
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/alignment.py
+  - tests/test_alignment.py
+
+requirements_verified:
+  tau_ge_h: true
+  source_not_after_forecast_origin: true
+  primary_horizon_one_only: true
+  future_parent_access: rejected
+
+tests:
+  workflow: tests
+  run_id: 34148619208
+  job_id: 101825925196
+  head_sha: 953a54b7cd0fb84aee4e0cd991149089d8677d95
+  python: 3.11.16
+  result: 185 passed in 1.56s
+  direct_cases:
+    - test_lag_one_horizon_one_alignment
+    - test_lag_two_horizon_one_alignment
+    - test_source_never_occurs_after_forecast_origin
+    - test_rejects_lag_smaller_than_horizon
+    - test_rejects_non_primary_horizon
+    - test_rejects_lag_with_no_aligned_samples
+
+scientific_checks:
+  - target-relative lag semantics remain source = target - tau
+  - no feature can be read after the forecast origin
+  - h>1 remains Sensitivity-only and is rejected in Primary construction
+  - no outer-test information is used by alignment logic
+
+remaining_issue: none
+next_task: C-09

@@ -1,0 +1,36 @@
+task_id: C-00
+task_name: Lag index utility
+status: PASS
+
+implemented:
+  - reused aligned_indices as the canonical target-relative lag index utility
+  - source index is defined as target index minus lag
+  - forecast origin is target index minus the frozen Primary horizon
+  - utility rejects invalid lag types and lags that leave no aligned samples
+
+files_changed:
+  - artifacts/setup/C-00/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/alignment.py
+  - tests/test_alignment.py
+
+tests:
+  workflow: tests
+  run_id: 34147524791
+  head_sha: d1dfa4e76dfc76136e049fae752b69f5899d6596
+  result: success
+  direct_tests:
+    - test_lag_one_horizon_one_alignment
+    - test_lag_two_horizon_one_alignment
+    - test_source_never_occurs_after_forecast_origin
+    - test_rejects_lag_with_no_aligned_samples
+
+scientific_checks:
+  - lag semantics remain target-relative
+  - source = target - tau
+  - no future sample can enter a lagged feature through this utility
+  - no h>1 Sensitivity semantics are introduced
+
+remaining_issue: none
+next_task: C-01

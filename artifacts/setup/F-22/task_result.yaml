@@ -1,0 +1,51 @@
+task_id: F-22
+task_name: Random-region feature-count preservation
+status: PASS
+
+implemented:
+  - adds a collision-pressure regression test for random-region mapping
+  - verifies one mapped ParentLink is produced for every source ParentLink
+  - verifies mapped ParentLinks remain unique instead of being silently deduplicated
+  - verifies lag and component identities remain unchanged while feature count is preserved
+
+files_changed:
+  - tests/test_null_random_region_feature_count_preservation.py
+  - artifacts/setup/F-22/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/null_random_region.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+
+implementation_commit:
+  sha: 4d92b5d936bd93d811ab6ca24ca3ba86a28cbd77
+  message: F-22: verify random-region feature count
+
+tests:
+  workflow: tests
+  run_id: 34164090714
+  job_id: 101871588862
+  head_sha: 4d92b5d936bd93d811ab6ca24ca3ba86a28cbd77
+  result: 556 passed, 1 warning in 5.08s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-22
+  targeted_checks:
+    - three source features remain three mapped features
+    - mapped features remain unique under collision pressure
+    - source ParentSet provenance remains unchanged
+    - lag and source/target component identity remain preserved
+
+scientific_checks:
+  outer_test_leakage: PASS
+  feature_count_preserved: PASS
+  silent_deduplication_forbidden: PASS
+  lag_identity_preserved: PASS
+  component_identity_preserved: PASS
+  deterministic_seed_behavior_preserved: PASS
+  sensitivity_contamination: PASS
+
+artifacts:
+  - artifacts/setup/F-22/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-23

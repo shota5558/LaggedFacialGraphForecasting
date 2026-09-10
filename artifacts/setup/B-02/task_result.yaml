@@ -1,0 +1,45 @@
+task_id: B-02
+task_name: Grouped outer split
+status: PASS
+
+implemented:
+  - reused the V0-proven build_subject_split_manifest implementation without duplicating split logic
+  - confirmed the outer split operates on unique subject IDs as indivisible groups
+  - confirmed every subject is assigned to exactly one of outer-train or outer-test
+  - confirmed outer-train and outer-test are subject-disjoint
+  - retained SplitManifest as the sole split authority for downstream modules
+
+files_changed:
+  - artifacts/setup/B-02/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/splits.py
+  - src/lagged_facial_graph_forecasting/contracts.py
+  - tests/test_subject_split_builder.py
+  - tests/test_split_manifest.py
+
+tests:
+  workflow: tests
+  baseline_run_id: 34146406079
+  baseline_head_sha: 4192612be334c9d903739975f1703a7c4241d5a9
+  baseline_result: 125 passed
+  targeted_existing_checks:
+    - outer train/test subject sets are disjoint
+    - outer train/test union covers all input subjects
+    - duplicate subject IDs are rejected
+    - same seed produces the same manifest
+    - inner folds contain outer-train subjects only
+
+scientific_checks:
+  - split unit remains subject
+  - no row/frame/session-level split is introduced
+  - outer-test subjects are separated before downstream fitting or selection
+  - SplitManifest remains the only canonical split object
+  - no preprocessing fit, PCMCI+ discovery, Ridge tuning, feature/lag selection, Null construction, or Sensitivity logic is introduced
+  - Primary/Sensitivity scientific freeze is unchanged
+
+artifacts:
+  - artifacts/setup/B-02/task_result.yaml
+
+remaining_issue: none
+next_task: B-03

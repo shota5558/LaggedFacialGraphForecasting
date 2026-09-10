@@ -1,0 +1,38 @@
+{
+  "is_synthetic": true,
+  "synthetic_notice": "FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS",
+  "purpose": "software verification only",
+  "seed": 20260908,
+  "primary": {
+    "discovery": "pcmci_plus",
+    "ci_test": "parcorr",
+    "tau_max": 10,
+    "pc_alpha": 0.01,
+    "forecaster": "ridge",
+    "horizon": 1
+  },
+  "evaluation": {
+    "primary_metric": "velocity_rmse"
+  },
+  "lag_response": {
+    "delta_frames": [
+      -2,
+      -1,
+      0,
+      1,
+      2
+    ],
+    "reference_delta": 0,
+    "shift_mode": "common_shift_all_selected_parents",
+    "require_complete_symmetric_grid": true,
+    "clipping": "forbidden",
+    "wrapping": "forbidden",
+    "feature_dropping": "forbidden"
+  },
+  "statistics": {
+    "paired_unit": "outer_test_subject",
+    "bootstrap_confidence_level": 0.95,
+    "bootstrap_n_resamples": 10000,
+    "bootstrap_method": "percentile"
+  }
+}

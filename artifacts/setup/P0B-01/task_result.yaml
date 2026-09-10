@@ -1,0 +1,38 @@
+task_id: P0B-01
+task_name: FaceTimeSeries
+status: PASS
+
+implemented:
+  - FaceTimeSeries immutable dataclass contract
+  - canonical X layout (T, K, D)
+  - subject_id validation
+  - strictly increasing numeric time_index validation
+  - region_id cardinality and uniqueness validation
+  - dimension cardinality and uniqueness validation
+  - elementwise boolean valid_mask validation
+  - finite positive sampling_rate validation
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/contracts.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_face_time_series.py
+  - pyproject.toml
+
+tests:
+  workflow: tests
+  run_id: 34144097872
+  head_sha: 3dba2e855414042cb49da5daee72e1b39955072f
+  result: 19 passed in 0.16s
+
+scientific_checks:
+  - contract contains no split, discovery, tuning, null, or outer-test access logic
+  - subject identity is explicit and mandatory
+  - time order is explicit and strictly increasing
+  - region and feature dimensions are explicit and traceable
+  - no Primary or Sensitivity method was introduced
+
+artifacts:
+  - artifacts/setup/P0B-01/task_result.yaml
+
+remaining_issue: none
+next_task: P0B-02

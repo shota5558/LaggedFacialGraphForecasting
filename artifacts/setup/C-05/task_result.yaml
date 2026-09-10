@@ -1,0 +1,48 @@
+task_id: C-05
+task_name: Full-history matrix
+status: PASS
+
+implemented:
+  - added build_full_history_design_matrix for the frozen Primary Full condition
+  - predictors include every facial region and every requested positive lag
+  - deterministic feature order is lag -> region -> dimension
+  - all lags use one common target/forecast-origin alignment based on maximum lag
+  - target remains the requested facial region
+  - feature name and feature lag provenance are preserved column-by-column
+  - exported the builder through the package public API
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_full_history_design_matrix.py
+  - artifacts/setup/C-05/task_result.yaml
+
+tests:
+  workflow: tests
+  targeted_run_id: 34148000949
+  targeted_head_sha: 625cc831b32b57c948118023f3461d73b2a16960
+  targeted_result: success
+  post_export_regression_run_id: 34148079424
+  post_export_regression_head_sha: 931f4d46729927049dfcf735a62407846123d941
+  post_export_regression_result: success
+  cases:
+    - all regions and requested lags are included in deterministic order
+    - target remains the selected target region
+    - forecast-origin and target-time alignment are preserved
+    - feature and target missingness propagate to row validity
+    - unknown target region is rejected
+    - non-Primary h > 1 is rejected
+
+scientific_checks:
+  - Full condition changes the information set without changing the forecasting contract
+  - no future value is used because source indices remain target-relative lagged values
+  - Primary h=1 remains enforced by the shared alignment contract
+  - all facial regions are included without outcome-driven feature selection
+  - feature provenance is retained for later leakage and lag audits
+  - no outer-test-dependent selection or construction is introduced
+
+artifacts:
+  - artifacts/setup/C-05/task_result.yaml
+
+remaining_issue: none
+next_task: C-06

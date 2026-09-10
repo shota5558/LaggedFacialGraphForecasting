@@ -1,0 +1,56 @@
+task_id: F-50
+task_name: Deterministic seed contract across Primary Nulls
+status: PASS
+
+implemented:
+  - reuses SplitManifest.seed as the single recorded root seed across Primary lag-shift, random-region, matched-sparsity, and time-shuffle NullMappings
+  - verifies stochastic Primary Nulls are exactly reproducible for identical manifest seed and frozen candidate/support metadata
+  - verifies matched-sparsity repeated sampling is deterministic and repeat index zero remains identical to the F-32 single draw
+  - verifies time-shuffle permutation generation is deterministic from frozen NullMapping.seed and row_count
+  - adds no alternate RNG source or hidden module-level randomness
+
+files_changed:
+  - tests/test_null_deterministic_seed_contract.py
+  - artifacts/setup/F-50/task_result.yaml
+
+implementation_commits:
+  - sha: 587093a670702f22de0e639e8295d46546d23e8e
+    message: F-50: test deterministic seed contract across Primary Nulls
+
+tests:
+  initial_workflow: tests
+  initial_run_id: 34165410303
+  initial_job_id: 101875361971
+  initial_head_sha: 587093a670702f22de0e639e8295d46546d23e8e
+  initial_result: failure
+  initial_failure_scope: inherited F-42 regression mismatch because F-50 was committed after the F-42 code reaudit but before the corresponding F-42 test update
+  validated_workflow: tests
+  validated_run_id: 34165433823
+  validated_job_id: 101875421034
+  validated_head_sha: 332f56c16d696fd1fb7dff28f3dd6293a5ee2823
+  validated_result: success
+  targeted_checks:
+    - every Primary NullMapping records SplitManifest.seed
+    - random-region mapping reproducible for same seed and frozen candidate regions
+    - matched-sparsity single draw reproducible for same seed and candidate universe
+    - matched-sparsity repeat sequence reproducible for same seed and repeat_count
+    - repeat zero equals the F-32 single seeded draw
+    - time-shuffle permutation reproducible for same frozen seed and row_count
+
+scientific_checks:
+  single_root_seed_provenance: PASS
+  no_outer_test_value_dependency: PASS
+  random_region_determinism: PASS
+  matched_sparsity_determinism: PASS
+  time_shuffle_determinism: PASS
+  repeated_sampling_prefix_contract: PASS
+  hidden_rng_source: PASS
+  sensitivity_contamination: PASS
+
+artifacts:
+  - artifacts/setup/F-50/task_result.yaml
+
+remaining_issue:
+  - matched-sparsity repeat_count is intentionally not invented by F-50; the Primary repeat count still requires scientific freeze before actual Primary execution
+
+next_task: F-51

@@ -1,0 +1,31 @@
+task_id: B-08
+task_name: Train/test overlap assertion
+status: PASS
+
+implemented:
+  - reused SplitManifest construction-time overlap rejection
+  - outer train/test subject overlap raises ContractError immediately
+  - reader path also revalidates the same SplitManifest contract
+
+files_changed:
+  - artifacts/setup/B-08/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/contracts.py
+  - tests/test_split_manifest.py
+  - src/lagged_facial_graph_forecasting/split_manifest_io.py
+
+tests:
+  workflow: tests
+  run_id: 34147035784
+  head_sha: bde7a3ba22aedd9f7a792e52cf615d5ecefb89c5
+  result: success
+  direct_test: test_rejects_outer_train_test_subject_overlap
+
+scientific_checks:
+  - outer train/test overlap is rejected before downstream computation
+  - loaded split artifacts are revalidated against the same invariant
+  - no duplicated split authority was introduced
+
+remaining_issue: none
+next_task: B-09

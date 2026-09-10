@@ -1,0 +1,30 @@
+task_id: B-09
+task_name: Preprocessing leakage assertion
+status: PASS
+
+implemented:
+  - preprocessing fit scope guard backed by the canonical SplitManifest
+  - outer-train subsets are allowed for inner-train fitting
+  - outer-test subjects are rejected before preprocessing fitting
+  - subjects outside the manifest outer-train are rejected
+  - duplicate/empty subject provenance is rejected
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/leakage_guard.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_leakage_guard.py
+  - artifacts/setup/B-09/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34147170527
+  head_sha: 8d4a0228dcad4f9ed9f7d0bd02c56ea5efcc59fa
+  result: success
+
+scientific_checks:
+  - preprocessing parameter fitting can use outer-train or inner-train subsets only
+  - outer-test cannot enter preprocessing fitting through the guard API
+  - no preprocessing algorithm or parameter choice is implemented by this task
+
+remaining_issue: none
+next_task: B-10

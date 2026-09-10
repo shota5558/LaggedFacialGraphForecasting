@@ -1,0 +1,53 @@
+task_id: P0A-M06
+task_name: Primary execution scientific-freeze migration
+status: PASS
+
+implemented:
+  - migrated Scientific Freeze schema v5 to v6 without changing PCMCI+ + ParCorr + Ridge, h=1, tau_max=10, pc_alpha=0.01, subject split unit, outer-train-only selection scopes, lag-response contract, or Primary/Sensitivity separation
+  - froze Primary matched-sparsity repeat_count=100 before any Primary outer-test execution
+  - froze matched-sparsity seed source to SplitManifest.seed and repeat aggregation to median error across repeats per subject-region
+  - froze Primary subject-level statistics to median point aggregation with two-sided 95% percentile bootstrap, n_resamples=10000, using the experiment seed
+  - extended the strict exact-value loader and JSON schema so omission or drift fails closed
+  - added regression tests for repeat-count, bootstrap-count, bootstrap-method, and seed-source drift
+
+files_changed:
+  - configs/scientific_freeze.yaml
+  - schemas/scientific_freeze.schema.json
+  - src/lagged_facial_graph_forecasting/scientific_config.py
+  - tests/test_scientific_config.py
+  - artifacts/setup/P0A-M06/task_result.yaml
+
+implementation_commit:
+  sha: 117331fde69a86bd36981d0660ed65749e0c261c
+  message: P0A-M06: freeze Primary null and bootstrap settings
+
+tests:
+  workflow: tests
+  run_id: 34167694592
+  job_id: 101881916347
+  head_sha: 117331fde69a86bd36981d0660ed65749e0c261c
+  result: 681 passed, 1 warning in 8.73s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to this migration
+
+scientific_checks:
+  outer_test_accessed: false
+  primary_discovery_pcmci_plus: PASS
+  primary_ci_test_parcorr: PASS
+  primary_forecaster_ridge: PASS
+  primary_horizon_h1: PASS
+  tau_max_10: PASS
+  pc_alpha_0_01: PASS
+  matched_sparsity_repeat_count_frozen_before_primary: PASS
+  bootstrap_settings_frozen_before_primary_statistics: PASS
+  deterministic_seed_sources_explicit: PASS
+  outer_train_only_selection_scopes_preserved: PASS
+  primary_sensitivity_separation_preserved: PASS
+
+artifacts:
+  - artifacts/setup/P0A-M06/task_result.yaml
+
+remaining_issue:
+  - PR-01 remains blocked by data/topology-dependent settings not inferable from the repository: concrete outer split strategy/fold count, exact landmark-to-region mapping, translation/scale/rotation reference landmarks, Primary displacement-vs-velocity choice, and immutable Primary subject/data manifest
+  - Scientific Freeze changed after the previous I4 evidence, so I4 must be revalidated against schema v6 before PR-01 retry
+
+next_task: I4-REVALIDATE

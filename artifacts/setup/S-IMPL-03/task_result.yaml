@@ -1,0 +1,33 @@
+task_id: S-IMPL-03
+task_name: LPCMCI adapter
+status: PASS
+implemented:
+  - Tigramite LPCMCI adapter using OSS implementation
+  - versioned LPCMCI sensitivity config schema
+  - explicit outer-train discovery leakage guard reuse
+  - deterministic ParCorr seed handling for the LPCMCI sensitivity path
+  - full LPCMCI DPAG edge-mark preservation in a Sensitivity-only graph artifact
+  - definite lagged directed links projected to canonical ParentSet without changing Core Contract schema
+  - LPCMCI graph serialization / deserialization round trip
+  - latent-confounding synthetic fixture and deterministic repeated-run test
+files_changed:
+  - configs/sensitivity_lpcmci.yaml
+  - src/lagged_facial_graph_forecasting/sensitivity_lpcmci.py
+  - tests/test_sensitivity_lpcmci.py
+tests:
+  workflow: tests
+  workflow_run_id: 34212858634
+  conclusion: success
+scientific_checks:
+  real_facial_data_used: false
+  primary_pcmci_plus_parcorr_changed: false
+  primary_horizon_changed: false
+  core_contract_schema_changed: false
+  outer_test_discovery_allowed: false
+  latent_confounding_marks_preserved: true
+provenance:
+  implementation_commit: bd4f1fc8ff4f91f979badf449df27750d4c73b98
+  branch: dev
+remaining_issue:
+  - none
+next_task: S-IMPL-04

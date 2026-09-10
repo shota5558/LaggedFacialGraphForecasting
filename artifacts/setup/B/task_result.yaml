@@ -1,0 +1,70 @@
+task_id: B
+task_name: Lane B Completion Gate — Split / Leakage Guard
+status: PASS
+audit_type: existing_implementation_revalidation
+
+validated_tasks:
+  - B-00 subject metadata loader
+  - B-01 subject ID validation
+  - B-02 grouped outer split
+  - B-03 LOSO
+  - B-04 grouped K-fold
+  - B-05 inner split
+  - B-06 manifest writer
+  - B-07 manifest reader
+  - B-08 train/test overlap assertion
+  - B-09 preprocessing leakage guard
+  - B-10 discovery leakage guard
+  - B-11 Ridge tuning leakage guard
+  - B-12 Null-construction leakage guard
+  - B-13 deterministic split test
+
+implementation_evidence:
+  - artifacts/setup/B-00/task_result.yaml
+  - artifacts/setup/B-01/task_result.yaml
+  - artifacts/setup/B-02/task_result.yaml
+  - artifacts/setup/B-03/task_result.yaml
+  - artifacts/setup/B-04/task_result.yaml
+  - artifacts/setup/B-05/task_result.yaml
+  - artifacts/setup/B-06/task_result.yaml
+  - artifacts/setup/B-07/task_result.yaml
+  - artifacts/setup/B-08/task_result.yaml
+  - artifacts/setup/B-09/task_result.yaml
+  - artifacts/setup/B-10/task_result.yaml
+  - artifacts/setup/B-11/task_result.yaml
+  - artifacts/setup/B-12/task_result.yaml
+  - artifacts/setup/B-13/task_result.yaml
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/splits.py
+  - src/lagged_facial_graph_forecasting/split_manifest_io.py
+  - src/lagged_facial_graph_forecasting/leakage_guard.py
+  - tests/test_leakage_guard.py
+
+tests:
+  workflow: tests
+  run_id: 34159355496
+  job_id: 101857730862
+  head_sha: 0e01a970f3634c6a201d8e084d79214f4239a5d5
+  python: 3.11.16
+  result: 415 passed, 1 warning in 2.29s
+  warning: Tigramite single-dataset multiple-mode warning; unrelated to Lane B
+
+scientific_checks:
+  - split unit is subject
+  - SplitManifest is the canonical downstream split authority
+  - outer train/test subjects are disjoint
+  - inner folds contain outer-train subjects only
+  - preprocessing fitting is restricted to outer-train or inner-train subsets
+  - PCMCI+ discovery is restricted to outer-train subjects and outer-test subjects are rejected before discovery
+  - Ridge hyperparameter tuning is restricted to outer-train subjects
+  - Primary Null mapping construction is restricted to outer-train subjects
+  - deterministic split construction depends only on validated subject IDs, configured fold semantics, and seed
+  - no outer-test values influence split, preprocessing-fit scope, discovery scope, tuning scope, or Null-construction scope
+  - Primary/Sensitivity Scientific Freeze remains unchanged
+
+artifacts:
+  - artifacts/setup/B/task_result.yaml
+
+remaining_issue: none
+next_task: C-00

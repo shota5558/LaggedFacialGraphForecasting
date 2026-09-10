@@ -1,0 +1,48 @@
+task_id: A-09
+task_name: Velocity
+status: PASS
+
+implemented:
+  - extended canonical motion_features.py with timestamp-aware velocity
+  - converts canonical consecutive displacement to coordinate-units per observed timestamp-unit
+  - uses validated observed timestamp differences rather than assuming fixed FPS
+  - preserves immutable time intervals and source/target frame provenance
+  - rejects non-consecutive displacement provenance and incomplete/invalid timestamps
+  - performs no interpolation, smoothing, imputation, resampling, or population-level fitting
+  - intentionally propagates NaN displacement values
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/motion_features.py
+  - tests/test_velocity.py
+  - artifacts/setup/A-09/task_result.yaml
+
+tests:
+  workflow: tests
+  implementation_commit: 5bec9e4003986d880fffe8a10926379967055f52
+  test_commit: 2f636c44ebaba909e3411f05803324048741f98f
+  test_run_id: 34152733633
+  test_job_id: 101838187043
+  result: success
+  python: 3.11.16
+  suite_result: 342 passed in 2.34s
+  cases:
+    - irregular observed time intervals are used exactly
+    - uniform intervals reduce to constant scaling
+    - NaN displacement propagates without imputation
+    - non-increasing and mis-sized timestamp sequences are rejected
+    - non-consecutive displacement provenance is rejected
+    - outputs are immutable and inputs are unchanged
+
+scientific_checks:
+  - A-01 timestamp semantics are reused; no hidden constant-frame-rate assumption is introduced
+  - A-08 displacement geometry and A-09 elapsed-time normalization remain separated
+  - no population-level preprocessing statistic is fitted and no outer-test-dependent selection is possible in this API
+  - no missing-frame repair/interpolation is introduced before A-12/A-13
+  - acceleration is not introduced before A-10
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-09/task_result.yaml
+
+remaining_issue: none
+next_task: A-10

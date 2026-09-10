@@ -1,0 +1,41 @@
+task_id: E-10
+task_name: Empty-parent handling
+status: PASS
+
+implemented:
+  - validated the existing PCMCI DesignMatrix empty-parent behavior instead of adding duplicate forecast logic
+  - an empty inter-regional ParentSet reduces the PCMCI condition exactly to the frozen Self-history condition
+  - no arbitrary replacement feature or zero-column estimator path is introduced
+  - verified the resulting Self-equivalent matrix remains valid input to the common Ridge fit/predict pipeline
+
+files_changed:
+  - tests/test_ridge_empty_parent.py
+  - artifacts/setup/E-10/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/forecaster.py
+
+tests:
+  workflow: tests
+  run_id: 34149857891
+  job_id: 101829669707
+  head_sha: 355721042b1bfd01ce51354978d0d9c574521576
+  result: success
+  cases:
+    - empty PCMCI ParentSet produces the exact same X and y as Self
+    - forecast_origin, target_time, valid_mask, feature_names, and feature_lags remain identical to Self
+    - common Ridge fitting succeeds on the Self-equivalent PCMCI matrix
+    - valid predictions remain finite
+
+scientific_checks:
+  - a failed/no-edge discovery does not trigger data-dependent feature substitution
+  - PCMCI remains interpretable as Self plus selected inter-regional information
+  - same Ridge estimator family is retained when no inter-regional parent is selected
+  - no outer-test feedback, Sensitivity method, or h>1 path is introduced
+
+artifacts:
+  - artifacts/setup/E-10/task_result.yaml
+
+remaining_issue: none
+next_task: H-00

@@ -1,0 +1,80 @@
+task_id: F-31
+task_name: Matched sparsity candidate space
+status: PASS
+
+implemented:
+  - defines the Primary matched-sparsity feasible universe as cross-region scalar component features over lags 1..10
+  - excludes the target region because target Self-history is already the fixed baseline block
+  - derives target-component strata from the canonical PCMCI ParentSet
+  - preserves PCMCI-selected links inside the feasible universe rather than adversarially excluding them
+  - canonicalizes candidate ordering independently of region/dimension input ordering
+  - retains outer-train-only Null construction guard
+  - performs no random sampling or repeated sampling; those remain F-32/F-33
+  - fail-closes if frozen region/dimension/lag/cross-region metadata would omit any selected PCMCI ParentLink
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/null_matched_sparsity.py
+  - tests/test_null_matched_sparsity_candidate_space.py
+  - artifacts/setup/F-31/task_result.yaml
+
+implementation_commits:
+  - sha: aec38171eeb9eb033c9577e0d399397d2a7fb4ff
+    message: F-31: define matched-sparsity candidate space
+  - sha: a3c067b69bbe4e3a0451cd132639dedb46522ca3
+    message: F-31: test matched-sparsity candidate space
+  - sha: 9d4b2ec9ffb7fd321cda2b324ca5528ba2806825
+    message: F-31: enforce selected-link candidate coverage
+  - sha: ae9612a58fd52317c57f70f9dc2143ba524aad9d
+    message: F-31: test incomplete candidate universe guards
+
+tests:
+  original_workflow: tests
+  original_run_id: 34164554950
+  original_job_id: 101872914151
+  original_head_sha: a3c067b69bbe4e3a0451cd132639dedb46522ca3
+  original_result: 570 passed, 1 warning in 4.04s
+  reaudit_workflow: tests
+  reaudit_run_id: 34164767383
+  reaudit_head_sha: ae9612a58fd52317c57f70f9dc2143ba524aad9d
+  reaudit_result: success
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-31
+  targeted_checks:
+    - full cross-region region x component x Primary-lag universe
+    - no target-region Self features in candidate space
+    - PCMCI-selected links remain eligible random candidates
+    - canonical output under region/dimension ordering changes
+    - empty ParentSet yields empty candidate space
+    - invalid target region or target component fails closed
+    - selected source region omitted from frozen region universe fails closed
+    - selected source component omitted from frozen dimension universe fails closed
+    - selected lag outside Primary 1..10 candidate domain fails closed
+    - same-region selected ParentLink incompatible with matched-sparsity cross-region universe fails closed
+    - outer-test construction scope fails closed
+    - ParentSet/manifest fold mismatch fails closed
+
+scientific_checks:
+  outer_test_leakage: PASS
+  primary_lag_domain_1_to_10: PASS
+  self_block_excluded_from_random_control_candidates: PASS
+  selected_parent_candidate_coverage: PASS
+  component_provenance_preserved: PASS
+  non_adversarial_random_control_universe: PASS
+  deterministic_candidate_order: PASS
+  random_sampling_not_implemented_early: PASS
+  repeated_sampling_not_implemented_early: PASS
+  sensitivity_contamination: PASS
+
+reaudit:
+  status: PASS
+  fail_type_found: contract mismatch
+  root_cause: candidate-space construction validated target components but did not fail closed when frozen source-region/source-component/lag metadata omitted a selected PCMCI ParentLink
+  minimal_fix: assert every selected ParentLink is a member of the constructed frozen candidate universe
+  regression_scope: current branch also contains F-32 implementation and tests; full tests workflow remained successful after the F-31 fix
+
+artifacts:
+  - artifacts/setup/F-31/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-32

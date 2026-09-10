@@ -1,0 +1,34 @@
+task_id: B-00
+task_name: Subject metadata loader
+status: PASS
+
+implemented:
+  - added UTF-8/UTF-8-BOM CSV subject metadata loader
+  - requires a deterministic header containing subject_id
+  - rejects malformed row widths and duplicate/blank header names
+  - preserves subject_id values exactly for the separate B-01 validation task
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/subject_metadata.py
+  - tests/test_subject_metadata_loader.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+
+tests:
+  workflow: tests
+  run_id: 34146216935
+  job_id: 101818711447
+  head_sha: 143552a16f3c38359f70e8122af33b55166a670f
+  python: 3.11.16
+  result: 117 passed in 1.40s
+
+scientific_checks:
+  - loader performs no subject splitting
+  - loader performs no filtering or selection based on outer-test information
+  - subject ID validity and uniqueness are intentionally deferred to B-01
+  - no preprocessing fitting, discovery, Ridge tuning, Null construction, or Sensitivity logic is introduced
+
+artifacts:
+  - artifacts/setup/B-00/task_result.yaml
+
+remaining_issue: none
+next_task: B-01

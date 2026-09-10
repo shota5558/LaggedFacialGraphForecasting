@@ -1,0 +1,28 @@
+task_id: G-15
+task_name: Lag preservation
+status: BLOCKED
+
+implemented:
+  - no new preservation score added because the repository already freezes lag-response perturbation mechanics, but the metric that converts predicted inter-region timing into a preservation score is not scientifically frozen
+
+scientific_checks:
+  research_plan_metric_semantics_present: PASS
+  lag_response_perturbation_contract_available: PASS
+  exact_lag_preservation_metric_frozen: FAIL
+  estimator_and_comparison_rule_frozen: FAIL
+  outer_test_accessed: false
+
+root_cause:
+  - the research plan defines Lag preservation semantically as whether predicted series retain observed inter-region lag structure
+  - it does not specify the lag estimator, eligible region pairs/components, search range, sign convention, or the distance/agreement score used to compare predicted and observed lags
+  - the existing frozen lag-response grid answers a related perturbation question but is not itself a Lag preservation metric
+
+minimal_fix_required_before_retry:
+  - freeze the lag estimator and eligible region/component pairs
+  - freeze search range/sign convention and missing/ambiguous-lag policy
+  - freeze the preservation score and aggregation unit
+  - add synthetic known-lag recovery tests before enabling G-15
+
+scientific_specification_changed: false
+outer_test_accessed: false
+primary_results_generated: false

@@ -1,0 +1,51 @@
+task_id: F-11
+task_name: Lag-shift boundary handling
+status: PASS
+
+implemented:
+  - froze the valid Primary lag-shift domain to the existing direct-h=1 discovery domain 1 <= tau <= 10
+  - validates both source ParentSet lags and shifted lags against the frozen domain
+  - rejects any shift that would cross either boundary
+  - explicitly forbids clipping, wrapping, dropping features, or substituting another shift
+  - preserves F-10 region/component/feature-count invariants
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/null_lag_shift.py
+  - tests/test_null_lag_shift.py
+  - artifacts/setup/F-11/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/pcmci_lagged_filter.py
+  - src/lagged_facial_graph_forecasting/pcmci_tau_max.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+  - src/lagged_facial_graph_forecasting/leakage_guard.py
+
+tests:
+  workflow: tests
+  run_id: 34162809213
+  job_id: 101867920482
+  head_sha: 5c1467f9de5edd9eff889054c76cf1e879ada769
+  python: 3.11.16
+  result: 537 passed, 1 warning in 3.90s
+  targeted_checks:
+    - lower-bound crossing rejected
+    - upper-bound crossing rejected
+    - no clipping/wrapping/dropping behavior
+    - source ParentSet outside Primary lag domain rejected
+    - existing F-10 preservation and outer-test leakage tests remain PASS
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-11
+
+scientific_checks:
+  - boundary derives only from already-frozen h=1 and tau_max=10
+  - feature count cannot change because of boundary handling
+  - no result-dependent choice of alternate shift is permitted
+  - outer-test remains excluded from Null construction
+  - no Sensitivity Null is introduced
+
+artifacts:
+  - artifacts/setup/F-11/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-12

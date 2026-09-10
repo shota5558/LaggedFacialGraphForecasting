@@ -1,0 +1,52 @@
+task_id: C-06
+task_name: PCMCI ParentSet matrix
+status: PASS
+
+fail_history:
+  prior_record_mismatch: true
+  fail_type: contract mismatch
+  root_cause: the earlier artifact described PCMCI as ParentSet-only and rejected an empty ParentSet, which does not preserve the fixed Self-history baseline required for an incremental Self-vs-PCMCI comparison
+  resolution: PCMCI matrix now contains the exact fixed Self-history block plus only selected inter-regional ParentSet links; discovered self-links are not duplicated and an empty inter-regional ParentSet deterministically reduces PCMCI to Self
+
+implemented:
+  - build_pcmci_parent_design_matrix consumes the canonical ParentSet contract without a Tigramite dependency
+  - the fixed Self-history block is included first using the same target-relative self lags as the Self condition
+  - only selected inter-regional ParentSet links are appended as incremental features
+  - ParentSet links whose source is the target region are not duplicated into the fixed Self block
+  - empty inter-regional ParentSet deterministically falls back to the identical Self matrix rather than using evaluation outcomes to choose another input set
+  - feature ordering and region/dimension/lag provenance are deterministic and lossless
+  - missingness propagates across both fixed Self and selected inter-regional features
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - tests/test_pcmci_parent_design_matrix.py
+  - artifacts/setup/C-06/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34149026741
+  job_id: 101827151606
+  head_sha: c436c5510015c4a6b902e09050ca1ae666db773b
+  python: 3.11.16
+  result: 196 passed in 1.75s
+  direct_cases:
+    - PCMCI is fixed Self plus selected inter-regional ParentSet links
+    - Self feature set is a strict subset of non-empty PCMCI and PCMCI is a subset of Full for the same lag space
+    - PCMCI uses the exact same Self feature block/alignment as the Self condition
+    - empty inter-regional ParentSet reduces deterministically to Self
+    - discovered self links are not duplicated
+    - parent/target missingness and h=1 alignment remain enforced
+
+scientific_checks:
+  - the Self-vs-PCMCI comparison is nested and therefore measures incremental inter-regional information rather than changing the Self baseline
+  - ParentSet remains the canonical discovery-to-forecasting boundary
+  - no Tigramite API enters the Ridge/design-matrix layer
+  - no outer-test-dependent feature fallback, parent selection, lag selection, fitting, or Null construction is introduced
+  - Primary h=1 and target-relative lag semantics remain frozen
+  - no Sensitivity method is introduced
+
+artifacts:
+  - artifacts/setup/C-06/task_result.yaml
+
+remaining_issue: none
+next_task: C-07

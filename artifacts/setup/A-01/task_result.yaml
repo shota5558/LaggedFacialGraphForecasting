@@ -1,0 +1,46 @@
+task_id: A-01
+task_name: Timestamp validation
+status: PASS
+
+implemented:
+  - added raw timestamp validation aligned with the canonical FaceTimeSeries time_index contract
+  - requires one-dimensional, non-empty, numeric, finite, strictly increasing observed timestamps
+  - optionally verifies timestamp count against an expected frame count
+  - accepts irregular positive sampling intervals and does not resample, interpolate, reorder, or repair timestamps
+  - returns an immutable copy of validated observed timestamps
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/preprocessing.py
+  - tests/test_timestamp_validation.py
+  - artifacts/setup/A-01/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34151343579
+  job_id: 101834110389
+  head_sha: fe8f064c3e9eca133d5242ecf4c6fa500fab74eb
+  python: 3.11.16
+  result: success
+  suite_result: 273 passed in 1.87s
+  cases:
+    - strictly increasing irregular timestamps are accepted unchanged
+    - duplicate timestamps are rejected
+    - decreasing timestamps are rejected
+    - NaN and infinity are rejected
+    - empty, nonnumeric, and nonvector timestamps are rejected
+    - frame-count mismatch is rejected
+    - invalid expected-frame-count parameters are rejected
+
+scientific_checks:
+  - timestamp validation performs no data-dependent fitting
+  - observed temporal order is validated but never repaired or selected using outer-test outcomes
+  - no uniform-sampling assumption is introduced
+  - no interpolation policy is introduced before A-13
+  - no landmark-shape semantics are introduced before A-02
+  - no PCMCI+, Null, Sensitivity, or h>1 path is introduced
+
+artifacts:
+  - artifacts/setup/A-01/task_result.yaml
+
+remaining_issue: none
+next_task: A-02

@@ -1,0 +1,55 @@
+task_id: F-40
+task_name: Time-shuffle Null contract
+status: PASS
+
+implemented:
+  - freezes the Primary coarse time-shuffle rule as a canonical NullMapping
+  - preserves the exact PCMCI-selected ParentLinks and all region/lag/component provenance
+  - records SplitManifest.seed as stochastic provenance
+  - deliberately leaves permutation unrealized at the outer-train construction boundary
+  - avoids consulting outer-test row counts or values during Null construction
+  - defers permutation generation to F-41 and deterministic application to F-42
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/null_time_shuffle.py
+  - tests/test_null_time_shuffle.py
+  - artifacts/setup/F-40/task_result.yaml
+
+implementation_commits:
+  - sha: 31dec41e074b2abdf05c436c43cada0cb50008be
+    message: F-40: add time-shuffle Null contract
+  - sha: 6f7b6a85ccf943852f598c2f662b6fa8945b5302
+    message: F-40: test time-shuffle Null contract
+
+tests:
+  workflow: tests
+  run_id: 34164973668
+  job_id: 101874114204
+  head_sha: 6f7b6a85ccf943852f598c2f662b6fa8945b5302
+  result: 598 passed, 1 warning in 4.97s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-40
+  targeted_checks:
+    - condition and seed provenance are frozen
+    - source and mapped ParentLinks remain identical
+    - no permutation is realized during outer-train Null construction
+    - empty ParentSet does not invent features
+    - outer-test construction scope fails closed
+    - ParentSet/manifest fold mismatch fails closed
+
+scientific_checks:
+  outer_test_leakage: PASS
+  parent_identity_preserved: PASS
+  lag_identity_preserved: PASS
+  component_identity_preserved: PASS
+  permutation_generation_not_implemented_early: PASS
+  permutation_application_not_implemented_early: PASS
+  time_shuffle_remains_primary_coarse_null: PASS
+  sensitivity_surrogate_contamination: PASS
+
+artifacts:
+  - artifacts/setup/F-40/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-41

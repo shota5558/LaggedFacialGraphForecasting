@@ -1,0 +1,26 @@
+task_id: G-14
+task_name: Onset timing error
+status: BLOCKED
+
+implemented:
+  - no onset-timing implementation added because onset detection is not operationally frozen and Issue #15 explicitly marks advanced peak/onset processing as non-blocking
+
+scientific_checks:
+  research_plan_metric_semantics_present: PASS
+  exact_operational_definition_frozen: FAIL
+  onset_threshold_frozen: FAIL
+  baseline_hysteresis_and_no_onset_policy_frozen: FAIL
+  outer_test_accessed: false
+
+root_cause:
+  - the research plan defines Onset timing error as motion-start timing error but does not specify thresholding, baseline estimation, persistence/hysteresis, smoothing, or no-onset handling
+
+minimal_fix_required_before_retry:
+  - freeze the onset signal and any smoothing
+  - freeze threshold/baseline/persistence rules and no-onset policy
+  - freeze timing units
+  - add deterministic boundary and missingness tests before enabling G-14
+
+scientific_specification_changed: false
+outer_test_accessed: false
+primary_results_generated: false
