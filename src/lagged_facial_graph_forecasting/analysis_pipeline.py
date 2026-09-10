@@ -17,8 +17,14 @@ import numpy as np
 import pandas as pd
 from scipy.stats import bootstrap as scipy_bootstrap
 
-ANALYSIS_SCHEMA_VERSION = 2
-ANALYSIS_CODE_VERSION = "issue23-analysis-v2"
+from .sensitivity_execution import (
+    SensitivityExperimentConfig,
+    SensitivityExecutionMode,
+    validate_primary_freeze_manifest,
+)
+
+ANALYSIS_SCHEMA_VERSION = 3
+ANALYSIS_CODE_VERSION = "issue23-analysis-v3"
 SYNTHETIC_NOTICE = "FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS"
 PRIMARY_CONDITIONS = ("persistence", "self", "full", "pcmci")
 LAG_GRID = (-2, -1, 0, 1, 2)
@@ -49,11 +55,11 @@ class AnalysisInputs:
     null_metrics: Path
     lag_response: Path
     edge_stability: Path
-    sensitivity: Path
+    sensitivity: Path | None
     prediction_trajectory: Path
 
     @classmethod
-    def from_directory(cls, root: str | Path) -> "AnalysisInputs":
+    def from_directory(cls, root: str | Path, *, include_sensitivity: bool = False) -> "AnalysisInputs":
         root = Path(root)
 
         def pick(stem: str, suffix: str = ".csv") -> Path:
@@ -70,11 +76,11 @@ class AnalysisInputs:
             null_metrics=pick("null_metrics"),
             lag_response=pick("lag_response"),
             edge_stability=pick("edge_stability"),
-            sensitivity=pick("sensitivity"),
+            sensitivity=pick("sensitivity") if include_sensitivity else None,
             prediction_trajectory=pick("prediction_trajectory"),
         )
 
-    def paths(self) -> tuple[Path, ...]:
+    def paths(self, *, include_sensitivity: bool = False) -> tuple[Path, ...]:
         return (
             self.dataset_summary,
             self.primary_config,
@@ -83,9 +89,8 @@ class AnalysisInputs:
             self.null_metrics,
             self.lag_response,
             self.edge_stability,
-            self.sensitivity,
             self.prediction_trajectory,
-        )
+        ) + ((self.sensitivity,) if include_sensitivity and self.sensitivity is not None else ())
 
 
 @dataclass(frozen=True, slots=True)
@@ -874,6 +879,7 @@ def generate_analysis_outputs(
     include_sensitivity: bool = False,
     primary_frozen: bool = False,
     allow_mock_sensitivity: bool = False,
+    sensitivity_config: SensitivityExperimentConfig | None = None,
 ) -> AnalysisRunResult:
     repository_root = Path(repository_root).resolve()
     with inputs.primary_config.open("r", encoding="utf-8") as handle:
@@ -886,13 +892,41 @@ def generate_analysis_outputs(
         "null_metrics": _read_csv(inputs.null_metrics),
         "lag_response": _read_csv(inputs.lag_response),
         "edge_stability": _read_csv(inputs.edge_stability),
-        "sensitivity": _read_csv(inputs.sensitivity),
         "prediction_trajectory": _read_csv(inputs.prediction_trajectory),
     }
+    if include_sensitivity:
+        if inputs.sensitivity is None:
+            raise AnalysisOutputError("required analysis input missing: sensitivity.csv")
+        frames["sensitivity"] = _read_csv(inputs.sensitivity)
     synthetic = _validate_provenance(frames, config)
+    freeze_reference = None
+    # A caller-provided boolean is not evidence of PRIMARY FREEZE.
+    primary_frozen = False
+    if include_sensitivity:
+        if synthetic:
+            if not allow_mock_sensitivity:
+                raise AnalysisOutputError("Sensitivity outputs are forbidden before Primary freeze without explicit mock verification")
+        else:
+            if not isinstance(sensitivity_config, SensitivityExperimentConfig) or sensitivity_config.execution_mode is not SensitivityExecutionMode.REAL:
+                raise AnalysisOutputError("real Sensitivity requires a real sensitivity_config and validated Primary freeze")
+            validate_primary_freeze_manifest(sensitivity_config, repository_root=repository_root)
+            freeze_reference = {
+                "source_primary_freeze_manifest": sensitivity_config.primary_freeze_manifest,
+                "source_primary_freeze_sha256": _file_hash(repository_root / sensitivity_config.primary_freeze_manifest),
+            }
+            _require_columns(frames["sensitivity"], freeze_reference, "sensitivity")
+            for key, value in freeze_reference.items():
+                if not frames["sensitivity"][key].eq(value).all():
+                    raise AnalysisOutputError(f"Sensitivity Primary reference mismatch: {key}")
+            primary_frozen = True
     if synthetic and publication_ready:
         raise AnalysisOutputError("synthetic analysis outputs can never be publication-ready")
-    required_root = (repository_root / ("artifacts/mock_analysis" if synthetic else "artifacts/analysis")).resolve()
+    output_namespace = "artifacts/analysis"
+    if synthetic:
+        output_namespace = "artifacts/mock_analysis"
+    elif include_sensitivity:
+        output_namespace = "artifacts/sensitivity/analysis"
+    required_root = (repository_root / output_namespace).resolve()
     root = Path(output_root).resolve() if output_root is not None else required_root
     try:
         root.relative_to(required_root)
@@ -902,12 +936,12 @@ def generate_analysis_outputs(
     primary_metric = _primary_metric(frames["metrics"], config)
     config_hash = _json_hash(config)
     seed = int(config.get("seed", 0))
-    input_records = [{"name": path.name, "sha256": _file_hash(path)} for path in inputs.paths()]
+    input_records = [{"name": path.name, "sha256": _file_hash(path)} for path in inputs.paths(include_sensitivity=include_sensitivity)]
     generated: list[Path] = []
     records: list[dict[str, object]] = []
 
     def source_names(*names: str) -> list[str]:
-        mapping = {p.stem.removeprefix("mock_"): p.name for p in inputs.paths()}
+        mapping = {p.stem.removeprefix("mock_"): p.name for p in inputs.paths(include_sensitivity=include_sensitivity)}
         return [mapping.get(name, name) for name in names]
 
     def register(paths: Sequence[Path], output_id: str, sources: Sequence[str], metric: str | None, aggregation: str) -> None:
@@ -989,6 +1023,7 @@ def generate_analysis_outputs(
         "synthetic_notice": SYNTHETIC_NOTICE if synthetic else None,
         "publication_ready": bool(publication_ready and not synthetic),
         "primary_frozen": bool(primary_frozen),
+        "primary_freeze_reference": freeze_reference,
         "sensitivity_included": bool(include_sensitivity),
         "sensitivity_validation_scope": "software_only_mock" if (include_sensitivity and synthetic) else ("post_primary_freeze" if include_sensitivity else "not_generated"),
         "figure_source_reconciliation": "every figure reads its serialized canonical source CSV before rendering",

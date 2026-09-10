@@ -25,7 +25,7 @@ FIXTURE_ROOT = Path("data/mock_analysis")
 
 
 def _inputs() -> AnalysisInputs:
-    return AnalysisInputs.from_directory(FIXTURE_ROOT)
+    return AnalysisInputs.from_directory(FIXTURE_ROOT, include_sensitivity=True)
 
 
 def _config() -> dict[str, object]:
@@ -175,7 +175,17 @@ def test_stability_validates_tau_max_frequency_and_missing_vs_zero() -> None:
     assert pd.isna(missing.fold_selection_frequency)
 
 
-def test_primary_outputs_can_be_generated_without_sensitivity_execution(tmp_path: Path) -> None:
+def test_primary_outputs_can_be_generated_without_sensitivity_execution(tmp_path: Path, monkeypatch) -> None:
+    import lagged_facial_graph_forecasting.analysis_pipeline as pipeline
+    original_read, original_hash = pipeline._read_csv, pipeline._file_hash
+    def read(path):
+        assert "sensitivity" not in path.name
+        return original_read(path)
+    def digest(path):
+        assert "sensitivity" not in path.name
+        return original_hash(path)
+    monkeypatch.setattr(pipeline, "_read_csv", read)
+    monkeypatch.setattr(pipeline, "_file_hash", digest)
     result = generate_analysis_outputs(_inputs(), repository_root=tmp_path, include_sensitivity=False)
     assert (result.output_root / "tables/T03_primary_condition_performance.csv").is_file()
     assert not (result.output_root / "tables/T09_sensitivity_summary.csv").exists()
@@ -206,3 +216,86 @@ def test_mock_generator_emits_issue23_v2_contract_columns(tmp_path: Path) -> Non
     assert {"same_region_identity", "same_feature_count"}.issubset(lag.columns)
     config = json.loads((tmp_path / "mock_primary_config.json").read_text(encoding="utf-8"))
     assert config["evaluation"]["primary_metric"] == "velocity_rmse"
+
+
+def test_primary_only_never_resolves_reads_or_hashes_sensitivity(tmp_path, monkeypatch):
+    import shutil
+    import lagged_facial_graph_forecasting.analysis_pipeline as pipeline
+    source = tmp_path / "input"
+    shutil.copytree(FIXTURE_ROOT, source)
+    (source / "mock_sensitivity.csv").unlink()
+    inputs = AnalysisInputs.from_directory(source)
+    assert inputs.sensitivity is None
+    original_read, original_hash = pipeline._read_csv, pipeline._file_hash
+    def read(path):
+        assert "sensitivity" not in path.name
+        return original_read(path)
+    def digest(path):
+        assert "sensitivity" not in path.name
+        return original_hash(path)
+    monkeypatch.setattr(pipeline, "_read_csv", read)
+    monkeypatch.setattr(pipeline, "_file_hash", digest)
+    result = generate_analysis_outputs(inputs, repository_root=tmp_path)
+    registry = pd.read_csv(result.registry_path)
+    assert set(registry.output_id) - {"CAPTIONS"} == ({f"T{i:02}" for i in range(1, 9)} | {f"F{i:02}" for i in range(1, 15) if i != 10})
+    manifest = json.loads(result.manifest_path.read_text())
+    assert not any("sensitivity" in row["name"] for row in manifest["input_artifacts"])
+    with pytest.raises(AnalysisOutputError, match="sensitivity.csv"):
+        AnalysisInputs.from_directory(source, include_sensitivity=True)
+    # Even an existing malformed file must be ignored in Primary-only mode.
+    (source / "mock_sensitivity.csv").write_text("invalid")
+    assert AnalysisInputs.from_directory(source).sensitivity is None
+
+
+@pytest.mark.parametrize("failure", [None, "missing", "incomplete", "tampered", "reference", "boolean"])
+def test_real_analysis_validates_freeze_before_writing(tmp_path, failure):
+    import shutil
+    from test_sensitivity_freeze_barrier import _config as barrier_config, _write_complete_freeze
+    from lagged_facial_graph_forecasting.sensitivity_execution import (
+        PRIMARY_FREEZE_MANIFEST_PATH, SensitivityExecutionMode, SensitivityExecutionError,
+    )
+    source = tmp_path / "input"
+    shutil.copytree(FIXTURE_ROOT, source)
+    for path in source.glob("*.csv"):
+        frame = pd.read_csv(path)
+        # Isolated contract fixture, never evidence of real-data validation.
+        if "subject_id" in frame:
+            frame["subject_id"] = frame["subject_id"].str.replace("MOCK_S", "FIXTURE_S", regex=False)
+        frame["is_synthetic"] = False
+        if "synthetic_notice" in frame:
+            frame["synthetic_notice"] = ""
+        frame.to_csv(path, index=False)
+    config_path = source / "mock_primary_config.json"
+    config = json.loads(config_path.read_text())
+    config["is_synthetic"] = False
+    config_path.write_text(json.dumps(config))
+    manifest = _write_complete_freeze(tmp_path)
+    manifest_path = tmp_path / PRIMARY_FREEZE_MANIFEST_PATH
+    sensitivity_path = source / "mock_sensitivity.csv"
+    frame = pd.read_csv(sensitivity_path)
+    frame["source_primary_freeze_manifest"] = PRIMARY_FREEZE_MANIFEST_PATH
+    frame["source_primary_freeze_sha256"] = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    if failure == "reference":
+        frame["source_primary_freeze_sha256"] = "0" * 64
+    frame.to_csv(sensitivity_path, index=False)
+    if failure == "missing":
+        manifest_path.unlink()
+    elif failure == "incomplete":
+        manifest["artifacts"].pop()
+        manifest_path.write_text(json.dumps(manifest))
+    elif failure == "tampered":
+        (tmp_path / manifest["artifacts"][0]["relative_path"]).write_text("changed")
+    kwargs = dict(repository_root=tmp_path, include_sensitivity=True, primary_frozen=True,
+                  sensitivity_config=None if failure == "boolean" else barrier_config(SensitivityExecutionMode.REAL))
+    inputs = AnalysisInputs.from_directory(source, include_sensitivity=True)
+    if failure:
+        with pytest.raises((AnalysisOutputError, SensitivityExecutionError)):
+            generate_analysis_outputs(inputs, **kwargs)
+        assert not (tmp_path / "artifacts/sensitivity/analysis").exists()
+    else:
+        result = generate_analysis_outputs(inputs, **kwargs)
+        assert result.output_root == (tmp_path / "artifacts/sensitivity/analysis").resolve()
+        assert not (tmp_path / "artifacts/analysis").exists()
+        saved = json.loads(result.manifest_path.read_text())
+        assert saved["primary_frozen"] is True
+        assert saved["primary_freeze_reference"]["source_primary_freeze_sha256"] == frame.source_primary_freeze_sha256.iloc[0]
