@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import shutil
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -147,6 +148,37 @@ def test_population_source_rejects_reference_drift() -> None:
     frame.loc[0, "reference_error"] += 0.5
     with pytest.raises(AnalysisOutputError, match="complete-unit"):
         population_sources(frame, _config())
+
+
+@pytest.mark.parametrize("aggregation", ["median", "mean"])
+def test_population_ci_resamples_whole_subjects_with_the_point_estimand(aggregation) -> None:
+    template = _population_frame().iloc[0].to_dict()
+    clusters = ([0.0, 0.0, 100.0], [10.0], [20.0, 40.0])
+    rows = []
+    for subject, values in enumerate(clusters):
+        for edge, value in enumerate(values):
+            for delta in (-1, 0, 1):
+                rows.append({**template, "subject_id": f"s{subject}", "edge_id": f"e{edge}",
+                             "delta": delta, "shifted_lag": 2 + delta,
+                             "reference_error": 1.0,
+                             "shifted_error": 1.0 + (value if delta else 0.0)})
+    config = _config()
+    config["population"]["aggregation_id"] = f"{aggregation}_edge_subject"
+    frame = pd.DataFrame(rows)
+    _, summary = population_sources(frame, config)
+    point = summary.loc[summary.delta_frames == 1].iloc[0]
+    statistic = getattr(np, aggregation)
+    draws = np.random.default_rng(config["seed"]).integers(
+        0, len(clusters), size=(config["statistics"]["bootstrap_n_resamples"], len(clusters))
+    )
+    bootstrap_values = [statistic([v for i in draw for v in clusters[i]]) for draw in draws]
+    low, high = np.percentile(bootstrap_values, [2.5, 97.5])
+    assert point.point_estimate == pytest.approx(statistic(np.concatenate(clusters)))
+    assert (point.ci_low, point.ci_high) == pytest.approx((low, high))
+    assert point.median_edge_subject_difference == pytest.approx(15.0)
+    assert point.n_subjects == 3 and point.n_edge_subject_units == 6
+    _, reordered = population_sources(frame.iloc[::-1], config)
+    pd.testing.assert_frame_equal(summary, reordered)
 
 
 def test_extended_sources_validate_and_reconcile() -> None:

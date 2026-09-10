@@ -1,5 +1,12 @@
 # Issue implementation — 2026-09-10
 
+## Population subject-cluster CI correction — 2026-09-11 (#35 / R-19)
+
+- Replaced bootstrap of subject medians with bootstrap of subject IDs carrying every associated edge. Each resample uses the configured edge-subject point estimator (median or mean), preserving unequal cluster sizes and repeated cluster draws.
+- Added `point_estimate` for the configured estimator while keeping the median/mean columns numerically literal. Population figures now display that point estimate with its corresponding interval. Interval lines do not assume that percentile CIs contain the point estimate.
+- Summary records include bootstrap seed/count and fixed-discovery/fitted-model conditioning; the caption states this scope. Scientific selection of the estimator/context and real-run approval remain unresolved; this corrects the existing configurable software path only.
+- Validation: `.venv/Scripts/python.exe -m pytest tests/test_extended_analysis_outputs.py tests/test_population_response.py -o addopts='' -q -p no:cacheprovider --basetemp tmp/pytest-cluster-ci` — 34 passed. Unequal-edge fixtures verify both estimators against independent seeded resampling and check row-order invariance; existing synthetic table/figure generation passes. No runner changes or real experiments.
+
 ## Individual population analysis correction — 2026-09-11 (#35 / R-19)
 
 - The edge-response reducer compares every delta's reference error against delta zero. A changed baseline is rejected even when identity and support digests match, regardless of delta ordering.

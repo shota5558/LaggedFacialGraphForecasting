@@ -1305,21 +1305,35 @@ def population_sources(population: pd.DataFrame, config: Mapping[str, object]) -
     eligible = out[out.population_evaluable].copy()
     rows: list[dict[str, object]] = []
     for aggregate in aggregates:
-        subject_values = (
-            eligible[eligible.delta_frames == aggregate.delta]
-            .groupby("subject_id", sort=True)
-            .difference.median()
+        delta_rows = eligible[eligible.delta_frames == aggregate.delta]
+        clusters = tuple(
+            group.sort_values(["outer_fold", "edge_id"]).difference.to_numpy(dtype=float)
+            for _, group in delta_rows.groupby("subject_id", sort=True)
         )
-        median, low, high = _bootstrap_median(
-            subject_values, n_resamples=n_resamples, seed=seed, method=method
-        )
+        if len(clusters) < 2:
+            raise AnalysisOutputError("population bootstrap requires at least two subjects")
+
+        def cluster_statistic(indices):
+            return aggregators[aggregation_id](
+                np.concatenate([clusters[int(index)] for index in indices])
+            )
+
+        interval = scipy_bootstrap(
+            (np.arange(len(clusters)),), cluster_statistic,
+            confidence_level=0.95, n_resamples=n_resamples, method=method,
+            vectorized=False, random_state=np.random.default_rng(seed),
+        ).confidence_interval
         rows.append({
             "delta_frames": aggregate.delta,
             "delta_ms": 1000.0 * aggregate.delta / sampling_rate,
-            "median_edge_subject_difference": aggregate.value,
+            "point_estimate": aggregate.value,
+            "median_edge_subject_difference": float(delta_rows.difference.median()),
             "mean_edge_subject_difference": float(eligible.loc[eligible.delta_frames == aggregate.delta, "difference"].mean()),
-            "ci_low": low,
-            "ci_high": high,
+            "ci_low": float(interval.low),
+            "ci_high": float(interval.high),
+            "bootstrap_seed": seed,
+            "bootstrap_n_resamples": n_resamples,
+            "ci_conditioning": "fixed_discovery_and_fitted_models",
             "confidence_level": 0.95,
             "n_subjects": aggregate.n_subjects,
             "n_edges": aggregate.n_edges,
@@ -1476,11 +1490,12 @@ def _plot_population(source: pd.DataFrame, path: Path, synthetic: bool) -> list[
     plt = _import_pyplot()
     source = source.sort_values("delta_ms", kind="stable")
     x = source.delta_ms.astype(float).to_numpy()
-    y = source.median_edge_subject_difference.astype(float).to_numpy()
+    y = source.point_estimate.astype(float).to_numpy()
     low = source.ci_low.astype(float).to_numpy()
     high = source.ci_high.astype(float).to_numpy()
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.errorbar(x, y, yerr=[y - low, high - y], marker="o", capsize=4)
+    ax.plot(x, y, marker="o")
+    ax.vlines(x, low, high)
     ax.axvline(0, linestyle="--", linewidth=1)
     ax.axhline(0, linewidth=1)
     ax.set_xlabel("Edge-centered lag shift Δ (ms)")
@@ -1499,7 +1514,7 @@ def _caption_contract(synthetic: bool, *, include_extended: bool = False) -> dic
         captions.update({
             "LANDSCAPE": prefix + "All candidate cells are retained. G = E_self − E_self+cell; cell ranking is exploratory.",
             "ENRICHMENT": prefix + "Selected and matched cell-gain repeats are preserved; repeats are not treated as subjects.",
-            "POPULATION": prefix + "Edge-centered response uses a complete symmetric Δ grid and a common support per edge/subject.",
+            "POPULATION": prefix + "Edge-centered response uses a complete symmetric Δ grid and common support per edge/subject. The configured point estimator is also used for subject-cluster percentile CIs, retaining all edges of each resampled subject and conditioning on fixed discovery and fitted models.",
         })
     return captions
 
