@@ -1,5 +1,13 @@
 # Issue implementation — 2026-09-10
 
+## Implemented locally: #25 / R-01
+
+- Added a single authority registry and migration gate document linking the source versions and SHA-256 values to the repository plans, decision record, requirement matrix, posted Issues and acceptance evidence.
+- Recorded explicit dispositions for the v6/new-plan conflicts: 100 vs 1,000 repeats, common-shift vs edge-centered response, component vs region-block cells, cell aggregation vs joint-set gain, and optional nonlinear/Sensitivity methods.
+- Replaced the placeholder README with the repository entry points and a warning that Scientific Freeze v6 remains the execution contract until R-02/R-03 decisions and a versioned migration are complete.
+
+Validation: source hashes, issue links, conflict ownership and migration gates were reconciled against `docs/experimental_plan.md`, `docs/detailed_design.md`, `docs/audit-report.md`, `docs/requirement-matrix.md`, and the current GitHub open-Issue list. This is documentation completion only; it does not authorize a real run or close downstream decision/experiment Issues.
+
 ## Implemented locally: #31 / R-07a and #32 / R-07b
 
 - Primary-only input discovery, CSV loading, provenance validation and input hashing no longer depend on Sensitivity. The 21 Primary output IDs exclude T09/F10.
