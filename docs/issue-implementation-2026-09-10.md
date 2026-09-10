@@ -28,8 +28,17 @@ Validation: `python -m pytest tests/test_analysis_pipeline.py tests/test_sensiti
 
 Full regression: `python -m pytest` — 773 passed, 2 skipped, 3 Tigramite single-dataset warnings. Local Python 3.12 uses the project dependency ranges installed under `tmp/test-deps`; this directory is ignored by Git. No experimental data were used.
 
+## Implemented locally: #30 / R-06 statistics contract (software portion)
+
+- Analysis input validation now requires an explicit frozen `velocity_rmse` primary metric and a non-negative experiment seed; metric and seed fallback selection is rejected.
+- Matched-sparsity input requires the configured repeat count, non-empty replicate IDs and seeds, exact PCMCI evaluation-unit coverage, and no duplicate or missing repeats.
+- T07 aggregates repeat medians within each subject-region before the subject summary, and records the aggregation order in its output. A skewed `[0, 0, 9]` fixture guards against reverting to the previous mean behavior.
+- The synthetic fixture config now declares its one-repeat software-test contract explicitly; it is not a replacement for the v6 real-run count or the pending 1,000-repeat migration.
+
+Validation: `.venv\Scripts\python.exe -m pytest --basetemp tmp\pytest-r06-2 -q tests/test_analysis_pipeline.py tests/test_primary_statistics_orchestration.py tests/test_subject_level_paired_difference.py tests/test_scientific_config.py tests/test_runner_config.py tests/test_mock_analysis_data.py` — passed. This closes only the software validation portion; R-03 still owns unresolved scientific aggregation and migration decisions. No GitHub Issue was closed and no real experiment was run.
+
 ## Remaining dependencies
 
 The untracked decision record `adopted_decisions_2026-09-10.md` changes the planned main representation/metric and several aggregation/null rules. Neither those decisions nor provisional numerical candidates have been silently written into the frozen v6 protocol.
 
-R-01/R-02/R-03 still require migration and resolution of the dataset, extractor/landmark topology, calibration/QC thresholds, usable time, candidate/history ranges, component projection and inferential rules. Implementations that depend on those choices and real runs (#16–21, #33–39 and real table/figure acceptance) must retain their respective prerequisites. Existing software-only and mock evidence is not promoted to experimental completion. No GitHub Issue was closed and no PR or result was published by this change.
+R-01/R-02/R-03 still require migration and resolution of the dataset, extractor/landmark topology, calibration/QC thresholds, usable time, candidate/history ranges, component projection and inferential rules. R-06 remains software-complete only until those approved aggregation and migration decisions are connected to the real protocol. Implementations that depend on those choices and real runs (#16–21, #33–39 and real table/figure acceptance) must retain their respective prerequisites. Existing software-only and mock evidence is not promoted to experimental completion. No GitHub Issue was closed and no PR or result was published by this change.
