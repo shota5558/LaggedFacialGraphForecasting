@@ -79,7 +79,10 @@ def aggregate_lag_response_metrics(
 
     ``metrics_by_delta`` must contain exactly ``[-2,-1,0,1,2]``.  Every delta must
     contain the same ``outer_fold × subject × region × metric`` keys and the same
-    condition label.  Any metric row whose target fold is absent or unevaluable is
+    condition label and valid-row count for each key. Every evaluable target fold
+    must contribute. Counts cannot establish exact timestamp/dimension support;
+    callers must validate that support on raw predictions before reduction.
+    Any metric row whose target fold is absent or unevaluable is
     rejected; no clipping, one-sided grid, feature dropping, or support drift can
     enter the aggregate silently.
     """
@@ -162,6 +165,25 @@ def aggregate_lag_response_metrics(
 
     assert reference_support is not None
     assert common_condition is not None
+
+    expected_folds = {
+        key for key, grid in grid_by_key.items() if grid.status == LAG_RESPONSE_EVALUABLE
+    }
+    for delta, indexed in indexed_by_delta.items():
+        for key, row in indexed.items():
+            if row.n_valid != indexed_by_delta[0][key].n_valid:
+                raise ValueError(
+                    f"lag-response n_valid differs for {key!r} at delta={delta}"
+                )
+        for metric_name in {key[3] for key in reference_support}:
+            observed_folds = {
+                (key[0], key[2]) for key in indexed if key[3] == metric_name
+            }
+            if observed_folds != expected_folds:
+                raise ValueError(
+                    "missing metrics for evaluable target folds: "
+                    f"metric={metric_name}, missing={sorted(expected_folds - observed_folds)}"
+                )
 
     grouped_support: dict[tuple[str, str], list[tuple[int, str, str, str]]] = defaultdict(list)
     for key in sorted(reference_support):

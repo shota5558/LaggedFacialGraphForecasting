@@ -1,5 +1,12 @@
 # Issue implementation — 2026-09-10
 
+## Individual analysis correction — 2026-09-11 (#29 / #30)
+
+- The legacy v6 lag-response reducer now rejects differing valid-row counts across deltas, including drift at delta zero.
+- Each metric must cover every evaluable target fold. A fold missing from all deltas can no longer inflate the reported evaluable-fold denominator.
+- Validation: `.venv/Scripts/python.exe -m pytest tests/test_lag_response_statistics.py tests/test_population_response.py tests/test_primary_statistics_orchestration.py -q -p no:cacheprovider` — 21 passed, including 7 new regression cases.
+- Scope: individual reducer correctness only. Counts do not prove exact timestamp/dimension support; raw prediction support validation remains required. This does not implement the new edge-centered estimand, change scientific decisions, or complete #29/#30. No runner changes or real experiments.
+
 ## Implemented locally: #25 / R-01
 
 - Added a single authority registry and migration gate document linking the source versions and SHA-256 values to the repository plans, decision record, requirement matrix, posted Issues and acceptance evidence.
