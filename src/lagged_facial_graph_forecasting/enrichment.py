@@ -224,6 +224,7 @@ def reduce_cell_gain_enrichment(
     if len(set(repeat_ids)) != len(repeat_ids):
         raise EnrichmentContractError("matched repeat IDs must be unique")
     grid_candidates = set(candidate_grid.candidates)
+    gains_by_candidate: dict[LandscapeCandidate, float] = {}
 
     def validate_observations(
         observations: Sequence[CellGainObservation], *, label: str
@@ -247,6 +248,10 @@ def reduce_cell_gain_enrichment(
                 raise EnrichmentContractError(
                     f"{label} support digest does not match unit support"
                 )
+            if gains_by_candidate.setdefault(item.candidate, item.gain) != item.gain:
+                raise EnrichmentContractError(
+                    f"{label} changes gain for the same landscape candidate"
+                )
         feature_units = {item.candidate.feature_unit for item in observations}
         if len(feature_units) > 1:
             raise EnrichmentContractError(
@@ -260,6 +265,10 @@ def reduce_cell_gain_enrichment(
         if len(repeat.observations) != len(selected):
             raise EnrichmentContractError(
                 f"repeat {repeat.repeat_id!r} does not match selected feature count"
+            )
+        if selected and repeat.observations[0].candidate.feature_unit != selected[0].candidate.feature_unit:
+            raise EnrichmentContractError(
+                f"repeat {repeat.repeat_id!r} feature_unit does not match selected"
             )
 
     # Empty selected membership is explicitly represented as unevaluable.  It is

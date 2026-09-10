@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from statistics import mean
 
 import pytest
@@ -54,8 +55,8 @@ def test_enrichment_preserves_selected_and_all_matched_repeat_values() -> None:
         support_sha256=SUPPORT_SHA256,
         selected=(_observation(1, 0.5), _observation(2, 0.2)),
         matched_repeats=(
-            MatchedGainRepeat("r000", 10, (_observation(1, 0.1), _observation(3, 0.1))),
-            MatchedGainRepeat("r001", 11, (_observation(2, 0.3), _observation(3, 0.4))),
+            MatchedGainRepeat("r000", 10, (_observation(1, 0.5), _observation(3, 0.1))),
+            MatchedGainRepeat("r001", 11, (_observation(2, 0.2), _observation(3, 0.1))),
         ),
         aggregate=mean,
         expected_repeat_count=2,
@@ -63,8 +64,8 @@ def test_enrichment_preserves_selected_and_all_matched_repeat_values() -> None:
 
     assert result.status == "evaluable"
     assert result.selected_aggregate == pytest.approx(0.35)
-    assert result.matched_aggregates == pytest.approx((0.1, 0.35))
-    assert result.differences == pytest.approx((0.25, 0.0))
+    assert result.matched_aggregates == pytest.approx((0.3, 0.15))
+    assert result.differences == pytest.approx((0.05, 0.2))
     assert result.repeat_ids == ("r000", "r001")
     assert result.to_records()[0]["seed"] == 10
     assert result.to_records()[0]["membership_sha256"]
@@ -86,6 +87,44 @@ def test_empty_selected_is_unevaluable_not_zero() -> None:
     assert result.status == "unevaluable_empty_selected"
     assert result.selected_aggregate is None
     assert result.differences == (None,)
+
+
+@pytest.mark.parametrize("conflict", ["selected_gain", "repeat_gain", "feature_unit"])
+def test_enrichment_rejects_inconsistent_landscape_before_aggregation(conflict) -> None:
+    selected = _observation(1, 0.5)
+    first = _observation(2, 0.1)
+    second = first
+    grid = _grid()
+    if conflict == "selected_gain":
+        second = replace(selected, gain=0.2)
+    elif conflict == "repeat_gain":
+        second = replace(first, gain=0.2)
+    else:
+        second = replace(first, candidate=replace(first.candidate, feature_unit="region_block"))
+        grid = CandidateGrid.from_candidates(
+            (*grid.candidates, second.candidate), protocol_sha256=PROTOCOL_SHA256
+        )
+    with pytest.raises(EnrichmentContractError, match="feature_unit|changes gain"):
+        reduce_cell_gain_enrichment(
+            subject_id="s01", target_region="mouth", estimand_id="cell_gain_enrichment_v1",
+            aggregation_id="arithmetic_mean", candidate_grid=grid,
+            support_sha256=SUPPORT_SHA256, selected=(selected,),
+            matched_repeats=(MatchedGainRepeat("r0", 10, (first,)), MatchedGainRepeat("r1", 11, (second,))),
+            aggregate=lambda _: pytest.fail("invalid input must fail before aggregation"),
+        )
+
+
+def test_enrichment_allows_identical_memberships_in_distinct_repeats() -> None:
+    selected = (_observation(1, 0.5),)
+    result = reduce_cell_gain_enrichment(
+        subject_id="s01", target_region="mouth", estimand_id="cell_gain_enrichment_v1",
+        aggregation_id="arithmetic_mean", candidate_grid=_grid(),
+        support_sha256=SUPPORT_SHA256, selected=selected,
+        matched_repeats=(MatchedGainRepeat("r0", 10, selected), MatchedGainRepeat("r1", 11, selected)),
+        aggregate=mean,
+    )
+    assert result.differences == (0.0, 0.0)
+    assert result.repeat_ids == ("r0", "r1")
 
 
 @pytest.mark.parametrize(

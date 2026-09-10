@@ -1,5 +1,12 @@
 # Issue implementation — 2026-09-10
 
+## Enrichment landscape consistency — 2026-09-11 (#34 / R-18)
+
+- The individual cell-gain reducer now rejects changed gains for the same candidate within one subject/support unit, across selected membership and all matched repeats. It also rejects selected/matched feature-unit mismatches even when candidate counts match.
+- Validation precedes aggregation. Distinct repeat IDs may still contain identical memberships and selected/matched overlap is preserved; these are not duplicate records.
+- Corrected the existing numerical fixture, which assigned different gains to the same frozen cell, and recalculated its expected aggregates. Added regressions for selected/repeat and repeat/repeat gain conflicts, feature-unit mismatch, and valid identical memberships.
+- Validation: `.venv/Scripts/python.exe -m pytest tests/test_enrichment.py tests/test_landscape.py tests/test_null_matched_sparsity.py tests/test_null_matched_sparsity_repeats.py -o addopts='' -q -p no:cacheprovider` — 30 passed. This is reducer correctness only; scientific aggregation choices, canonical export and real-run acceptance remain open. No runner changes or real experiments.
+
 ## Population subject-cluster CI correction — 2026-09-11 (#35 / R-19)
 
 - Replaced bootstrap of subject medians with bootstrap of subject IDs carrying every associated edge. Each resample uses the configured edge-subject point estimator (median or mean), preserving unequal cluster sizes and repeated cluster draws.
