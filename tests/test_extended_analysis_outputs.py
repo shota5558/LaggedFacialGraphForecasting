@@ -133,6 +133,63 @@ def _population_frame() -> pd.DataFrame:
     return _provenance(pd.DataFrame(rows))
 
 
+@pytest.mark.parametrize("column", ["status", "estimand_id", "aggregation_id", "candidate_grid_sha256", "support_sha256"])
+def test_enrichment_rejects_repeat_contract_drift(column) -> None:
+    first = _enrichment_frame()
+    second = first.assign(repeat_id="MOCK_R001")
+    second.loc[0, column] = (
+        "unevaluable_empty_selected" if column == "status"
+        else HASH_C if column.endswith("sha256") else "different"
+    )
+    config = _config()
+    config["primary"]["matched_sparsity"]["repeat_count"] = 2
+    with pytest.raises(AnalysisOutputError, match=f"{column} changes across repeats"):
+        enrichment_sources(pd.concat([first, second], ignore_index=True), config)
+
+
+@pytest.mark.parametrize("column", ["subject_id", "target_region", "repeat_id", "estimand_id", "aggregation_id"])
+@pytest.mark.parametrize("value", [None, " "])
+def test_enrichment_rejects_missing_identifiers(column, value) -> None:
+    frame = _enrichment_frame()
+    frame.loc[0, column] = value
+    with pytest.raises(AnalysisOutputError, match="non-empty identifiers"):
+        enrichment_sources(frame, _config())
+
+
+@pytest.mark.parametrize("column", ["estimand_id", "aggregation_id"])
+def test_enrichment_rejects_mixed_subject_estimands(column) -> None:
+    frame = _enrichment_frame()
+    frame.loc[0, column] = "different"
+    with pytest.raises(AnalysisOutputError, match="differs across subject units"):
+        enrichment_sources(frame, _config())
+
+
+def test_enrichment_preserves_unevaluable_units_without_numeric_effects() -> None:
+    frame = _enrichment_frame()
+    frame.loc[0, "status"] = "unevaluable_empty_selected"
+    with pytest.raises(AnalysisOutputError, match="must be missing"):
+        enrichment_sources(frame, _config())
+    columns = ["selected_aggregate", "matched_aggregate", "difference_selected_minus_matched"]
+    frame.loc[0, columns] = np.nan
+    distribution, summary = enrichment_sources(frame, _config())
+    assert len(distribution) == 4
+    assert summary.iloc[0].n_subjects == 3
+
+
+def test_enrichment_accepts_same_digest_case_and_subject_specific_support() -> None:
+    first = _enrichment_frame()
+    first.loc[0, "support_sha256"] = HASH_C
+    second = first.assign(repeat_id="MOCK_R001", seed=123)
+    for column in ("candidate_grid_sha256", "support_sha256", "membership_sha256"):
+        second[column] = second[column].str.upper()
+    config = _config()
+    config["primary"]["matched_sparsity"]["repeat_count"] = 2
+    distribution, summary = enrichment_sources(pd.concat([first, second]), config)
+    assert len(distribution) == 8
+    assert summary.iloc[0].n_subjects == 4
+    assert summary.iloc[0].n_repeats_per_subject == 2
+
+
 @pytest.mark.parametrize("column", ["outer_fold", "tau_star", "delta", "shifted_lag"])
 @pytest.mark.parametrize("value", [0.5, True, float("inf"), float("nan")])
 def test_population_source_rejects_non_integer_identity(column, value) -> None:
@@ -179,6 +236,52 @@ def test_population_ci_resamples_whole_subjects_with_the_point_estimand(aggregat
     assert point.n_subjects == 3 and point.n_edge_subject_units == 6
     _, reordered = population_sources(frame.iloc[::-1], config)
     pd.testing.assert_frame_equal(summary, reordered)
+
+
+@pytest.mark.parametrize("column", ["self_error", "support_sha256"])
+def test_landscape_rejects_changed_self_reference_or_support(column) -> None:
+    grid = _grid()
+    frame = _landscape_frame(grid)
+    if column == "self_error":
+        frame.loc[0, column] += 0.5
+        # Per-cell arithmetic still reconciles; the shared baseline is wrong.
+        frame.loc[0, "gain"] = frame.loc[0, "self_error"] - frame.loc[0, "cell_error"]
+    else:
+        frame.loc[0, column] = HASH_C
+    with pytest.raises(AnalysisOutputError, match="same Self reference|same evaluation support"):
+        landscape_source(frame, grid)
+
+
+def test_landscape_reference_is_scoped_to_subject_and_target_component() -> None:
+    base = _grid()
+    grid = CandidateGrid.from_candidates(
+        [LandscapeCandidate(c.source_region, c.target_region, c.lag,
+                            c.source_dimension, dimension, c.feature_unit)
+         for c in base.candidates for dimension in ("vx", "vy")],
+        protocol_sha256=HASH_A,
+    )
+    frame = _landscape_frame(grid)
+    other_target = frame.target_dimension == "vx"
+    frame.loc[other_target, "self_error"] += 2
+    frame.loc[other_target, "cell_error"] += 2
+    frame.loc[other_target, "support_sha256"] = HASH_C
+    expected = landscape_source(frame, grid)
+    # DataFrame index labels are not cell identities (e.g. after concatenation).
+    frame.index = [0] * len(frame)
+    actual = landscape_source(frame, grid)
+    pd.testing.assert_frame_equal(actual, expected)
+    assert actual.gain.tolist() == pytest.approx(expected.gain.tolist())
+
+
+def test_landscape_unevaluable_cells_do_not_supply_a_self_reference() -> None:
+    grid = _grid()
+    frame = _landscape_frame(grid)
+    frame.loc[0, ["self_error", "cell_error", "gain"]] = np.nan
+    frame.loc[0, "status"] = "unevaluable"
+    frame.loc[0, "support_sha256"] = HASH_C
+    result = landscape_source(frame, grid)
+    assert len(result) == len(frame)
+    assert result.loc[result.status == "unevaluable", "gain"].isna().all()
 
 
 def test_extended_sources_validate_and_reconcile() -> None:

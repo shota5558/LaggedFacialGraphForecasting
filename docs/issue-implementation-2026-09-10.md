@@ -1,5 +1,12 @@
 # Issue implementation — 2026-09-10
 
+## Enrichment CSV aggregation guards — 2026-09-11 (#34 / R-18)
+
+- Reject missing/blank identifiers before pandas grouping, repeat-level changes in status/estimand/aggregation/grid/support, and mixed estimands or cell aggregation rules within a target's subject summary.
+- Unevaluable rows must carry missing numerical aggregates; they remain in the distribution but do not contribute to subject counts. SHA-256 values are normalized to lowercase; support may legitimately differ between subjects.
+- Validation: the extended-output and enrichment test files passed (52 tests), followed by the enrichment-focused extended tests after digest normalization (19 passed, 28 deselected). New cases cover metadata drift, missing identities, mixed subject estimands, unevaluable records, and valid two-repeat input with subject-specific support and equivalent digest casing.
+- This corrects the existing CSV analysis boundary. Raw-export integration, scientific decisions and real-run acceptance remain open; no runner changes or real experiment.
+
 ## Enrichment landscape consistency — 2026-09-11 (#34 / R-18)
 
 - The individual cell-gain reducer now rejects changed gains for the same candidate within one subject/support unit, across selected membership and all matched repeats. It also rejects selected/matched feature-unit mismatches even when candidate counts match.

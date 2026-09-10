@@ -914,7 +914,7 @@ def landscape_source(
     _require_columns(landscape, required, "landscape")
     if not isinstance(candidate_grid, CandidateGrid):
         raise TypeError("candidate_grid must be a CandidateGrid")
-    out = landscape.copy()
+    out = landscape.copy().reset_index(drop=True)
     _validate_sha256_column(out, "support_sha256", "landscape")
     _validate_sha256_column(out, "candidate_grid_sha256", "landscape")
     if not (out.candidate_grid_sha256.astype(str).str.lower() == candidate_grid.digest).all():
@@ -960,6 +960,16 @@ def landscape_source(
         out[column] = pd.to_numeric(out[column], errors="coerce")
         if out.loc[evaluable, column].isna().any() or not np.isfinite(out.loc[evaluable, column]).all():
             raise AnalysisOutputError(f"landscape.{column} must be finite for evaluable cells")
+    # A Self reference belongs to the evaluated target, not to the source cell.
+    reference_keys = [*unit_keys, "target_region", "target_dimension"]
+    for key in ("run_id", "protocol_sha256", "metric_name", "estimand_id"):
+        if key in out.columns:
+            reference_keys.append(key)
+    for _, group in out.loc[evaluable].groupby(reference_keys, sort=False, dropna=False):
+        if group.support_sha256.str.lower().nunique() != 1:
+            raise AnalysisOutputError("landscape cells must share the same evaluation support")
+        if group.self_error.nunique() != 1:
+            raise AnalysisOutputError("landscape cells must share the same Self reference error")
     supplied_gain = pd.to_numeric(out.gain, errors="coerce")
     calculated_gain = out.self_error - out.cell_error
     if not np.allclose(
@@ -1096,8 +1106,12 @@ def enrichment_sources(
     )
     _require_columns(enrichment, required, "enrichment")
     out = enrichment.copy()
+    for column in ("subject_id", "target_region", "repeat_id", "estimand_id", "aggregation_id"):
+        if not out[column].map(lambda value: isinstance(value, str) and bool(value.strip())).all():
+            raise AnalysisOutputError(f"enrichment.{column} must contain non-empty identifiers")
     for column in ("candidate_grid_sha256", "support_sha256", "membership_sha256"):
         _validate_sha256_column(out, column, "enrichment")
+        out[column] = out[column].str.lower()
     seeds = pd.to_numeric(out.seed, errors="coerce")
     if seeds.isna().any() or (seeds % 1 != 0).any() or (seeds < 0).any():
         raise AnalysisOutputError("enrichment seed must be a non-negative integer")
@@ -1106,10 +1120,20 @@ def enrichment_sources(
         raise AnalysisOutputError("enrichment repeat identity must be unique")
     if not set(out.status.astype(str)).issubset({"evaluable", "unevaluable_empty_selected"}):
         raise AnalysisOutputError("enrichment status is invalid")
+    for _, group in out.groupby(["subject_id", "target_region"], sort=False):
+        for column in ("status", "estimand_id", "aggregation_id", "candidate_grid_sha256", "support_sha256"):
+            if group[column].nunique() != 1:
+                raise AnalysisOutputError(f"enrichment {column} changes across repeats")
+    for _, group in out.groupby("target_region", sort=False):
+        for column in ("estimand_id", "aggregation_id"):
+            if group[column].nunique() != 1:
+                raise AnalysisOutputError(f"enrichment {column} differs across subject units")
     numeric = ("selected_aggregate", "matched_aggregate", "difference_selected_minus_matched")
     for column in numeric:
         out[column] = pd.to_numeric(out[column], errors="coerce")
     evaluable = out.status.astype(str) == "evaluable"
+    if out.loc[~evaluable, numeric].notna().any().any():
+        raise AnalysisOutputError("unevaluable enrichment aggregates must be missing, not zero")
     if not np.isfinite(out.loc[evaluable, numeric].to_numpy(dtype=float)).all():
         raise AnalysisOutputError("evaluable enrichment aggregates must be finite")
     if not np.allclose(
