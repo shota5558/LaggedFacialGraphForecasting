@@ -1297,12 +1297,69 @@ def _plot_f13(source: pd.DataFrame, path: Path, synthetic: bool) -> list[Path]:
     ax.set_ylabel(str(source.metric_name.iloc[0])); ax.set_title(_title("F13 Prediction-error distribution", synthetic)); return _save_figure(fig, path, synthetic=synthetic)
 
 
-def _caption_contract(synthetic: bool) -> dict[str, str]:
+def _plot_landscape(source: pd.DataFrame, path: Path, synthetic: bool) -> list[Path]:
+    plt = _import_pyplot()
+    source = source.copy()
+    source["relation"] = source.source_region.astype(str) + "→" + source.target_region.astype(str)
+    pivot = source.pivot(index="relation", columns="lag_band", values="median_gain")
+    fig, ax = plt.subplots(figsize=(max(7, 0.9 * len(pivot.columns) + 3), max(4, 0.45 * len(pivot.index) + 2)))
+    image = ax.imshow(np.ma.masked_invalid(pivot.to_numpy(dtype=float)), aspect="auto", cmap="coolwarm")
+    ax.set_xticks(np.arange(len(pivot.columns)), pivot.columns, rotation=45, ha="right")
+    ax.set_yticks(np.arange(len(pivot.index)), pivot.index)
+    ax.set_xlabel("Lag band")
+    ax.set_ylabel("Source → target")
+    ax.set_title(_title("LANDSCAPE Cell gain G = Self − Self+cell", synthetic))
+    fig.colorbar(image, ax=ax, label="Median gain")
+    return _save_figure(fig, path, synthetic=synthetic)
+
+
+def _plot_enrichment(source: pd.DataFrame, path: Path, synthetic: bool) -> list[Path]:
+    plt = _import_pyplot()
+    evaluable = source[source.status == "evaluable"].copy()
+    targets = sorted(evaluable.target_region.astype(str).unique())
+    data = [evaluable.loc[evaluable.target_region == target, "matched_aggregate"].astype(float) for target in targets]
+    selected = [float(evaluable.loc[evaluable.target_region == target, "selected_aggregate"].iloc[0]) for target in targets]
+    fig, ax = plt.subplots(figsize=(max(7, 1.1 * len(targets) + 3), 5))
+    ax.boxplot(data, tick_labels=targets, showfliers=True)
+    ax.scatter(np.arange(1, len(targets) + 1), selected, marker="D", color="black", label="Selected")
+    ax.axhline(0, linewidth=1)
+    ax.set_xlabel("Target region")
+    ax.set_ylabel("Aggregated cell gain")
+    ax.set_title(_title("ENRICHMENT Selected vs matched sets", synthetic))
+    ax.legend()
+    return _save_figure(fig, path, synthetic=synthetic)
+
+
+def _plot_population(source: pd.DataFrame, path: Path, synthetic: bool) -> list[Path]:
+    plt = _import_pyplot()
+    source = source.sort_values("delta_ms", kind="stable")
+    x = source.delta_ms.astype(float).to_numpy()
+    y = source.median_edge_subject_difference.astype(float).to_numpy()
+    low = source.ci_low.astype(float).to_numpy()
+    high = source.ci_high.astype(float).to_numpy()
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.errorbar(x, y, yerr=[y - low, high - y], marker="o", capsize=4)
+    ax.axvline(0, linestyle="--", linewidth=1)
+    ax.axhline(0, linewidth=1)
+    ax.set_xlabel("Edge-centered lag shift Δ (ms)")
+    ax.set_ylabel("Shifted error − reference error")
+    ax.set_title(_title("POPULATION Edge-centered response", synthetic))
+    return _save_figure(fig, path, synthetic=synthetic)
+
+
+def _caption_contract(synthetic: bool, *, include_extended: bool = False) -> dict[str, str]:
     prefix = "SYNTHETIC SOFTWARE-VERIFICATION ONLY. " if synthetic else ""
-    return {
+    captions = {
         **{f"T{i:02d}": prefix + "Canonical analysis table. Report aggregation unit, evaluable support, frozen metric definition, and 95% CI where applicable." for i in range(1, 10)},
         **{f"F{i:02d}": prefix + "Rendered only from the registered canonical source CSV; plotting choices are frozen independently of outcome." for i in range(1, 15)},
     }
+    if include_extended:
+        captions.update({
+            "LANDSCAPE": prefix + "All candidate cells are retained. G = E_self − E_self+cell; cell ranking is exploratory.",
+            "ENRICHMENT": prefix + "Selected and matched cell-gain repeats are preserved; repeats are not treated as subjects.",
+            "POPULATION": prefix + "Edge-centered response uses a complete symmetric Δ grid and a common support per edge/subject.",
+        })
+    return captions
 
 
 def generate_analysis_outputs(
@@ -1312,6 +1369,7 @@ def generate_analysis_outputs(
     output_root: str | Path | None = None,
     publication_ready: bool = False,
     include_sensitivity: bool = False,
+    include_extended: bool = False,
     primary_frozen: bool = False,
     allow_mock_sensitivity: bool = False,
     sensitivity_config: SensitivityExperimentConfig | None = None,
@@ -1329,6 +1387,16 @@ def generate_analysis_outputs(
         "edge_stability": _read_csv(inputs.edge_stability),
         "prediction_trajectory": _read_csv(inputs.prediction_trajectory),
     }
+    candidate_grid = None
+    if include_extended:
+        if any(path is None for path in (inputs.landscape, inputs.enrichment, inputs.population, inputs.candidate_grid)):
+            raise AnalysisOutputError("extended analysis inputs are incomplete")
+        frames.update({
+            "landscape": _read_csv(inputs.landscape),
+            "enrichment": _read_csv(inputs.enrichment),
+            "population": _read_csv(inputs.population),
+        })
+        candidate_grid = _load_candidate_grid(inputs.candidate_grid)
     if include_sensitivity:
         if inputs.sensitivity is None:
             raise AnalysisOutputError("required analysis input missing: sensitivity.csv")
@@ -1371,12 +1439,12 @@ def generate_analysis_outputs(
     primary_metric = _primary_metric(frames["metrics"], config)
     config_hash = _json_hash(config)
     seed = int(config.get("seed", 0))
-    input_records = [{"name": path.name, "sha256": _file_hash(path)} for path in inputs.paths(include_sensitivity=include_sensitivity)]
+    input_records = [{"name": path.name, "sha256": _file_hash(path)} for path in inputs.paths(include_sensitivity=include_sensitivity, include_extended=include_extended)]
     generated: list[Path] = []
     records: list[dict[str, object]] = []
 
     def source_names(*names: str) -> list[str]:
-        mapping = {p.stem.removeprefix("mock_"): p.name for p in inputs.paths(include_sensitivity=include_sensitivity)}
+        mapping = {p.stem.removeprefix("mock_"): p.name for p in inputs.paths(include_sensitivity=include_sensitivity, include_extended=include_extended)}
         return [mapping.get(name, name) for name in names]
 
     def register(paths: Sequence[Path], output_id: str, sources: Sequence[str], metric: str | None, aggregation: str) -> None:
@@ -1438,7 +1506,88 @@ def generate_analysis_outputs(
     f13_raw = t03_subject[(t03_subject.metric_name == primary_metric) & t03_subject.condition.isin(["self", "pcmci"])].copy(); f13 = write_source(f13_raw, tables / "F13_prediction_error_distribution_source.csv", "F13", source_names("metrics"), primary_metric, "outer_test_subject"); paths = _plot_f13(f13, figures / "F13_prediction_error_distribution.png", synthetic); register(paths, "F13", ["F13_prediction_error_distribution_source.csv"], primary_metric, "outer_test_subject")
     f14_raw = metric_concordance_source(frames["metrics"], config); f14 = write_source(f14_raw, tables / "F14_metric_concordance_source.csv", "F14", source_names("metrics"), None, "outer_test_subject_by_metric"); paths = _plot_effect(f14, "metric_name", "median_direction_normalized_effect", figures / "F14_metric_concordance.png", "F14 Metric concordance — positive means PCMCI better", synthetic); register(paths, "F14", ["F14_metric_concordance_source.csv"], None, "outer_test_subject_by_metric")
 
-    captions = root / "captions.json"; captions.write_text(json.dumps(_caption_contract(synthetic), indent=2, sort_keys=True) + "\n", encoding="utf-8"); register([captions], "CAPTIONS", source_names("primary_config"), None, "caption_contract")
+    if include_extended:
+        assert candidate_grid is not None
+        landscape = landscape_source(frames["landscape"], candidate_grid)
+        landscape_cells = write_source(
+            landscape,
+            tables / "LANDSCAPE_cell_gain_source.csv",
+            "LANDSCAPE",
+            source_names("landscape", "candidate_grid"),
+            primary_metric,
+            "subject_candidate_cell",
+        )
+        pair_summary, band_summary = landscape_aggregate_sources(landscape_cells, config)
+        paths = _write_table(
+            pair_summary,
+            tables / "LANDSCAPE_source_target_summary.csv",
+            tables / "LANDSCAPE_source_target_summary.md",
+            synthetic=synthetic,
+        )
+        register(paths, "LANDSCAPE", ["LANDSCAPE_cell_gain_source.csv"], primary_metric, "source_target_subject")
+        paths = _write_table(
+            band_summary,
+            tables / "LANDSCAPE_lag_band_summary.csv",
+            tables / "LANDSCAPE_lag_band_summary.md",
+            synthetic=synthetic,
+        )
+        register(paths, "LANDSCAPE", ["LANDSCAPE_cell_gain_source.csv"], primary_metric, "source_target_lag_band_subject")
+        paths = _plot_landscape(
+            band_summary,
+            figures / "LANDSCAPE_gain_heatmap.png",
+            synthetic,
+        )
+        register(paths, "LANDSCAPE", ["LANDSCAPE_lag_band_summary.csv"], primary_metric, "source_target_lag_band_subject")
+
+        enrichment_distribution, enrichment_summary = enrichment_sources(
+            frames["enrichment"], config
+        )
+        paths = _write_table(
+            enrichment_distribution,
+            tables / "ENRICHMENT_distribution_source.csv",
+            tables / "ENRICHMENT_distribution_source.md",
+            synthetic=synthetic,
+        )
+        register(paths, "ENRICHMENT", source_names("enrichment"), primary_metric, "subject_matched_repeat")
+        paths = _write_table(
+            enrichment_summary,
+            tables / "ENRICHMENT_subject_summary.csv",
+            tables / "ENRICHMENT_subject_summary.md",
+            synthetic=synthetic,
+        )
+        register(paths, "ENRICHMENT", ["ENRICHMENT_distribution_source.csv"], primary_metric, "target_subject")
+        paths = _plot_enrichment(
+            enrichment_distribution,
+            figures / "ENRICHMENT_selected_vs_matched.png",
+            synthetic,
+        )
+        register(paths, "ENRICHMENT", ["ENRICHMENT_distribution_source.csv"], primary_metric, "subject_matched_repeat")
+
+        population_source_frame, population_summary = population_sources(
+            frames["population"], config
+        )
+        paths = _write_table(
+            population_source_frame,
+            tables / "POPULATION_edge_subject_response_source.csv",
+            tables / "POPULATION_edge_subject_response_source.md",
+            synthetic=synthetic,
+        )
+        register(paths, "POPULATION", source_names("population"), primary_metric, "edge_subject_delta")
+        paths = _write_table(
+            population_summary,
+            tables / "POPULATION_response_summary.csv",
+            tables / "POPULATION_response_summary.md",
+            synthetic=synthetic,
+        )
+        register(paths, "POPULATION", ["POPULATION_edge_subject_response_source.csv"], primary_metric, "subject_edge_delta")
+        paths = _plot_population(
+            population_summary,
+            figures / "POPULATION_edge_centered_response.png",
+            synthetic,
+        )
+        register(paths, "POPULATION", ["POPULATION_response_summary.csv"], primary_metric, "subject_edge_delta")
+
+    captions = root / "captions.json"; captions.write_text(json.dumps(_caption_contract(synthetic, include_extended=include_extended), indent=2, sort_keys=True) + "\n", encoding="utf-8"); register([captions], "CAPTIONS", source_names("primary_config"), None, "caption_contract")
 
     registry_path = root / "analysis_artifact_registry.csv"
     registry_frame = pd.DataFrame(records).sort_values(["output_id", "relative_path"], kind="stable")
@@ -1460,6 +1609,8 @@ def generate_analysis_outputs(
         "primary_frozen": bool(primary_frozen),
         "primary_freeze_reference": freeze_reference,
         "sensitivity_included": bool(include_sensitivity),
+        "extended_outputs_included": bool(include_extended),
+        "extended_output_ids": ["LANDSCAPE", "ENRICHMENT", "POPULATION"] if include_extended else [],
         "sensitivity_validation_scope": "software_only_mock" if (include_sensitivity and synthetic) else ("post_primary_freeze" if include_sensitivity else "not_generated"),
         "figure_source_reconciliation": "every figure reads its serialized canonical source CSV before rendering",
         "example_selection_rule": "lexicographically first subject_id,region_id; independent of outcome",

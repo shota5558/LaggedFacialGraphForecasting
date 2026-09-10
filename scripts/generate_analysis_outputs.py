@@ -16,6 +16,11 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path)
     parser.add_argument("--publication-ready", action="store_true")
     parser.add_argument("--include-sensitivity", action="store_true")
+    parser.add_argument(
+        "--include-extended",
+        action="store_true",
+        help="generate LANDSCAPE, ENRICHMENT, and POPULATION outputs",
+    )
     parser.add_argument("--sensitivity-config", type=Path)
     parser.add_argument(
         "--allow-mock-sensitivity",
@@ -24,11 +29,16 @@ def main() -> int:
     )
     args = parser.parse_args()
     result = generate_analysis_outputs(
-        AnalysisInputs.from_directory(args.input_dir, include_sensitivity=args.include_sensitivity),
+        AnalysisInputs.from_directory(
+            args.input_dir,
+            include_sensitivity=args.include_sensitivity,
+            include_extended=args.include_extended,
+        ),
         repository_root=args.repository_root,
         output_root=args.output_root,
         publication_ready=args.publication_ready,
         include_sensitivity=args.include_sensitivity,
+        include_extended=args.include_extended,
         sensitivity_config=(
             load_sensitivity_experiment_config(
                 args.sensitivity_config, repository_root=args.repository_root
