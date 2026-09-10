@@ -11,7 +11,11 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from hashlib import sha256
+import json
 from pathlib import Path
+
+import numpy as np
 
 from .bootstrap_statistics import BootstrapMedianCI, bootstrap_median_paired_difference_ci
 from .contracts import PredictionArtifact
@@ -35,6 +39,59 @@ class PrimaryPairedStatistics:
     paired_differences: tuple[PairedMetricDifference, ...]
     median_differences: tuple[MedianPairedDifference, ...]
     bootstrap_cis: tuple[BootstrapMedianCI, ...]
+    support_digests: tuple[tuple[int, str], ...]
+
+
+def _support_digest(artifact: PredictionArtifact) -> str:
+    """Hash the exact valid held-out rows, independent of row order."""
+
+    rows = [
+        (
+            artifact.subject_id[index],
+            artifact.region_id[index],
+            float(artifact.forecast_origin[index]),
+            float(artifact.target_time[index]),
+            artifact.target_dimensions,
+        )
+        for index in np.flatnonzero(artifact.valid_mask)
+    ]
+    if not rows:
+        raise ValueError("prediction artifact has no valid evaluation support")
+    if len(set(rows)) != len(rows):
+        raise ValueError("prediction artifact contains duplicate evaluation support rows")
+    payload = json.dumps(sorted(rows), ensure_ascii=False, separators=(",", ":"))
+    return sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _validate_exact_prediction_support(
+    reference_predictions: Sequence[PredictionArtifact],
+    comparison_predictions: Sequence[PredictionArtifact],
+) -> tuple[tuple[int, str], ...]:
+    def index(
+        predictions: Sequence[PredictionArtifact], label: str
+    ) -> dict[int, PredictionArtifact]:
+        indexed: dict[int, PredictionArtifact] = {}
+        for artifact in predictions:
+            if artifact.outer_fold in indexed:
+                raise ValueError(
+                    f"{label} predictions contain duplicate outer_fold={artifact.outer_fold}"
+                )
+            indexed[artifact.outer_fold] = artifact
+        return indexed
+
+    reference = index(reference_predictions, "reference")
+    comparison = index(comparison_predictions, "comparison")
+    if set(reference) != set(comparison):
+        raise ValueError("reference and comparison prediction folds differ")
+
+    digests: list[tuple[int, str]] = []
+    for fold in sorted(reference):
+        reference_digest = _support_digest(reference[fold])
+        comparison_digest = _support_digest(comparison[fold])
+        if reference_digest != comparison_digest:
+            raise ValueError(f"prediction evaluation support differs for outer_fold={fold}")
+        digests.append((fold, reference_digest))
+    return tuple(digests)
 
 
 def _velocity_metrics(
@@ -99,6 +156,9 @@ def compute_primary_velocity_paired_statistics(
     if bootstrap_config["seed_source"] != "experiment_seed":
         raise ValueError("Primary bootstrap seed_source must remain 'experiment_seed'")
 
+    support_digests = _validate_exact_prediction_support(
+        reference_predictions, comparison_predictions
+    )
     reference_metrics = _velocity_metrics(reference_predictions, label="reference")
     comparison_metrics = _velocity_metrics(comparison_predictions, label="comparison")
     paired = subject_level_paired_difference(reference_metrics, comparison_metrics)
@@ -116,4 +176,5 @@ def compute_primary_velocity_paired_statistics(
         paired_differences=paired,
         median_differences=medians,
         bootstrap_cis=cis,
+        support_digests=support_digests,
     )

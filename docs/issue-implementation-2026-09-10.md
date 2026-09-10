@@ -8,6 +8,14 @@
 
 Validation: source hashes, issue links, conflict ownership and migration gates were reconciled against `docs/experimental_plan.md`, `docs/detailed_design.md`, `docs/audit-report.md`, `docs/requirement-matrix.md`, and the current GitHub open-Issue list. This is documentation completion only; it does not authorize a real run or close downstream decision/experiment Issues.
 
+## Partially implemented locally: #29 / R-05 raw prediction support
+
+- Primary paired statistics now hashes the exact valid support tuple `(subject, region, forecast_origin, target_time, target_dimensions)` for every outer fold before metric aggregation.
+- Pairing rejects equal-count but different timestamps, mask drift, target-dimension reordering, duplicate support rows, missing folds and all-invalid artifacts. Successful results retain the per-fold SHA-256 support digests.
+- The existing subject-level metric pairing and effect values are unchanged after exact raw support validation.
+
+Validation: `uv run --project . --extra test python -m pytest tests/test_subject_level_paired_difference.py tests/test_primary_condition_alignment.py tests/test_analysis_pipeline.py tests/test_primary_statistics_orchestration.py -q` — 35 passed. R-05 remains partial until R-08 connects raw prediction export to the analysis CSV schema and carries the same support digest through that boundary; `n_valid` alone is not promoted as sufficient evidence.
+
 ## Implemented locally: #31 / R-07a and #32 / R-07b
 
 - Primary-only input discovery, CSV loading, provenance validation and input hashing no longer depend on Sensitivity. The 21 Primary output IDs exclude T09/F10.
