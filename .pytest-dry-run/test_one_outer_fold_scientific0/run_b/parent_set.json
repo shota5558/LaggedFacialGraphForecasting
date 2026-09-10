@@ -1,0 +1,1 @@
+{"contract_type":"ParentSet","payload":{"discovery_method":"pcmci_plus","outer_fold":0,"parents":[{"lag":5,"source_dimension":"vx","source_region":"left_cheek","target_dimension":"vy"}],"target_region":"mouth"},"schema_version":3}

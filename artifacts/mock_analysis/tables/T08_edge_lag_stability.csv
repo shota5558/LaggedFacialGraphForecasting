@@ -1,0 +1,7 @@
+is_synthetic,synthetic_notice,source_region,source_dimension,target_region,target_dimension,lag,fold_selected_count,fold_opportunities,outer_fold_selection_frequency,bootstrap_selected_count,bootstrap_opportunities,bootstrap_selection_frequency,evaluable
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,jaw,vy,mouth,vy,1,4,4,1,90,100,0.9,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,left_cheek,vx,mouth,vx,2,4,4,1,84,100,0.84,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,left_cheek,vy,right_cheek,vy,4,2,4,0.5,52,100,0.52,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,mouth,vx,jaw,vx,2,3,4,0.75,66,100,0.66,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,right_cheek,vy,left_cheek,vy,4,2,4,0.5,50,100,0.5,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,right_cheek,vx,mouth,vx,3,3,4,0.75,79,100,0.79,True

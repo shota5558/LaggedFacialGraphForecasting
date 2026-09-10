@@ -1,0 +1,17 @@
+is_synthetic,synthetic_notice,subject_id,condition,metric_name,metric_direction,value,evaluable_unit_count
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S01,pcmci,velocity_rmse,lower_is_better,0.9961575,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S02,pcmci,velocity_rmse,lower_is_better,1.0127645,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S03,pcmci,velocity_rmse,lower_is_better,1.02522825,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S04,pcmci,velocity_rmse,lower_is_better,1.03532425,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S05,pcmci,velocity_rmse,lower_is_better,1.049195,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S06,pcmci,velocity_rmse,lower_is_better,1.05549175,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S07,pcmci,velocity_rmse,lower_is_better,1.06926875,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S08,pcmci,velocity_rmse,lower_is_better,1.08312925,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S01,self,velocity_rmse,lower_is_better,1.1330825,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S02,self,velocity_rmse,lower_is_better,1.138585,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S03,self,velocity_rmse,lower_is_better,1.151349,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S04,self,velocity_rmse,lower_is_better,1.17052575,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S05,self,velocity_rmse,lower_is_better,1.1803775,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S06,self,velocity_rmse,lower_is_better,1.18226775,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S07,self,velocity_rmse,lower_is_better,1.2081585,4
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S08,self,velocity_rmse,lower_is_better,1.20784775,4

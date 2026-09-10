@@ -1,0 +1,8 @@
+> **FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS**
+
+| is_synthetic   | synthetic_notice                           | target_region   | metric_name   | metric_direction   |   median_self_minus_pcmci |   ci_low |   ci_high |   confidence_level |   n_subjects |   evaluable_count |
+|:---------------|:-------------------------------------------|:----------------|:--------------|:-------------------|--------------------------:|---------:|----------:|-------------------:|-------------:|------------------:|
+| True           | FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS | jaw             | velocity_rmse | lower_is_better    |                  0.138277 | 0.115158 |  0.141454 |               0.95 |            8 |                 8 |
+| True           | FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS | left_cheek      | velocity_rmse | lower_is_better    |                  0.121544 | 0.116624 |  0.128822 |               0.95 |            8 |                 8 |
+| True           | FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS | mouth           | velocity_rmse | lower_is_better    |                  0.135526 | 0.127034 |  0.151286 |               0.95 |            8 |                 8 |
+| True           | FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS | right_cheek     | velocity_rmse | lower_is_better    |                  0.133154 | 0.117537 |  0.145174 |               0.95 |            8 |                 8 |

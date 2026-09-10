@@ -1,0 +1,6 @@
+is_synthetic,synthetic_notice,delta_frames,delta_ms,median_delta_error,ci_low,ci_high,confidence_level,n_subjects,evaluable_target_folds,unevaluable_target_folds,same_support_across_deltas,same_region_identity,same_feature_count,reference_delta
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,-2,-66.667,0.109134625,0.107142,0.11218025,0.95,8,32,0,True,True,True,0
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,-1,-33.333,0.04934975,0.04768325,0.0515545,0.95,8,32,0,True,True,True,0
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,0,0,0,0,0.95,8,32,0,True,True,True,0
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,1,33.333,0.056203625,0.05399325,0.05718625,0.95,8,32,0,True,True,True,0
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,2,66.667,0.11518225,0.11379375,0.1182665,0.95,8,32,0,True,True,True,0
