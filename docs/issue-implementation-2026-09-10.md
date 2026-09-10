@@ -47,6 +47,22 @@ Validation: `.venv\Scripts\python.exe -m pytest --basetemp tmp\pytest-r06-2 -q t
 
 Validation: `python -m pytest tests/test_landscape.py -q` — passed. This is the specification-independent contract portion only; it does not choose Ω, fit Ridge models, run real data, or implement the unresolved D-11 aggregation rules.
 
+## Partially implemented locally: #34 / R-18 enrichment contract
+
+- Added cell-level `G` observations and explicit matched-repeat records with seed and membership SHA-256 provenance.
+- The reducer validates candidate-grid membership, target identity, feature-count matching, support digest equality, duplicate repeat/cell rejection, and preserves every repeat-level aggregate and selected-minus-matched difference.
+- Empty selected sets are marked unevaluable rather than silently converted to zero. The aggregation callable and estimand ID are explicit, so unresolved D-10/D-11/D-12 rules are not chosen by the software.
+
+Validation: `.venv\Scripts\python.exe -m pytest --basetemp tmp\pytest-r18 -q tests\test_enrichment.py tests\test_landscape.py tests\test_null_matched_sparsity.py tests\test_null_matched_sparsity_repeats.py` — 26 passed; full suite — 800 passed, 2 skipped, 3 Tigramite warnings. This is contract/reducer software only; it does not generate matched sets, choose the approved scientific aggregate/CI, or run real data.
+
+## Partially implemented locally: #35 / R-19 population-response contract
+
+- Added edge/subject response records with explicit context, `tau_star`, `delta`, shifted lag, frame/ms conversion, exact common support, and the `E_shifted - E_reference` difference.
+- The reducer rejects clipping, Δ=0 drift, support/identity changes, mixed edge contexts, duplicate units, and incomplete Δ grids; output keeps edge-subject, subject, and edge denominators separate.
+- Point aggregation is injected and cluster bootstrap is intentionally not implemented until D-13/D-08 are approved.
+
+Validation: `.venv\Scripts\python.exe -m pytest --basetemp tmp\pytest-r19 -q tests\test_population_response.py tests\test_lag_response_statistics.py` — passed. This is contract/reducer software only; it does not construct edge-centered predictions or produce real population results.
+
 The untracked decision record `adopted_decisions_2026-09-10.md` changes the planned main representation/metric and several aggregation/null rules. Neither those decisions nor provisional numerical candidates have been silently written into the frozen v6 protocol.
 
 R-01/R-02/R-03 still require migration and resolution of the dataset, extractor/landmark topology, calibration/QC thresholds, usable time, candidate/history ranges, component projection and inferential rules. R-06 remains software-complete only until those approved aggregation and migration decisions are connected to the real protocol. Implementations that depend on those choices and real runs (#16–21, #33–39 and real table/figure acceptance) must retain their respective prerequisites. Existing software-only and mock evidence is not promoted to experimental completion. No GitHub Issue was closed and no PR or result was published by this change.
