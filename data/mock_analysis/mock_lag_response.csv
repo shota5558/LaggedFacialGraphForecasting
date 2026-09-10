@@ -1,5 +1,6 @@
 is_synthetic,synthetic_notice,outer_fold,subject_id,region_id,delta_frames,delta_ms,reference_delta,error,reference_error,delta_error,evaluable,same_support,same_region_identity,same_feature_count,n_valid
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,0,MOCK_S01,mouth,-2,-66.667,0,1.12,1.01,0.11,True,True,True,True,120
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,0,MOCK_S01,mouth,-1,-33.333,0,1.06,1.01,0.05,True,True,True,True,120
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,0,MOCK_S01,mouth,0,0.0,0,1.01,1.01,0.0,True,True,True,True,120
@@ -21,6 +22,8 @@ True,MOCK DATA / NOT A SCIENTIFIC RESULT,3,MOCK_S04,mouth,0,0.0,0,1.03,1.03,0.0,
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,3,MOCK_S04,mouth,1,33.333,0,1.085,1.03,0.055,True,True,True,True,120
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,3,MOCK_S04,mouth,2,66.667,0,1.145,1.03,0.115,True,True,True,True,120
 =======
+=======
+>>>>>>> Stashed changes
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,-2,-66.667,0,1.074907,0.969543,0.105364,True,True,True,True,240
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,-1,-33.333,0,1.023251,0.969543,0.053708,True,True,True,True,240
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,0,0.0,0,0.969543,0.969543,0.0,True,True,True,True,240
@@ -181,4 +184,7 @@ True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,-1,-33.33
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,0,0.0,0,1.113338,1.113338,0.0,True,True,True,True,240
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,1,33.333,0,1.176427,1.113338,0.063089,True,True,True,True,240
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,2,66.667,0,1.230329,1.113338,0.116991,True,True,True,True,240
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

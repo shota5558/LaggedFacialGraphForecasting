@@ -13,4 +13,7 @@ True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,phase_surrogate,Phase-shuffled s
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,circular_shift,Circular-shift surrogate,0.028,-0.011,0.068,0.95,velocity_rmse,positive_is_pcmci_better
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,h2_parcorr_ridge,h=2,0.086,0.041,0.132,0.95,velocity_rmse,positive_is_pcmci_better
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,gru_confirmation,GRU confirmation,0.121,0.069,0.171,0.95,velocity_rmse,positive_is_pcmci_better
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

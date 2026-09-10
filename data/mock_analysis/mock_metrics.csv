@@ -530,4 +530,7 @@ True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,persisten
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,self,temporal_correlation,higher_is_better,0.616052,240
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,full,temporal_correlation,higher_is_better,0.699268,240
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,pcmci,temporal_correlation,higher_is_better,0.704847,240
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

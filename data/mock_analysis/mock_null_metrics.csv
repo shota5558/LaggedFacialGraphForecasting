@@ -1,5 +1,6 @@
 is_synthetic,synthetic_notice,outer_fold,subject_id,region_id,condition,metric_name,metric_direction,value,n_valid,replicate_id,seed,mapping_scope,pcmci_feature_count,null_feature_count,input_count_preserved,lag_identity_preserved
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,0,MOCK_S01,mouth,lag_shift_-2,velocity_rmse,lower_is_better,1.12,120,MOCK_R000,20260908,outer_train_only,9,9,True,False
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,0,MOCK_S01,mouth,random_region,velocity_rmse,lower_is_better,1.13,120,MOCK_R000,20260908,outer_train_only,9,9,True,True
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,0,MOCK_S01,mouth,matched_sparsity,velocity_rmse,lower_is_better,1.10,120,MOCK_R000,20260908,outer_train_only,9,9,True,True
@@ -17,6 +18,8 @@ True,MOCK DATA / NOT A SCIENTIFIC RESULT,3,MOCK_S04,mouth,random_region,velocity
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,3,MOCK_S04,mouth,matched_sparsity,velocity_rmse,lower_is_better,1.12,120,MOCK_R000,20260908,outer_train_only,8,8,True,True
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,3,MOCK_S04,mouth,time_shuffle,velocity_rmse,lower_is_better,1.21,120,MOCK_R000,20260908,outer_train_only,8,8,True,True
 =======
+=======
+>>>>>>> Stashed changes
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,lag_shift_-2,velocity_rmse,lower_is_better,1.072567,240,MOCK_R000,20260908,outer_train_only,9,9,True,False
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,lag_shift_-1,velocity_rmse,lower_is_better,1.028289,240,MOCK_R000,20260908,outer_train_only,9,9,True,False
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,lag_shift_+1,velocity_rmse,lower_is_better,1.036331,240,MOCK_R000,20260908,outer_train_only,9,9,True,False
@@ -241,4 +244,7 @@ True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,lag_shift
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,random_region,velocity_rmse,lower_is_better,1.238053,240,MOCK_R000,20260908,outer_train_only,9,9,True,True
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,matched_sparsity,velocity_rmse,lower_is_better,1.208596,240,MOCK_R000,20260908,outer_train_only,9,9,True,True
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,time_shuffle,velocity_rmse,lower_is_better,1.291337,240,MOCK_R000,20260908,outer_train_only,9,9,True,True
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

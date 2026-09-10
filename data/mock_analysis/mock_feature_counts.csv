@@ -1,5 +1,6 @@
 is_synthetic,synthetic_notice,outer_fold,subject_id,region_id,condition,feature_count
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,0,MOCK_S01,mouth,full,80
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,0,MOCK_S01,mouth,pcmci,9
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,1,MOCK_S02,mouth,full,80
@@ -9,6 +10,8 @@ True,MOCK DATA / NOT A SCIENTIFIC RESULT,2,MOCK_S03,mouth,pcmci,11
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,3,MOCK_S04,mouth,full,80
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,3,MOCK_S04,mouth,pcmci,8
 =======
+=======
+>>>>>>> Stashed changes
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,persistence,1
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,self,10
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,0,MOCK_S01,mouth,full,80
@@ -137,4 +140,7 @@ True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,persisten
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,self,10
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,full,80
 True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,3,MOCK_S08,right_cheek,pcmci,9
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
