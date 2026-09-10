@@ -9,7 +9,12 @@
     "tau_max": 10,
     "pc_alpha": 0.01,
     "forecaster": "ridge",
-    "horizon": 1
+    "horizon": 1,
+    "matched_sparsity": {
+      "repeat_count": 1,
+      "seed_source": "split_manifest_seed",
+      "repeat_aggregation": "median_error_across_repeats_per_subject_region"
+    }
   },
   "evaluation": {
     "primary_metric": "velocity_rmse"

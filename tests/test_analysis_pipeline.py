@@ -17,6 +17,7 @@ from lagged_facial_graph_forecasting.analysis_pipeline import (
     generate_analysis_outputs,
     lag_response_source,
     null_distribution_source,
+    table_t07,
     table_t04,
     table_t08,
 )
@@ -144,6 +145,90 @@ def test_null_provenance_is_outer_train_only_and_matched_sparsity_is_exact() -> 
     assert random_region.lag_identity_preserved.all()
     keys = ["outer_fold", "subject_id", "region_id", "condition", "metric_name", "replicate_id"]
     assert not source.duplicated(keys).any()
+
+
+def _matched_repeat_fixture(values: tuple[float, ...]) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, object]]:
+    metrics = pd.DataFrame([
+        {
+            "outer_fold": index,
+            "subject_id": subject,
+            "region_id": "mouth",
+            "condition": "pcmci",
+            "metric_name": "velocity_rmse",
+            "metric_direction": "lower_is_better",
+            "value": 0.0,
+            "n_valid": 4,
+        }
+        for index, subject in enumerate(("S01", "S02"))
+    ])
+    nulls = pd.DataFrame([
+        {
+            "outer_fold": outer_fold,
+            "subject_id": subject,
+            "region_id": "mouth",
+            "condition": "matched_sparsity",
+            "metric_name": "velocity_rmse",
+            "metric_direction": "lower_is_better",
+            "value": value,
+            "n_valid": 4,
+            "replicate_id": f"R{index:03d}",
+            "seed": 7,
+            "mapping_scope": "outer_train_only",
+            "pcmci_feature_count": 2,
+            "null_feature_count": 2,
+            "input_count_preserved": True,
+            "lag_identity_preserved": True,
+        }
+        for outer_fold, subject in enumerate(("S01", "S02"))
+        for index, value in enumerate(values)
+    ])
+    config = _config()
+    config["primary"] = dict(config["primary"])
+    config["primary"]["matched_sparsity"] = {
+        "repeat_count": len(values),
+        "seed_source": "split_manifest_seed",
+        "repeat_aggregation": "median_error_across_repeats_per_subject_region",
+    }
+    return metrics, nulls, config
+
+
+def test_matched_sparsity_aggregates_repeat_median_before_region_summary() -> None:
+    metrics, nulls, config = _matched_repeat_fixture((0.0, 0.0, 9.0))
+
+    summary, _ = table_t07(metrics, nulls, config)
+
+    row = summary.loc[summary.null_condition == "matched_sparsity"].iloc[0]
+    assert row.median_null_minus_pcmci == pytest.approx(0.0)
+    assert row.mean_null_minus_pcmci == pytest.approx(0.0)
+    assert row.repeat_aggregation == "median_error_across_repeats_per_subject_region"
+
+
+@pytest.mark.parametrize(
+    "mutator,match",
+    [
+        (lambda frame: frame.iloc[:-1], "exactly 3 unique repeats"),
+        (lambda frame: pd.concat([frame, frame.iloc[[0]]], ignore_index=True), "replicate identity"),
+        (lambda frame: frame.assign(seed=float("nan")), "replicate seed"),
+    ],
+)
+def test_matched_sparsity_rejects_incomplete_duplicate_or_unseeded_repeats(mutator, match) -> None:
+    metrics, nulls, config = _matched_repeat_fixture((0.0, 0.0, 9.0))
+
+    with pytest.raises(AnalysisOutputError, match=match):
+        null_distribution_source(metrics, mutator(nulls), config)
+
+
+def test_primary_analysis_rejects_metric_and_seed_fallbacks() -> None:
+    metrics = pd.read_csv(FIXTURE_ROOT / "mock_metrics.csv")
+    config = _config()
+    config["evaluation"] = {}
+    with pytest.raises(AnalysisOutputError, match="explicitly frozen"):
+        table_t04(metrics, config)
+
+    config = _config()
+    config.pop("seed")
+    with pytest.raises(AnalysisOutputError, match="explicit non-negative integer"):
+        table_t04(metrics, config)
 
 
 def test_stability_validates_tau_max_frequency_and_missing_vs_zero() -> None:
