@@ -241,8 +241,12 @@ def aggregate_edge_lag_response(
                 f"edge/subject unit {unit_key!r} does not have the complete delta grid"
             )
         ordered = [rows[delta] for delta in deltas]
-        reference = ordered[0]
-        for item in ordered[1:]:
+        reference = rows[0]
+        for item in ordered:
+            if item.reference_error != reference.reference_error:
+                raise PopulationResponseContractError(
+                    f"edge/subject unit {unit_key!r} changes reference error across deltas"
+                )
             if (
                 item.tau_star != reference.tau_star
                 or item.source_region != reference.source_region

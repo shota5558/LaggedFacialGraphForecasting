@@ -1213,6 +1213,15 @@ def population_sources(population: pd.DataFrame, config: Mapping[str, object]) -
     )
     _require_columns(population, required, "population")
     out = population.copy()
+    for column in ("outer_fold", "tau_star", "delta", "shifted_lag"):
+        values = pd.to_numeric(out[column], errors="coerce")
+        if (
+            out[column].map(lambda value: isinstance(value, (bool, np.bool_))).any()
+            or values.isna().any()
+            or (values % 1 != 0).any()
+        ):
+            raise AnalysisOutputError(f"population.{column} must contain finite integers")
+        out[column] = values
     text_columns = (
         "edge_id", "subject_id", "source_region", "target_region", "source_dimension",
         "target_dimension", "context_id",

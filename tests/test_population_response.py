@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from statistics import median
 
 import pytest
@@ -13,6 +14,25 @@ from lagged_facial_graph_forecasting.population_response import (
 
 SUPPORT_A = "a" * 64
 SUPPORT_B = "b" * 64
+
+
+@pytest.mark.parametrize("changed_delta", [-1, 0, 1])
+@pytest.mark.parametrize("deltas", [(-1, 0, 1), (1, -1, 0)])
+def test_edge_response_rejects_reference_error_drift(changed_delta, deltas) -> None:
+    rows = [
+        _row(edge_id="e1", subject_id="s01", tau_star=2, delta=delta,
+             reference_error=1.0, shifted_error=1.0)
+        for delta in deltas
+    ]
+    rows = [
+        replace(row, reference_error=2.0, shifted_error=2.0)
+        if row.delta == changed_delta else row
+        for row in rows
+    ]
+    with pytest.raises(PopulationResponseContractError, match="reference error"):
+        aggregate_edge_lag_response(
+            rows, deltas=deltas, aggregate=median, aggregation_id="median_edge_subject"
+        )
 
 
 def _row(

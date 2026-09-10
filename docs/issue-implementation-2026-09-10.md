@@ -1,5 +1,12 @@
 # Issue implementation — 2026-09-10
 
+## Individual population analysis correction — 2026-09-11 (#35 / R-19)
+
+- The edge-response reducer compares every delta's reference error against delta zero. A changed baseline is rejected even when identity and support digests match, regardless of delta ordering.
+- Population CSV validation rejects fractional, boolean, missing and non-finite fold/lag/delta fields before integer conversion; truncation can no longer change a response's identity or lag.
+- Validation: `.venv/Scripts/python.exe -m pytest tests/test_population_response.py tests/test_extended_analysis_outputs.py -q -p no:cacheprovider --basetemp tmp/pytest-population-validation` — passed, including 23 new regression cases and existing synthetic output generation.
+- This is individual software validation only. It does not resolve the scientific context/cluster-CI decisions, run real data, or complete #35. No runner changes.
+
 ## Individual analysis correction — 2026-09-11 (#29 / #30)
 
 - The legacy v6 lag-response reducer now rejects differing valid-row counts across deltas, including drift at delta zero.

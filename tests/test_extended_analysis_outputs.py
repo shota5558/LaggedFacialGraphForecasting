@@ -132,6 +132,23 @@ def _population_frame() -> pd.DataFrame:
     return _provenance(pd.DataFrame(rows))
 
 
+@pytest.mark.parametrize("column", ["outer_fold", "tau_star", "delta", "shifted_lag"])
+@pytest.mark.parametrize("value", [0.5, True, float("inf"), float("nan")])
+def test_population_source_rejects_non_integer_identity(column, value) -> None:
+    frame = _population_frame()
+    frame[column] = frame[column].astype(object)
+    frame.loc[0, column] = value
+    with pytest.raises(AnalysisOutputError, match=f"population.{column}.*finite integers"):
+        population_sources(frame, _config())
+
+
+def test_population_source_rejects_reference_drift() -> None:
+    frame = _population_frame()
+    frame.loc[0, "reference_error"] += 0.5
+    with pytest.raises(AnalysisOutputError, match="complete-unit"):
+        population_sources(frame, _config())
+
+
 def test_extended_sources_validate_and_reconcile() -> None:
     grid = _grid()
     source = landscape_source(_landscape_frame(grid), grid)
