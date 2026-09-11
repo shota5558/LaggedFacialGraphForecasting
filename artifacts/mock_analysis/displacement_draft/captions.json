@@ -1,0 +1,188 @@
+{
+  "N_F1_landscape": {
+    "title": "N-F1 全候補の帯域G  横source 縦target",
+    "caption": "被験者内の全lag平均後に被験者間中央値。斜線は自己対、灰色は評価不能。",
+    "source_tables": [
+      "N_ST2_band_summary.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F2_commonality": {
+    "title": "N-F2 改善の符号と分母  横source 縦target",
+    "caption": "セル内は正の人数/評価人数。0は正に含めない。真の効果がある人口の割合ではない。",
+    "source_tables": [
+      "N_ST2_band_summary.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F2_subject_speaking": {
+    "title": "N-F2 全被験者の帯域G  本人のみ発話",
+    "caption": "",
+    "source_tables": [
+      "N_ST2_band_subject.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F2_subject_non_speaking": {
+    "title": "N-F2 全被験者の帯域G  本人非発話",
+    "caption": "",
+    "source_tables": [
+      "N_ST2_band_subject.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F3_absolute_speaking": {
+    "title": "N-F3A 全56部位対の絶対lag  本人のみ発話",
+    "caption": "横source・縦target。全候補を固定順に表示。実上限500 ms、h=1。帯は点ごとの名目区間。",
+    "source_tables": [
+      "N_ST2_cell_summary.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F3_absolute_non_speaking": {
+    "title": "N-F3A 全56部位対の絶対lag  本人非発話",
+    "caption": "横source・縦target。全候補を固定順に表示。実上限500 ms、h=1。帯は点ごとの名目区間。",
+    "source_tables": [
+      "N_ST2_cell_summary.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F3_centered": {
+    "title": "N-F3B 選択lag中心の応答",
+    "caption": "Δ=0は定義上0。正はずらした時の悪化。全Δで同じedge・部位対・被験者。",
+    "source_tables": [
+      "N_ST2_centered_subject.csv",
+      "N_ST2_centered_summary.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F4_models": {
+    "title": "N-F4 4条件の誤差と対応差",
+    "caption": "全顔は8領域が揃う被験者のみ。点は被験者、太線は名目区間。差は被験者内で計算。",
+    "source_tables": [
+      "N_T2_model_errors.csv",
+      "N_T2_paired_effects.csv",
+      "N_ST2_model_subject.csv",
+      "N_ST2_paired_subject.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F4_targets_speaking": {
+    "title": "N-F4 target別対応差  本人のみ発話",
+    "caption": "",
+    "source_tables": [
+      "N_T2_paired_effects.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F4_targets_non_speaking": {
+    "title": "N-F4 target別対応差  本人非発話",
+    "caption": "",
+    "source_tables": [
+      "N_T2_paired_effects.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F5_enrichment": {
+    "title": "N-F5 選択cellの濃縮",
+    "caption": "選択cell-G平均から1,000ランダム集合平均の算術平均を引く。空選択は不能。",
+    "source_tables": [
+      "N_T3_enrichment.csv",
+      "N_ST2_enrichment_subject.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F5_random_speaking": {
+    "title": "N-F5 全被験者の1,000集合  本人のみ発話  灰点=random 茶点=selected 青線=random平均",
+    "caption": "横は集合平均G、縦はMOCK subject ID。反復は人数ではない。失敗・空選択を0にしない。",
+    "source_tables": [
+      "N_ST2_enrichment_repeats.csv.gz"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_F5_random_non_speaking": {
+    "title": "N-F5 全被験者の1,000集合  本人非発話  灰点=random 茶点=selected 青線=random平均",
+    "caption": "横は集合平均G、縦はMOCK subject ID。反復は人数ではない。失敗・空選択を0にしない。",
+    "source_tables": [
+      "N_ST2_enrichment_repeats.csv.gz"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_SF1_quality": {
+    "title": "N-SF1 測定定義と品質",
+    "caption": "点配置は概念図。実topologyや追跡品質の確認ではない。QC時間は模擬値。",
+    "source_tables": [
+      "../input/quality.csv",
+      "../input/config.json"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_SF2_stability_speaking": {
+    "title": "N-SF2 帯域選択頻度  本人のみ発話  白枠は元の選択",
+    "caption": "100回の模擬選択記録。PCMCI再探索を実行した結果ではない。失敗時は下限k/N、上限はCSV。",
+    "source_tables": [
+      "N_ST2_stability_band.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_SF2_exact_lag_speaking": {
+    "title": "N-SF2 全lagの選択記録  本人のみ発話",
+    "caption": "",
+    "source_tables": [
+      "../input/selection.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_SF2_stability_non_speaking": {
+    "title": "N-SF2 帯域選択頻度  本人非発話  白枠は元の選択",
+    "caption": "100回の模擬選択記録。PCMCI再探索を実行した結果ではない。失敗時は下限k/N、上限はCSV。",
+    "source_tables": [
+      "N_ST2_stability_band.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  },
+  "N_SF2_exact_lag_non_speaking": {
+    "title": "N-SF2 全lagの選択記録  本人非発話",
+    "caption": "",
+    "source_tables": [
+      "../input/selection.csv"
+    ],
+    "unit": "眼角中点間距離比 ×10⁻³",
+    "uncertainty": "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。",
+    "synthetic_notice": "MOCK DATA / NOT A SCIENTIFIC RESULT"
+  }
+}

@@ -18,6 +18,23 @@ from .core_contracts import MetricsResult
 
 MetricFunction = Callable[[np.ndarray, np.ndarray], float]
 VELOCITY_RMSE_NAME = "velocity_rmse"
+DISPLACEMENT_EUCLIDEAN_NAME = "displacement_mean_euclidean_error"
+
+
+def displacement_mean_euclidean_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """Mean pointwise 2D distance on an already matched (time, point, xy) support.
+
+    Geometric normalization must precede this calculation. Missing points/rows
+    must be resolved by the common-support policy, never silently skipped here.
+    This is neither coordinate RMSE nor the norm of a region centroid.
+    """
+    truth = np.asarray(y_true, dtype=float)
+    prediction = np.asarray(y_pred, dtype=float)
+    if truth.shape != prediction.shape or truth.ndim != 3 or truth.shape[-1] != 2:
+        raise ValueError("displacement arrays must share shape (time, point, 2)")
+    if truth.size == 0 or not np.isfinite(truth).all() or not np.isfinite(prediction).all():
+        raise ValueError("displacement support must be nonempty and finite")
+    return float(np.linalg.norm(prediction - truth, axis=-1).mean())
 
 
 def evaluate_metric_by_subject_region(

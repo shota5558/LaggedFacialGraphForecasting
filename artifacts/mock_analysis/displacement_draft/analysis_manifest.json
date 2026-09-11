@@ -1,0 +1,92 @@
+{
+  "protocol_id": "displacement-report-draft-v1",
+  "is_synthetic": true,
+  "publication_ready": false,
+  "primary_metric": "displacement_mean_euclidean_error",
+  "unit": "interocular_midpoint_distance_ratio",
+  "dataset": "SYNTHETIC_ONLY",
+  "seed": 20260911,
+  "fps": 30,
+  "horizon": 1,
+  "self_history": 30,
+  "lag_max": 15,
+  "delta_radius": 3,
+  "matched_repeats": 1000,
+  "bootstrap_repeats": 10000,
+  "discovery_repeats": 100,
+  "n_subjects": 30,
+  "n_groups": 15,
+  "n_evaluation_frames": 900,
+  "bands": [
+    "0–100 ms",
+    "100–250 ms",
+    "250–500 ms"
+  ],
+  "point_mapping": {
+    "left_brow": [
+      336,
+      296,
+      300
+    ],
+    "right_brow": [
+      107,
+      66,
+      70
+    ],
+    "left_eyelid": [
+      385,
+      386,
+      380,
+      374
+    ],
+    "right_eyelid": [
+      158,
+      159,
+      153,
+      145
+    ],
+    "left_cheek": [
+      425,
+      280
+    ],
+    "right_cheek": [
+      205,
+      50
+    ],
+    "mouth": [
+      61,
+      291,
+      13,
+      14,
+      37,
+      267,
+      84,
+      314
+    ],
+    "jaw": [
+      176,
+      152,
+      400
+    ]
+  },
+  "selection_scope": "synthetic_train_recipe_before_test_generation",
+  "prediction_recipe": "truth + residual_scale * unit_residual; persistence = previous truth",
+  "fitting_performed": false,
+  "real_protocol_frozen": false,
+  "report": "analysis_report_draft.md",
+  "code_hashes": {
+    "scripts/generate_displacement_mock_report.py": "85f4af40dc757c025531beea0dfd7cd140c8db7ebacd7387a43f87b91f0ada6d",
+    "src/lagged_facial_graph_forecasting/displacement_analysis.py": "5fe2341d501de3c81c7ae31a38ebe3bd304ae7a6a207531619f24319c40090ae",
+    "src/lagged_facial_graph_forecasting/displacement_report.py": "3828ea45f6c2a8187a1f6c6fae9ee356f8d41f9240d5918ea49b27774ad499ca",
+    "src/lagged_facial_graph_forecasting/metrics.py": "1d6a83b2410fd9ed2054f51b8a3e61fe582de41a81ce85aee8c0838132ea07d0"
+  },
+  "git_sha": "2226bd64411c105851a3888fddeaf69bc6d783f3",
+  "python": "3.11.16",
+  "numpy": "2.4.6",
+  "pandas": "2.3.3",
+  "expected_failure_fixture": true,
+  "report_generated": true,
+  "real_data_validated": false,
+  "artifact_count": 51,
+  "registry_sha256": "46a50fa70469f7efdeba2aefc454cb03b16b2a1ab6678bdb2e40098e9c83139d"
+}

@@ -1,0 +1,3 @@
+﻿condition,n_subjects,n_groups,original_seconds,after_calibration_seconds,after_qc_seconds,after_boundary_history_seconds,common_support_seconds,is_synthetic,synthetic_notice,protocol_id
+non_speaking,30,15,2700.0,2400.0,2160.0,1800.0,900.0,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,30,15,2700.0,2400.0,2160.0,1800.0,900.0,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1

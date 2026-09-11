@@ -1,0 +1,9 @@
+﻿領域,点index,点数,成分数,is_synthetic,synthetic_notice,protocol_id
+左眉,"336, 296, 300",3,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+右眉,"107, 66, 70",3,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+左眼瞼,"385, 386, 380, 374",4,8,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+右眼瞼,"158, 159, 153, 145",4,8,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+左頬,"425, 280",2,4,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+右頬,"205, 50",2,4,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+口,"61, 291, 13, 14, 37, 267, 84, 314",8,16,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+顎,"176, 152, 400",3,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
