@@ -4,6 +4,7 @@ PCMCI+ と Ridge を用いて、顔部位間の遅延予測構造を held-out �
 
 ## 現在の基準
 
+- [新指標に基づく解析図表の再構成案（2026-09-11）](docs/analysis_tables_figures_redesign_2026-09-11.md)
 - [本実験に必要な定義の最終推薦案（2026-09-11）](docs/primary_experiment_recommendation_2026-09-11.md)
 - [研究計画](docs/experimental_plan.md)
 - [詳細設計](docs/detailed_design.md)

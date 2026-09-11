@@ -3,8 +3,14 @@
 
 **Scope:** Issue #23 — T01–T09 / F01–F14 analysis-output generation pipeline  
 **Branch:** `dev`  
-**Normative scientific contract:** Issue #23 + Scientific Freeze.  
+**Implementation contract for the legacy outputs recorded below:** Issue #23 + Scientific Freeze v6.
 **Last implementation audit:** 2026-09-11
+
+**Current redesign (2026-09-11):** [新指標に基づく解析図表の再構成案](docs/analysis_tables_figures_redesign_2026-09-11.md)
+reorganizes the report around pointwise mean Euclidean displacement error, full-candidate G,
+subject commonality, and absolute/centered lag response. Its `N-*` outputs are a design proposal,
+not implemented or scientifically validated by the checkboxes below. The current output pipeline
+still fixes `velocity_rmse`; do not relabel legacy artifacts as new-metric results.
 
 This tracker records software implementation status separately from real-data scientific validation.
 Synthetic/mock success may complete `Code` and `Test`, but **must not** be used to mark real-data
