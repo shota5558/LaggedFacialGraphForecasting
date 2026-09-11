@@ -1,6 +1,19 @@
 is_synthetic,synthetic_notice,analysis_id,label,effect_self_minus_pcmci,ci_low,ci_high,confidence_level,metric_name,effect_direction
+<<<<<<< Updated upstream
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,primary_parcorr_ridge,Primary ParCorr + Ridge,0.13,0.085,0.176,0.95,velocity_rmse,positive_is_pcmci_better
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,gpdc_ridge,GPDC + Ridge,0.118,0.071,0.165,0.95,velocity_rmse,positive_is_pcmci_better
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,lpcmci_ridge,LPCMCI + Ridge,0.101,0.052,0.151,0.95,velocity_rmse,positive_is_pcmci_better
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,phase_surrogate,Phase-shuffled surrogate,0.022,-0.018,0.061,0.95,velocity_rmse,positive_is_pcmci_better
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,h2_parcorr_ridge,h=2,0.086,0.041,0.132,0.95,velocity_rmse,positive_is_pcmci_better
+=======
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,primary_parcorr_ridge,Primary ParCorr + Ridge,0.13,0.085,0.176,0.95,velocity_rmse,positive_is_pcmci_better
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,gpdc_ridge,GPDC + Ridge,0.118,0.071,0.165,0.95,velocity_rmse,positive_is_pcmci_better
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lpcmci_ridge,LPCMCI + Ridge,0.101,0.052,0.151,0.95,velocity_rmse,positive_is_pcmci_better
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,phase_surrogate,Phase-shuffled surrogate,0.022,-0.018,0.061,0.95,velocity_rmse,positive_is_pcmci_better
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,circular_shift,Circular-shift surrogate,0.028,-0.011,0.068,0.95,velocity_rmse,positive_is_pcmci_better
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,h2_parcorr_ridge,h=2,0.086,0.041,0.132,0.95,velocity_rmse,positive_is_pcmci_better
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,gru_confirmation,GRU confirmation,0.121,0.069,0.171,0.95,velocity_rmse,positive_is_pcmci_better
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes

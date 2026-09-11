@@ -1,0 +1,5 @@
+is_synthetic,synthetic_notice,target_region,metric_name,median_full_error,median_pcmci_error,median_full_minus_pcmci,ci_low,ci_high,median_full_feature_count,median_pcmci_feature_count,median_feature_ratio_pcmci_over_full,n_subjects
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,jaw,velocity_rmse,1.0557935,1.032618,0.0253865,-0.00555,0.046551,80,10.5,0.13125,8
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,left_cheek,velocity_rmse,1.079758,1.0519265,0.0234055,0.013484,0.030007,80,10.5,0.13125,8
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,mouth,velocity_rmse,1.036273,1.0134855,0.0287845,0.019736,0.032817,80,10,0.125,8
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,right_cheek,velocity_rmse,1.081205,1.0600695,0.0203805,0.009528,0.026422,80,9.5,0.11875,8

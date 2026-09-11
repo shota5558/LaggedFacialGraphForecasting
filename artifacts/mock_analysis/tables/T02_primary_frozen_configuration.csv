@@ -1,0 +1,26 @@
+is_synthetic,synthetic_notice,parameter,value
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,evaluation.primary_metric,velocity_rmse
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,is_synthetic,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_response.clipping,forbidden
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_response.delta_frames,"[-2,-1,0,1,2]"
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_response.feature_dropping,forbidden
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_response.reference_delta,0
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_response.require_complete_symmetric_grid,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_response.shift_mode,common_shift_all_selected_parents
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_response.wrapping,forbidden
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,primary.ci_test,parcorr
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,primary.discovery,pcmci_plus
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,primary.forecaster,ridge
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,primary.horizon,1
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,primary.pc_alpha,0.01
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,primary.tau_max,10
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,purpose,software verification only
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,seed,20260908
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,statistics.bootstrap_confidence_level,0.95
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,statistics.bootstrap_method,percentile
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,statistics.bootstrap_n_resamples,10000
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,statistics.paired_unit,outer_test_subject
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,synthetic_notice,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,analysis_schema_version,2
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,analysis_code_version,issue23-analysis-v2
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,config_sha256,d047174c6c0df08f21f33ea9ab13232fb79db093234af2b2e7e6ee5d3ede1676

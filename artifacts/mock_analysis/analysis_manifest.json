@@ -1,0 +1,59 @@
+{
+  "analysis_issue": 23,
+  "artifact_registry": {
+    "record_count": 72,
+    "relative_path": "artifacts/mock_analysis/analysis_artifact_registry.csv",
+    "sha256": "0c857b9497a7a31ae8dee29f099d6a0eb62ded34f1b2875d0281a15262d2f51c"
+  },
+  "code_version": "issue23-analysis-v2",
+  "config_sha256": "d047174c6c0df08f21f33ea9ab13232fb79db093234af2b2e7e6ee5d3ede1676",
+  "example_selection_rule": "lexicographically first subject_id,region_id; independent of outcome",
+  "figure_source_reconciliation": "every figure reads its serialized canonical source CSV before rendering",
+  "input_artifacts": [
+    {
+      "name": "mock_dataset_summary.csv",
+      "sha256": "85439261e13e59034df731395f1778e2a85cb0d982942f6ca284937f2ce8e47d"
+    },
+    {
+      "name": "mock_primary_config.json",
+      "sha256": "7391198838005aaf42bd6d57b183f7197be3dbcb5bfa9a45b665bba274a8e0ca"
+    },
+    {
+      "name": "mock_metrics.csv",
+      "sha256": "73642abde53eda3162f61f718efba5a2460d8739ef0ae8904022270447b8dcf1"
+    },
+    {
+      "name": "mock_feature_counts.csv",
+      "sha256": "03fd511020b8bfcd79a4cfe972831092e223cb61e2bf2f2ed84f16243903239d"
+    },
+    {
+      "name": "mock_null_metrics.csv",
+      "sha256": "a17fb9355a732cebcbdcaa23860ecdfe2361f4142da90921fc02af8707731a27"
+    },
+    {
+      "name": "mock_lag_response.csv",
+      "sha256": "2f31a48134d184cc494834a0edfdb9ef1c5709dd7be27008ad2e297c7ec5628a"
+    },
+    {
+      "name": "mock_edge_stability.csv",
+      "sha256": "96e1f4bce14d4ec6367ddc3e304dcd1868e3a6a1e0d37aaa514128ba60294790"
+    },
+    {
+      "name": "mock_sensitivity.csv",
+      "sha256": "34ad6153844566073d9d58f14b9770be4d6b0831b1ff44006573dd3b074324f8"
+    },
+    {
+      "name": "mock_prediction_trajectory.csv",
+      "sha256": "695009ba97ab7c381dba5716d2438edaf0277551a5439686f92a49c5cb0c8b93"
+    }
+  ],
+  "is_synthetic": true,
+  "primary_frozen": false,
+  "primary_metric": "velocity_rmse",
+  "publication_ready": false,
+  "schema_version": 2,
+  "seed": 20260908,
+  "sensitivity_included": true,
+  "sensitivity_validation_scope": "software_only_mock",
+  "synthetic_notice": "FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS"
+}

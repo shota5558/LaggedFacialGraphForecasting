@@ -1,0 +1,1 @@
+{"contract_type":"MetricsResult","payload":{"condition":"random-region","metric_name":"velocity_rmse","n_valid":550,"outer_fold":0,"region_id":"mouth","subject_id":"outer_test","value":1.8887634888150189},"schema_version":3}

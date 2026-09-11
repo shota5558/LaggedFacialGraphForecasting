@@ -1,0 +1,21 @@
+Metadata-Version: 2.4
+Name: lagged-facial-graph-forecasting
+Version: 0.0.1
+Requires-Python: >=3.11
+Requires-Dist: numpy<3,>=2.0
+Requires-Dist: PyYAML<7,>=6.0
+Requires-Dist: scikit-learn<2,>=1.7
+Requires-Dist: scipy<2,>=1.13
+Requires-Dist: tigramite<5.3,>=5.2.10.1
+Requires-Dist: dcor<1,>=0.6
+Provides-Extra: analysis
+Requires-Dist: pandas<3,>=2.2; extra == "analysis"
+Requires-Dist: matplotlib<4,>=3.9; extra == "analysis"
+Requires-Dist: tabulate<1,>=0.9; extra == "analysis"
+Provides-Extra: test
+Requires-Dist: pytest<9,>=8; extra == "test"
+Requires-Dist: pandas<3,>=2.2; extra == "test"
+Requires-Dist: matplotlib<4,>=3.9; extra == "test"
+Requires-Dist: tabulate<1,>=0.9; extra == "test"
+Provides-Extra: sensitivity
+Requires-Dist: torch<3,>=2.4; extra == "sensitivity"
