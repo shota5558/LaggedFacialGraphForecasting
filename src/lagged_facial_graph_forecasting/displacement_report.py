@@ -21,6 +21,11 @@ UNIT_LABEL = "眼角中点間距離比 ×10⁻³"
 INTERVAL = "帯と区間は固定OOF値のgroup構成に対する名目95%区間。学習全体の不確かさ・同時区間ではない。"
 
 
+def _markdown_path(root: Path, path: Path) -> str:
+    """Return a report-local POSIX path for Markdown links and images."""
+    return path.resolve().relative_to(root.resolve()).as_posix()
+
+
 def render_report(root: Path, config: dict) -> Path:
     plt.rcParams.update({"font.family": ["Meiryo", "DejaVu Sans"], "font.size": 9,
                          "axes.spines.top": False, "axes.spines.right": False,
@@ -280,10 +285,11 @@ def render_report(root: Path, config: dict) -> Path:
 
 def write_markdown(root: Path, config: dict, captions: dict, supplement_images: list[str]) -> Path:
     tables=root/"tables"
-    link=lambda label,path:f"[{label}]({path.resolve().as_posix()})"
+    link=lambda label,path:f"[{label}]({_markdown_path(root,path)})"
     def img(name):
         caption=captions[name]
-        return f"![{caption['title']}]({(root/'figures'/(name+'.png')).resolve().as_posix()})\n\n{caption['caption']}\n"
+        path = root/"figures"/(name+".png")
+        return f"![{caption['title']}]({_markdown_path(root,path)})\n\n{caption['caption']}\n"
     def table(frame):
         return frame.to_markdown(index=False,floatfmt=".3f",missingval="評価不能")
     def fmt(value):
@@ -424,9 +430,9 @@ targetごとの選択cell-G平均から、ブロック数と実scalar成分数�
 
 データ利用と独立group、採用点と測定品質、fps・Self履歴・共通support、実際の探索・Ridge調整・再学習を確認した後、承認protocolの実artifactから全指標を再計算する。旧速度RMSE集計を名称変更して読み込むことはできない。本草案生成は本実験freezeや科学的受容の完了ではない。
 
-{link('補足資料 図表 設定 全数値への索引',root/'supplement.md')}  
-{link('生成設定',root/'input/config.json')}  
-{link('出力registry',root/'analysis_artifact_registry.csv')}  
+{link('補足資料 図表 設定 全数値への索引',root/'supplement.md')}<br>
+{link('生成設定',root/'input/config.json')}<br>
+{link('出力registry',root/'analysis_artifact_registry.csv')}<br>
 {link('出力manifest',root/'analysis_manifest.json')}
 
 再生成コマンド（repository root、analysis依存関係を導入したPython）:

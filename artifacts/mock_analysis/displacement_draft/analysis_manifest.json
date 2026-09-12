@@ -77,10 +77,10 @@
   "code_hashes": {
     "scripts/generate_displacement_mock_report.py": "85f4af40dc757c025531beea0dfd7cd140c8db7ebacd7387a43f87b91f0ada6d",
     "src/lagged_facial_graph_forecasting/displacement_analysis.py": "5fe2341d501de3c81c7ae31a38ebe3bd304ae7a6a207531619f24319c40090ae",
-    "src/lagged_facial_graph_forecasting/displacement_report.py": "3828ea45f6c2a8187a1f6c6fae9ee356f8d41f9240d5918ea49b27774ad499ca",
+    "src/lagged_facial_graph_forecasting/displacement_report.py": "ea46df849831ecb8155be0897c3d7be155b3793d6f21c4866d9af727f6d9a942",
     "src/lagged_facial_graph_forecasting/metrics.py": "1d6a83b2410fd9ed2054f51b8a3e61fe582de41a81ce85aee8c0838132ea07d0"
   },
-  "git_sha": "2226bd64411c105851a3888fddeaf69bc6d783f3",
+  "git_sha": "5465796462eab4acd62979537547bf2706a94f0e",
   "python": "3.11.16",
   "numpy": "2.4.6",
   "pandas": "2.3.3",
@@ -88,5 +88,5 @@
   "report_generated": true,
   "real_data_validated": false,
   "artifact_count": 51,
-  "registry_sha256": "46a50fa70469f7efdeba2aefc454cb03b16b2a1ab6678bdb2e40098e9c83139d"
+  "registry_sha256": "89dc088df40b51c6f246dec1b143b83576e43c6053b0e8046fb17aaa37e2c240"
 }

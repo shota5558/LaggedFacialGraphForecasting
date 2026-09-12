@@ -31,35 +31,35 @@ G>0は追加ブロックにより誤差が小さくなることを示す。cell-
 
 ## 2 全候補の追加予測情報
 
-![N-F1 全候補の帯域G  横source 縦target](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/figures/N_F1_landscape.png)
+![N-F1 全候補の帯域G  横source 縦target](figures/N_F1_landscape.png)
 
 被験者内の全lag平均後に被験者間中央値。斜線は自己対、灰色は評価不能。
 
 
 各条件168個の部位対×帯域セルをすべて描いた。模擬値は正・負・ほぼ0が混在するよう生成した。本文を実データで書き換える際は、部位対と帯域、Gの大きさ、正の割合と分母を併記する。結果から最大lagや良かったcellだけを選び直さない。
 
-![N-F2 改善の符号と分母  横source 縦target](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/figures/N_F2_commonality.png)
+![N-F2 改善の符号と分母  横source 縦target](figures/N_F2_commonality.png)
 
 セル内は正の人数/評価人数。0は正に含めない。真の効果がある人口の割合ではない。
 
 
-同じ中央値でも被験者ごとの符号は異なり得るため、G>0人数と全被験者の値を併せて報告する。分母が異なるセルの大小を直接比較する場合は、共通被験者で対応差を再計算する。[全被験者のGとfold別の補足図](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/supplement.md)に個別分布を示した。
+同じ中央値でも被験者ごとの符号は異なり得るため、G>0人数と全被験者の値を併せて報告する。分母が異なるセルの大小を直接比較する場合は、共通被験者で対応差を再計算する。[全被験者のGとfold別の補足図](supplement.md)に個別分布を示した。
 
 ## 3 絶対lagと中心化応答
 
-![N-F3A 全56部位対の絶対lag  本人のみ発話](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/figures/N_F3_absolute_speaking.png)
+![N-F3A 全56部位対の絶対lag  本人のみ発話](figures/N_F3_absolute_speaking.png)
 
 横source・縦target。全候補を固定順に表示。実上限500 ms、h=1。帯は点ごとの名目区間。
 
 
-![N-F3A 全56部位対の絶対lag  本人非発話](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/figures/N_F3_absolute_non_speaking.png)
+![N-F3A 全56部位対の絶対lag  本人非発話](figures/N_F3_absolute_non_speaking.png)
 
 横source・縦target。全候補を固定順に表示。実上限500 ms、h=1。帯は点ごとの名目区間。
 
 
 絶対lag曲線は全56部位対を保持した。生成規則には広いピーク、上限付近まで続く形、口→顎の平坦な形を含む。これは図の読み分けを確認するための形状である。絶対lagの上限に改善が続く場合は終端未確認と記載する。
 
-![N-F3B 選択lag中心の応答](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/figures/N_F3_centered.png)
+![N-F3B 選択lag中心の応答](figures/N_F3_centered.png)
 
 Δ=0は定義上0。正はずらした時の悪化。全Δで同じedge・部位対・被験者。
 
@@ -77,7 +77,7 @@ edge数はfold・条件・部位対・lagの一意な選択数であり、被験
 
 ## 4 四条件の予測と入力数
 
-![N-F4 4条件の誤差と対応差](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/figures/N_F4_models.png)
+![N-F4 4条件の誤差と対応差](figures/N_F4_models.png)
 
 全顔は8領域が揃う被験者のみ。点は被験者、太線は名目区間。差は被験者内で計算。
 
@@ -125,7 +125,7 @@ edge数はfold・条件・部位対・lagの一意な選択数であり、被験
 
 ## 5 選択集合の濃縮
 
-![N-F5 選択cellの濃縮](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/figures/N_F5_enrichment.png)
+![N-F5 選択cellの濃縮](figures/N_F5_enrichment.png)
 
 選択cell-G平均から1,000ランダム集合平均の算術平均を引く。空選択は不能。
 
@@ -141,7 +141,7 @@ targetごとの選択cell-G平均から、ブロック数と実scalar成分数�
 
 ランダム集合は模擬test値の生成前に固定し、同じfoldの全被験者で共有した。集合内重複なし、選択集合との重なりと反復間重複は許した。空選択はZ=0とせず評価不能。予定targetの計算失敗は成功targetだけの要約へ置き換えず、集約失敗として残した。1,000回を独立人数や厳密な置換p値には用いない。
 
-[全被験者とtargetの1,000集合分布](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/supplement.md)も保存した。正のZでもselected平均Gが負なら、Selfを改善したという結論にはならない。
+[全被験者とtargetの1,000集合分布](supplement.md)も保存した。正のZでもselected平均Gが負なら、Selfを改善したという結論にはならない。
 
 ## 6 不確かさと解釈の範囲
 
@@ -153,10 +153,10 @@ targetごとの選択cell-G平均から、ブロック数と実scalar成分数�
 
 データ利用と独立group、採用点と測定品質、fps・Self履歴・共通support、実際の探索・Ridge調整・再学習を確認した後、承認protocolの実artifactから全指標を再計算する。旧速度RMSE集計を名称変更して読み込むことはできない。本草案生成は本実験freezeや科学的受容の完了ではない。
 
-[補足資料 図表 設定 全数値への索引](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/supplement.md)  
-[生成設定](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/input/config.json)  
-[出力registry](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/analysis_artifact_registry.csv)  
-[出力manifest](C:/Users/yukit/OneDrive/ドキュメント/ChatGPT/PCMCI＋/artifacts/mock_analysis/displacement_draft/analysis_manifest.json)
+[補足資料 図表 設定 全数値への索引](supplement.md)<br>
+[生成設定](input/config.json)<br>
+[出力registry](analysis_artifact_registry.csv)<br>
+[出力manifest](analysis_manifest.json)
 
 再生成コマンド（repository root、analysis依存関係を導入したPython）:
 
