@@ -1,79 +1,185 @@
-schema_version: 6
+schema_version: 7
+protocol_id: primary-2026-09-12-adopted
+protocol_status: preflight_required
+
+authority:
+  specification: docs/authoritative_primary_experiment_spec_2026-09-12.md
+  specification_sha256: e623a6fc690b41ea6b882cff6058e5c34f1820da79b17a49aa41d4b540cf3fce
+  adoption_record: docs/adopted_decisions_2026-09-12.md
+  adoption_record_sha256: d5e906cffd788b36229a62e387ba3a81f7704dc47b21b783a577b7c9b8d823e3
+  recommendation: docs/primary_experiment_recommendation_2026-09-11.md
+  recommendation_sha256: bcee8a1c2bc38b5b8661a532f09a23746f0b3aa8149fe4615e1a8a67df03480b
+
+compatibility:
+  supersedes_schema_version: 6
+  legacy_artifacts: reject
+  explicit_migration_required: true
 
 primary:
-  discovery: pcmci_plus
-  ci_test: parcorr
-  forecaster: ridge
   horizon: 1
-  tau_max: 10
-  pc_alpha: 0.01
   conditions:
-    - persistence
-    - self
-    - full
-    - pcmci
-    - lag_shift
-    - random_region
-    - matched_sparsity
-    - time_shuffle
+    - self_speaking
+    - self_non_speaking
+  analysis:
+    - predictive_gain_landscape
+    - four_condition_comparison
+    - selection_enrichment
+    - selected_lag_centered_response
+    - discovery_stability
+    - data_execution_audit
+  representation:
+    input: normalized_2d_displacement
+    node_unit: landmark_coordinate_scalar
+    forecast_projection: region_block_or
+    forecast_feature_rule: all_usable_source_scalars
+    raw_scalar_links_preserved: true
+  discovery:
+    method: pcmci_plus
+    ci_test: parcorr
+    pc_alpha: 0.01
+    significance: analytic
+    mask_type: xyz
+    recycle_residuals: false
+    tau_min: 0
+    tau_max: null
+    tau_max_rule: floor_half_fps
+    contemporaneous_forecast_input: forbidden
+    contemp_collider_rule: majority
+    conflict_resolution: true
+    reset_lagged_links: false
+    max_combinations: 1
+    max_conds_dim: null
+    max_conds_py: null
+    max_conds_px: null
+    max_conds_px_lagged: null
+    fdr_method: none
+  lag:
+    candidate_rule: integer_frames_1_through_floor_half_fps
+    bands_ms:
+      - label: B1
+        lower_exclusive: 0
+        upper_inclusive: 100
+      - label: B2
+        lower_exclusive: 100
+        upper_inclusive: 250
+      - label: B3
+        lower_exclusive: 250
+        upper_inclusive: 500
+  self_history:
+    selection: pilot_60_20_20_shortest_within_1_percent
+    candidate_seconds: [0.5, 1.0, 2.0]
+    optional_extension_seconds: 4.0
+    history_frames: null
+  forecaster:
+    method: ridge
+    intercept: true
+    target_standardization: false
+    input_standardization: train_only
+    subject_equal_weight: true
+    alpha_grid: [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]
+    alpha_selection: inner_subject_equal_main_error
+    alpha_tie_tolerance: 1.0e-12
+    alpha_tie_break: larger
+    outer_test_grid_extension: forbidden
+  matched_sparsity:
+    repeat_count: 1000
+    sampling_unit: source_region_lag_block_scalar_count_strata
+    within_set_replacement: forbidden
+    selected_overlap: allowed
+    repeat_overlap: allowed
+    lag_distribution_matching: forbidden
   lag_response:
-    delta_frames: [-2, -1, 0, 1, 2]
+    estimand: self_plus_single_selected_source_region_lag_block
+    delta_frames: null
+    delta_rule: symmetric_floor_tenth_fps
     reference_delta: 0
-    shift_mode: common_shift_all_selected_parents
-    valid_lag_min: 1
-    valid_lag_max: 10
-    boundary_policy: mark_target_fold_unevaluable
+    complete_symmetric_grid: true
     clipping: forbidden
     wrapping: forbidden
-    feature_dropping: forbidden
     one_sided_grid: forbidden
-    evaluability:
-      require_complete_symmetric_grid: true
-      empty_parent_set: unevaluable_no_parents
-    aggregation:
-      support: complete_grid_target_folds_only
-      same_units_across_all_deltas: true
-      report_unevaluable_counts: true
-  matched_sparsity:
-    repeat_count: 100
-    seed_source: split_manifest_seed
-    repeat_aggregation: median_error_across_repeats_per_subject_region
+    boundary_policy: unevaluable_without_common_grid
   statistics:
     paired_unit: subject
     point_aggregation: median
+    bootstrap_unit: dependency_group
     bootstrap:
       confidence_level: 0.95
       n_resamples: 10000
-      method: percentile
-      seed_source: experiment_seed
+      method: percentile_linear
+      shared_indices_across_outputs: true
+      minimum_evaluable_groups: 10
+    held_out_significance: not_primary
+    fdr: not_primary
+    full_noninferiority_margin: null
+  discovery_stability:
+    resampling_unit: dependency_group
+    repeat_count: 100
+    time_order: preserved
+    duplicate_group: independent_series_copy
+    concatenation: forbidden
+    parent_set_redefinition: forbidden
 
-discovery_representation:
-  node_unit: region_dimension
-  component_mapping: identity
-  forecasting_feature_rule: exact_selected_component
-  reporting_projection: region_lag
+measurement:
+  regions: [left_brow, right_brow, left_eyelid, right_eyelid, left_cheek, right_cheek, mouth, jaw]
+  landmark_count: 29
+  scalar_component_count: 58
+  extractor: mediapipe_face_landmarker
+  mode: IMAGE
+  num_faces: 1
+  detection_threshold: 0.5
+  presence_threshold: 0.5
+  blendshapes: false
+  pose_matrix: true
+  point_mapping:
+    left_brow: [336, 296, 300]
+    right_brow: [107, 66, 70]
+    left_eyelid: [385, 386, 380, 374]
+    right_eyelid: [158, 159, 153, 145]
+    left_cheek: [425, 280]
+    right_cheek: [205, 50]
+    mouth: [61, 291, 13, 14, 37, 267, 84, 314]
+    jaw: [176, 152, 400]
 
-evaluation:
-  split_unit: subject
-  outer_test_usage: frozen_final_evaluation_only
+data:
+  dataset_family: NoXi
+  distribution_policy: single_distribution_only
+  fallback_to_caviares: forbidden
+  conditions: [self_speaking, self_non_speaking]
+  condition_boundary_exclusion_ms: 200
+  calibration_seconds: 10
+  normalization: eye_corner_similarity_transform
+  normalization_reference_distance_min_px: 20
+  pose_abs_yaw_pitch_max_degrees: 20
+  missingness: no_interpolation_or_resampling
+  point_valid_subject_fraction: 0.8
+  point_variance_min: 1.0e-12
 
-selection_scope:
-  preprocessing_fit: outer_train_only
-  discovery: outer_train_only
-  ridge_tuning: outer_train_only
-  null_mapping: outer_train_only
-  feature_selection: outer_train_only
-  lag_selection: outer_train_only
+split:
+  seed: 20260911
+  unit: dependency_group
+  pilot_min_subjects: 5
+  outer_folds: 5
+  outer_fallback_folds: 3
+  inner_folds: 3
+  pilot_excluded_from_formal: true
+  loso_fallback: forbidden
+  frame_split: forbidden
 
-sensitivity:
-  execute_after_primary_freeze: true
-  methods:
-    - gpdc
-    - lpcmci
-    - phase_shuffled_surrogate
-    - circular_shift_surrogate
-    - horizon_gt_1
-    - gru
+preflight:
+  dataset_manifest_path: null
+  dataset_manifest_sha256: null
+  extractor_package_version: null
+  extractor_package_sha256: null
+  model_asset_sha256: null
+  actual_fps: null
+  actual_cadence: null
+  actual_subject_group_inventory_path: null
+  actual_self_history_frames: null
+  outer_split_manifest_path: null
+  outer_split_manifest_sha256: null
+  common_support_manifest_path: null
+  common_support_manifest_sha256: null
+  executable_freeze_path: null
 
 artifacts:
   primary_root: artifacts/primary

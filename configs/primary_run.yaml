@@ -1,6 +1,10 @@
-schema_version: 3
+schema_version: 4
 experiment_id: primary
 scientific_config_path: configs/scientific_freeze.yaml
 run_config_path: configs/primary_run.yaml
 artifact_root: artifacts/primary
-seed: 20260908
+seed: 20260911
+protocol_id: primary-2026-09-12-adopted
+execution_mode: preflight
+preflight_manifest_path: null
+executable_freeze_path: null

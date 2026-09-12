@@ -1,6 +1,9 @@
 # 顔部位間遅延依存の一般化可能な予測構造：実験計画
 
-> **SUPERSEDED / HISTORICAL（2026-09-12）**: 本文は旧計画の履歴。本文中の「科学上の正本」や未決事項を現行作業のauthorityにしない。現在の科学仕様は[正式仕様](authoritative_primary_experiment_spec_2026-09-12.md)、作業順は[実装一覧](implementation_backlog_2026-09-12.md)を参照する。
+> **Legacy source:** The executable authority is now
+> [`authoritative_primary_experiment_spec_2026-09-12.md`](authoritative_primary_experiment_spec_2026-09-12.md)
+> (`primary-2026-09-12-adopted`, schema 7). This document remains a
+> background source; conflicting v6 and pre-adoption values are superseded.
 
 版：2026-09-10 / 正本整備版3（独立サブシステムを不採用、検証を既存工程へ統合）
 

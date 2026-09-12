@@ -69,7 +69,19 @@ from .primary_statistics import (
     compute_primary_velocity_paired_statistics,
 )
 from .runner import FoldRunResult, MinimalFoldRunner, OuterTestLockedError
-from .scientific_config import ScientificConfigError, load_scientific_config
+from .scientific_config import (
+    PRIMARY_PROTOCOL_ID,
+    SCIENTIFIC_CONFIG_SCHEMA_VERSION,
+    ScientificConfigError,
+    load_scientific_config,
+    validate_scientific_config,
+)
+from .runner_config import (
+    PrimaryExecutionMode,
+    PrimaryRunConfig,
+    RunnerConfigError,
+    load_primary_experiment_config,
+)
 from .split_manifest_io import (
     SPLIT_MANIFEST_SCHEMA_VERSION,
     SplitManifestReadError,
@@ -119,6 +131,11 @@ __all__ = [
     "PredictionArtifact",
     "PopulationResponseContractError",
     "PrimaryPairedStatistics",
+    "PrimaryExecutionMode",
+    "PrimaryRunConfig",
+    "PRIMARY_PROTOCOL_ID",
+    "RunnerConfigError",
+    "SCIENTIFIC_CONFIG_SCHEMA_VERSION",
     "SPLIT_MANIFEST_SCHEMA_VERSION",
     "SplitManifest",
     "SplitManifestReadError",
@@ -148,6 +165,7 @@ __all__ = [
     "fit_ridge_forecaster",
     "generate_synthetic_face_time_series",
     "load_scientific_config",
+    "load_primary_experiment_config",
     "load_subject_metadata_csv",
     "loads_core_contract",
     "predict_ridge_forecaster",
@@ -156,6 +174,7 @@ __all__ = [
     "reduce_cell_gain_enrichment",
     "serialize_core_contract",
     "validate_subject_ids",
+    "validate_scientific_config",
     "velocity_rmse",
     "write_split_manifest_json",
     "write_v0_result_json",

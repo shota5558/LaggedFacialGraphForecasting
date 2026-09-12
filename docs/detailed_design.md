@@ -1,6 +1,8 @@
 # 顔部位間遅延依存の一般化可能な予測構造：詳細設計
 
-> **SUPERSEDED / HISTORICAL（2026-09-12）**: 本文は旧実装設計の履歴。旧D01〜D10や完了依存を現行Primaryの必須条件にしない。現在の科学仕様は[正式仕様](authoritative_primary_experiment_spec_2026-09-12.md)、実装担当・受入順は[実装一覧](implementation_backlog_2026-09-12.md)を参照する。
+> **Migration authority (2026-09-12):** Executable Primary settings are
+> governed by [`authoritative_primary_experiment_spec_2026-09-12.md`](authoritative_primary_experiment_spec_2026-09-12.md)
+> and schema 7. Legacy v6 settings in this historical design are superseded.
 
 版：2026-09-10 / 正本整備版3対応（検証を既存工程へ統合）
 

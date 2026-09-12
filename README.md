@@ -40,7 +40,12 @@ Random-region、Time-shuffle、joint-set matched-sparsity再学習、circular/ph
 - [新指標に基づく解析図表の再構成案（2026-09-11）](docs/analysis_tables_figures_redesign_2026-09-11.md)
 - [研究計画の検討資料](docs/experimental_plan.md)
 - [実装移行の詳細設計](docs/detailed_design.md)
+- [原典レジストリと移行計画](docs/protocol_authority_and_migration.md)
+- [採用済みPrimary仕様](docs/authoritative_primary_experiment_spec_2026-09-12.md)
+- [実行移行状況](docs/migration_status_2026-09-12.md)
 - [要求トレーサビリティ](docs/requirement-matrix.md)
 - [Issue 実装記録](docs/issue-implementation-2026-09-10.md)
 
-文書の採用だけでは executable migration の完了を意味しません。`configs/scientific_freeze.yaml`、schema、config loader、実装、tests、dry run、leakage audit、hash付き freeze を authoritative specification と一致させた後にのみ、新 Primary 実験を開始します。
+上記は検討経緯と実装管理のための資料です。実験仕様の確認には実験設計書を用います。
+
+採用済みPrimary仕様はprotocol `primary-2026-09-12-adopted` / schema 7です。チェックイン済み設定は`preflight_required`であり、NoXi配布版・実fps・抽出器/model hash・group split・common support等の実物確認とhash付きexecutable freezeが揃うまでreal executionを拒否します。旧Scientific Freeze v6とmockの成功は、新Primaryの実験実施・受容を意味しません。

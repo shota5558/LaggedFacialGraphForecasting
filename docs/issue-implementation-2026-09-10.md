@@ -1,5 +1,25 @@
 # Issue implementation — 2026-09-10
 
+## Adopted protocol migration — 2026-09-12 (#25 / R-01 M-01)
+
+- Migrated the scientific config from legacy Freeze v6 to schema 7 with
+  protocol ID `primary-2026-09-12-adopted`.
+- The executable contract records adopted constants separately from preflight
+  materializations: NoXi/data hashes, extractor/model facts, cadence, realized
+  group splits, Self history, and common support remain explicit until verified.
+- Migrated the Primary run descriptor to schema 4 with explicit `preflight`,
+  `synthetic`, and `real` execution states. Real mode requires the materialized
+  dynamic lag values and a PASS executable-freeze JSON bound to the scientific
+  config hash; legacy v6 freeze artifacts are rejected.
+- Added the authoritative 2026-09-12 specification/adoption records and
+  synchronized the migration registry, YAML config, JSON schema, loader, and
+  runner validator.
+
+Validation: `tests/test_adopted_protocol_migration.py` covers adopted values,
+legacy schema rejection, missing real preflight facts, dynamic `L/M` checks,
+and freeze hash binding. This migration does not claim real data, a dry run,
+or the result PRIMARY FREEZE owned by Issue #20.
+
 ## Enrichment図表・実成果受入ゲート — 2026-09-11 (#75 / R-16-ENRICHMENT)
 
 - ENRICHMENTの入力にrun ID、full git SHA、protocol/config/source hash、fold、horizon、metric/directionを必須化し、run/config/grid/supportの不一致、未定義metric、差分不整合を拒否するようにした。subjectごとのsupport差は許容し、repeat内の一致は維持する。
