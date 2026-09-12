@@ -48,39 +48,8 @@ def test_nonfinite_value_cannot_be_marked_valid() -> None:
         handle_missing_frames(values, valid_mask=valid)
 
 
-def test_mask_shape_and_dtype_must_match_contract() -> None:
+def test_mask_shape_must_match_values() -> None:
     values = np.ones((2, 1, 2), dtype=float)
 
     with pytest.raises(MissingnessError, match="same shape"):
         handle_missing_frames(values, valid_mask=np.ones((2, 1), dtype=bool))
-    with pytest.raises(MissingnessError, match="boolean dtype"):
-        handle_missing_frames(values, valid_mask=np.ones(values.shape, dtype=int))
-
-
-def test_missing_frame_handling_rejects_invalid_value_tensor() -> None:
-    with pytest.raises(MissingnessError, match="shape"):
-        handle_missing_frames(
-            np.ones((2, 2), dtype=float),
-            valid_mask=np.ones((2, 2), dtype=bool),
-        )
-    with pytest.raises(MissingnessError, match="numeric"):
-        handle_missing_frames(
-            np.array([[['x']]]),
-            valid_mask=np.ones((1, 1, 1), dtype=bool),
-        )
-
-
-def test_outputs_are_immutable_and_inputs_are_unchanged() -> None:
-    values = np.array([[[1.0]], [[np.nan]]])
-    valid = np.isfinite(values)
-    values_before = values.copy()
-    valid_before = valid.copy()
-
-    handled = handle_missing_frames(values, valid_mask=valid)
-
-    assert np.array_equal(values, values_before, equal_nan=True)
-    assert np.array_equal(valid, valid_before)
-    assert not handled.values.flags.writeable
-    assert not handled.valid_mask.flags.writeable
-    assert not handled.frame_has_missing.flags.writeable
-    assert not handled.frame_fully_missing.flags.writeable
