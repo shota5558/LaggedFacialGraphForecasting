@@ -1,56 +1,143 @@
-# Protocol authority registry and migration plan
+# Protocol Authority Registry and Migration Plan
 
-更新日: 2026-09-11
+更新日: 2026-09-12  
+対象: `shota5558/LaggedFacialGraphForecasting`
 
-対象: `shota5558/LaggedFacialGraphForecasting`  
-基準実装: `dev@9bbc3d946c0a64935b8786d9413abe53e6cefe29`
+## 1. Authority registry
 
-この文書は Issue #25 / R-01 の独立レビュー用索引である。科学値を新たに決定せず、原典、旧仕様との差分、責任 Issue、受入証拠を一か所に固定する。
+2026-09-12 のユーザー決定により、2026-09-11 の最終推薦案を全面採用した。以後の authority hierarchy は次とする。
 
-## Authority registry
-
-| 優先 | 役割 | 版 / SHA-256 | repository representation |
-|---|---|---|---|
-| 1 | 後続のユーザー判断（矛盾する旧記述より優先） | 2026-09-10、2026-09-11追記 | `docs/adopted_decisions_2026-09-10.md` |
-| 2 | 科学上の正本・後続判断の反映元 | `PCMCI_facial_motion_research_plan_generalized_predictive_structure_2026-09-09.docx` / `7d77f30febaf4856131f2bb9930a2da93ec8252b60e5137e46c96f58550bc249` | `docs/experimental_plan.md` |
-| 3 | 実装契約 | 2026-09-09 Markdown design | `docs/detailed_design.md` |
-| 4 | 継承資料 | `PCMCI_facial_motion_implementation_plan_2026-09-08.docx` / `9ba024806749268f5a456267a616149f507f366a9dc3d31ff683205220697ab3` | 矛盾しない実装原則だけを継承 |
-| 5 | 移行元 | Scientific Freeze schema v6 | `configs/scientific_freeze.yaml`, `schemas/scientific_freeze.schema.json` |
-
-原 DOCX の記録上の所在は `C:/Users/yukit/OneDrive/デスクトップ/研究/`。別 repository の合成 DDL 回収研究、旧 DOCX の package 名 `facial_pcmci`、mock 出力は本研究の科学仕様・実成果へ混入しない。
-
-## Approved dispositions
-
-2026-09-11の[本実験に必要な定義の最終推薦案](primary_experiment_recommendation_2026-09-11.md)は、今回の必須範囲に限定したR-02/R-03の判断材料である。具体値の推薦と実データでの確認を分け、必要な実物確認を同書第14節へ集約する。推薦文書の作成だけでは実行用freezeを変更しない。旧計画・Issue本文の速度主指標や任意解析の必須化を、最新ユーザー判断に優先させない。
-
-| 差分 | disposition | migration owner |
+| 優先 | 役割 | repository representation |
 |---|---|---|
-| 主表現 / 主指標 | 正規化変位と点ごとの平均 Euclidean error を新計画候補として採用。実データ topology・単位・QC の確定までは実行 freeze を更新しない | #26 R-02, #27 R-03 |
-| matched sparsity | 新 enrichment は 1,000 反復。旧 v6 の joint Null 100 反復とは別 estimand・別 protocol version とする | #27 R-03, #30 R-06, #34 R-18 |
-| lag response | 新 Primary は edge-centered response。旧 common-shift は別 ID の補助解析として保持する | #27 R-03, #35 R-19 |
-| landscape cell | source-region × lag block を採用候補とし、component topology と同数層化は実データ extractor 確定後に freeze する | #26 R-02, #27 R-03, #33 R-17 |
-| enrichment | cell-G 集合平均を主定義、joint-set Ridge gain は別名の補助比較とする | #27 R-03, #34 R-18 |
-| GRU / GPDC / LPCMCI / phase surrogate | 必須ではない。Primary freeze 後、必要性を記録した独立 Sensitivity としてのみ実行する | #21, #46–#48 |
-| circular shift | 主要 Sensitivity 候補。shift 幅など未決値の確定と Primary freeze 前には実行しない | #27 R-03, #49 |
+| 1 | 正式な Primary specification declaration | `docs/authoritative_primary_experiment_spec_2026-09-12.md` |
+| 2 | 採用対象となった詳細設計本文 | `docs/primary_experiment_recommendation_2026-09-11.md` |
+| 3 | 読みやすい統合実験設計 | `docs/experiment_design.md` |
+| 4 | 採用判断・履歴 | `docs/adopted_decisions_2026-09-10.md` および 2026-09-12 の adoption record |
+| 5 | 移行対象の旧研究計画・詳細設計 | `docs/experimental_plan.md`, `docs/detailed_design.md` |
+| 6 | Legacy executable protocol | `configs/scientific_freeze.yaml`, `schemas/scientific_freeze.schema.json` |
 
-「候補」「暫定」の値は freeze 済みの値ではない。実装者は性能結果を根拠に補完しない。
+下位文書、config、schema、Issue が上位仕様と矛盾する場合、上位仕様を優先し、下位記述は `SUPERSEDED` とする。
 
-## Migration gates
+## 2. 2026-09-12 に正式採用された主要決定
 
-1. R-02 が dataset、extractor/topology、split、normalization、QC、sampling、usable-time の式と値を確定する。
-2. R-03 が aggregation、support、candidate/history range、bootstrap、multiple-comparison、enrichment、population-response の契約を確定する。
-3. R-04/R-05/R-06 が承認 protocol、raw support、解析統計を fail-closed に接続する。
-4. R-17/R-18/R-19 を synthetic contract test まで実装する。
-5. schema/protocol version を上げ、旧 v6 artifact を新版成果として受理しない migration test を追加する。
-6. R-08/R-09/R-10 の producer、runner、DRY audit が通った後だけ実データ Primary を開始する。
-7. Primary result manifest の完全性と hash を R-13 で freeze した後だけ Sensitivity を実行する。
+以下は「推薦候補」ではなく Primary の設計決定となった。
 
-## Traceability and acceptance evidence
+- 主研究対象: 自然な表情・発話中の顔部位間遅延予測構造と被験者間共通性
+- 主表現: 点ごとの2D正規化変位
+- データ第一選択: NoXi の単一配布版
+- 解析条件: 本人のみ発話 / 本人非発話
+- 8 region / 29 landmark / 58 scalar component mapping
+- MediaPipe Face Landmarker IMAGE mode
+- calibration / QC / missingness / cadence 規則
+- Outer: dependency-group 5-fold、成立不能時のみ3-fold、LOSO fallback禁止
+- Inner: group 3-fold
+- `h=1`
+- inter-region lag: `L=floor(0.5*fps)`、1 frame刻み
+- lag bands: `(0,100]`, `(100,250]`, `(250,500] ms`
+- Self history の予備データによる決定アルゴリズム
+- PCMCI+ + ParCorr, `pc_alpha=0.01`
+- scalar discovery → region-block OR projection
+- Ridge の被験者等重み学習、alpha tuning contract
+- condition×fold×subject 単位の common support
+- Predictive Gain Landscape `G = E_Self - E_cell`
+- Selection Enrichment: cell-G 集合平均、1000 random sets
+- centered lag response: 約±100 ms、complete symmetric grid
+- OOF group bootstrap 10000回、nominal 95% percentile interval
+- held-out significance test / FDR を Primary completion criterion にしない
+- discovery stability: outer-train group resampling 100回
 
-- F-ID → Q-ID →責任 Issue / Task →既存証拠・回帰条件: `docs/audit-report.md` と `docs/requirement-matrix.md`
-- Issue 一覧と依存関係: `docs/issue-drafts/README.md`、投稿結果は `docs/issue-drafts/POSTED.md`
-- Primary hypothesis / endpoint / scope: `docs/experimental_plan.md` §§2–6, 9
-- 実装順序と gate: `docs/detailed_design.md` §§3, 13–15
-- 採用事項と残る未決事項: `docs/adopted_decisions_2026-09-10.md` §§1–9
+## 3. Primary mandatory boundary
 
-R-01 の文書成果は上記で充足する。これは R-02/R-03 の科学決定、実行用 freeze の更新、実データ実験、または下流 Issue の完了を意味しない。
+本実験の必須解析は以下。
+
+1. Predictive Gain Landscape
+2. Persistence / Self / Full / PCMCI-block 4条件比較
+3. Selection Enrichment
+4. selected-lag centered response
+5. discovery stability
+6. data / execution audit
+
+以下は Primary completion blocker ではない。
+
+- Random-region
+- Time-shuffle
+- joint-set matched-sparsity model comparison
+- phase-shuffled / circular-shift surrogate
+- GPDC
+- LPCMCI
+- GRU
+- h>1
+- GNN
+- secondary motion metrics
+
+必要な場合のみ PRIMARY FREEZE 後の Sensitivity / Optional namespace で実行する。
+
+## 4. 実物 preflight と科学仕様を分離する
+
+以下は科学的未決事項ではなく、実データから materialize する実物確認である。
+
+- NoXi の利用可能な配布版・利用条件・file hash
+- subject/group/session/sequence inventory
+- actual fps / cadence
+- extractor exact version / model hash
+- landmark overlay / 左右 / pose axis / tracking quality
+- actual `L` / lag-band membership
+- adopted Self history `H`
+- final alpha grid（必要な場合のみ予備段階で拡張）
+- actual split manifests
+- common support counts / duration
+- dry run / leakage / reproducibility evidence
+
+これらを未取得のまま値で埋めない。
+
+## 5. Superseded legacy decisions
+
+本仕様により少なくとも以下は旧 Primary 仕様として superseded となる。
+
+- velocity を Primary target / metric とする規則
+- `tau_max=10` 固定
+- centered lag grid `[-2,-1,0,1,2]` 固定
+- Random-region / Time-shuffle / joint-set matched sparsity を Primary 必須 Null とする規則
+- held-out significance / FDR を Primary の必須完了判定とする規則
+- LOSO への自動 fallback
+- scalar parent の exact component のみを forecasting feature とする旧 contract
+- sensitivity の未決値が Primary 実行を block する設計
+
+## 6. Executable migration gates
+
+設計採用は完了したが、実行環境の移行は別に完了させる。
+
+1. `configs/scientific_freeze.yaml` を新 protocol version へ移行
+2. `configs/primary_run.yaml` を新 Primary mandatory scope へ移行
+3. `schemas/scientific_freeze.schema.json` を同期
+4. config loader / preflight validator を同期
+5. region block / support / landscape / enrichment / centered-response contracts を同期
+6. old-v6 artifact を新 Primary evidence として拒否する regression test を追加
+7. synthetic integration を通す
+8. one-fold dry run を通す
+9. leakage / reproducibility audit を通す
+10. preflight 実物値と hash を固定
+11. 新 Primary Full Run を開始
+12. PRIMARY FREEZE 後に Sensitivity を許可
+
+## 7. Issue authority
+
+- #24: active backlog / dependency index
+- #25: protocol migration / scientific adoption record
+- #28: data / support contract enforcement
+- #31: Primary / Sensitivity boundary
+- #33: Predictive Gain Landscape
+- #34: Selection Enrichment
+- #35: centered Population Lag Response
+- #36: raw artifact → analysis export
+- #37: production runner
+- #38: production integration / dry-run audit
+- #16 / #17 / #18 / #19 / #20: formal execution gates
+
+旧 Issue は履歴として残し、上記 authoritative specification と競合する場合は新 work の authority にしない。
+
+## 8. Completion rule
+
+README や文書へリンクしただけでは migration complete としない。
+
+`specification → config/schema → implementation → tests → dry run → leakage audit → frozen real preflight values → hash` が一致して初めて executable migration complete とする。
