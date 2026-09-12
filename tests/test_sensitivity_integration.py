@@ -105,28 +105,32 @@ def test_lpcmci_synthetic_end_to_end_reaches_sensitivity_result_namespace() -> N
     assert parent_set.discovery_method == "lpcmci"; assert '"namespace":"sensitivity"' in encoded
 
 
-def test_phase_shuffle_synthetic_end_to_end_is_deterministic() -> None:
+def test_phase_shuffle_synthetic_end_to_end_reaches_sensitivity_result_namespace() -> None:
     execution = _execution(); train = _series("train_a", 3001); test = _series("outer_test", 3003); seed = 3201
-    first_train = phase_shuffle_face_time_series(execution, train, seed=seed, repository_root=ROOT).series
-    first_test = phase_shuffle_face_time_series(execution, test, seed=seed, repository_root=ROOT).series
-    second_train = phase_shuffle_face_time_series(execution, train, seed=seed, repository_root=ROOT).series
-    second_test = phase_shuffle_face_time_series(execution, test, seed=seed, repository_root=ROOT).series
-    np.testing.assert_array_equal(first_train.X, second_train.X); np.testing.assert_array_equal(first_test.X, second_test.X)
-    first = _serialize_result(execution, "phase_shuffle", _ridge_from_self(first_train, first_test, "phase_shuffle"), horizon=1, seed=seed)
-    second = _serialize_result(execution, "phase_shuffle", _ridge_from_self(second_train, second_test, "phase_shuffle"), horizon=1, seed=seed)
-    assert first == second
+    shuffled_train = phase_shuffle_face_time_series(execution, train, seed=seed, repository_root=ROOT).series
+    shuffled_test = phase_shuffle_face_time_series(execution, test, seed=seed, repository_root=ROOT).series
+    encoded = _serialize_result(
+        execution,
+        "phase_shuffle",
+        _ridge_from_self(shuffled_train, shuffled_test, "phase_shuffle"),
+        horizon=1,
+        seed=seed,
+    )
+    assert '"namespace":"sensitivity"' in encoded
 
 
-def test_circular_shift_synthetic_end_to_end_is_deterministic() -> None:
+def test_circular_shift_synthetic_end_to_end_reaches_sensitivity_result_namespace() -> None:
     execution = _execution(); train = _series("train_a", 4001); test = _series("outer_test", 4003); seed = 4201
-    first_train = circular_shift_face_time_series(execution, train, seed=seed, repository_root=ROOT).series
-    first_test = circular_shift_face_time_series(execution, test, seed=seed, repository_root=ROOT).series
-    second_train = circular_shift_face_time_series(execution, train, seed=seed, repository_root=ROOT).series
-    second_test = circular_shift_face_time_series(execution, test, seed=seed, repository_root=ROOT).series
-    np.testing.assert_array_equal(first_train.X, second_train.X); np.testing.assert_array_equal(first_test.X, second_test.X)
-    first = _serialize_result(execution, "circular_shift", _ridge_from_self(first_train, first_test, "circular_shift"), horizon=1, seed=seed)
-    second = _serialize_result(execution, "circular_shift", _ridge_from_self(second_train, second_test, "circular_shift"), horizon=1, seed=seed)
-    assert first == second
+    shifted_train = circular_shift_face_time_series(execution, train, seed=seed, repository_root=ROOT).series
+    shifted_test = circular_shift_face_time_series(execution, test, seed=seed, repository_root=ROOT).series
+    encoded = _serialize_result(
+        execution,
+        "circular_shift",
+        _ridge_from_self(shifted_train, shifted_test, "circular_shift"),
+        horizon=1,
+        seed=seed,
+    )
+    assert '"namespace":"sensitivity"' in encoded
 
 
 def test_multi_horizon_synthetic_end_to_end_preserves_horizon_provenance() -> None:

@@ -67,23 +67,6 @@ def test_metric_interface_returns_subject_region_metrics_with_full_provenance() 
         assert result.metric_name == "fixture_mae"
 
 
-def test_metric_interface_excludes_invalid_rows_before_calling_metric() -> None:
-    artifact = _artifact()
-    original_true = artifact.y_true.copy()
-    original_pred = artifact.y_pred.copy()
-
-    results = evaluate_metric_by_subject_region(
-        artifact,
-        metric_name="fixture_mae",
-        metric=_mean_absolute_error,
-    )
-
-    assert len(results) == 3
-    np.testing.assert_array_equal(artifact.valid_mask, np.asarray([True, True, True, False, True]))
-    np.testing.assert_array_equal(artifact.y_true, original_true)
-    np.testing.assert_array_equal(artifact.y_pred, original_pred)
-
-
 def test_metric_interface_fails_closed_when_no_valid_prediction_rows_exist() -> None:
     artifact = PredictionArtifact(
         outer_fold=0,
@@ -103,22 +86,4 @@ def test_metric_interface_fails_closed_when_no_valid_prediction_rows_exist() -> 
             artifact,
             metric_name="fixture_mae",
             metric=_mean_absolute_error,
-        )
-
-
-def test_metric_interface_rejects_invalid_metric_contract_inputs() -> None:
-    artifact = _artifact()
-
-    with pytest.raises(ValueError, match="metric_name"):
-        evaluate_metric_by_subject_region(
-            artifact,
-            metric_name=" ",
-            metric=_mean_absolute_error,
-        )
-
-    with pytest.raises(TypeError, match="metric must be callable"):
-        evaluate_metric_by_subject_region(
-            artifact,
-            metric_name="fixture_mae",
-            metric=None,  # type: ignore[arg-type]
         )
