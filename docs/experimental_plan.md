@@ -1,5 +1,10 @@
 # 顔部位間遅延依存の一般化可能な予測構造：実験計画
 
+> **Legacy source:** The executable authority is now
+> [`authoritative_primary_experiment_spec_2026-09-12.md`](authoritative_primary_experiment_spec_2026-09-12.md)
+> (`primary-2026-09-12-adopted`, schema 7). This document remains a
+> background source; conflicting v6 and pre-adoption values are superseded.
+
 版：2026-09-10 / 正本整備版3（独立サブシステムを不採用、検証を既存工程へ統合）
 
 本書は、新研究計画書を基に再構成した科学上の正本である。[詳細設計](detailed_design.md)は本書に従う。文書化済みであることと、実験設定のfreeze・実装完了・科学的受容は区別する。第12節の未決事項を解消するまで、本実験を開始しない。

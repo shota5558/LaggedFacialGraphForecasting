@@ -1,5 +1,9 @@
 # 顔部位間遅延依存の一般化可能な予測構造：詳細設計
 
+> **Migration authority (2026-09-12):** Executable Primary settings are
+> governed by [`authoritative_primary_experiment_spec_2026-09-12.md`](authoritative_primary_experiment_spec_2026-09-12.md)
+> and schema 7. Legacy v6 settings in this historical design are superseded.
+
 版：2026-09-10 / 正本整備版3対応（検証を既存工程へ統合）
 
 科学上の正本は[実験計画](experimental_plan.md)。本書は新計画の実行に必要な設計を定める。既存実装の完了報告ではなく、旧詳細設計を基にした移行・実装契約である。科学的な未決値は実験計画D01〜D10に従い、実装者が補完しない。

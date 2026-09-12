@@ -1,5 +1,10 @@
 # 顔部位間の遅延予測構造と被験者間の共通性：実験設計書
 
+> **Authority note (2026-09-12):** This design is governed by
+> [`authoritative_primary_experiment_spec_2026-09-12.md`](authoritative_primary_experiment_spec_2026-09-12.md)
+> and protocol `primary-2026-09-12-adopted`. Conflicting legacy v6 values are
+> `SUPERSEDED`; real-data facts remain preflight materializations.
+
 作成日：2026年9月12日  
 文書の状態：実データ確認・実行設定の凍結前
 

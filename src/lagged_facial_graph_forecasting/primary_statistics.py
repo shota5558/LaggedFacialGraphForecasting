@@ -153,7 +153,7 @@ def compute_primary_velocity_paired_statistics(
         raise ValueError("Primary point_aggregation must remain 'median'")
 
     bootstrap_config = statistics_config["bootstrap"]
-    if bootstrap_config["seed_source"] != "experiment_seed":
+    if bootstrap_config.get("seed_source", "experiment_seed") != "experiment_seed":
         raise ValueError("Primary bootstrap seed_source must remain 'experiment_seed'")
 
     support_digests = _validate_exact_prediction_support(
@@ -167,7 +167,9 @@ def compute_primary_velocity_paired_statistics(
         paired,
         n_resamples=int(bootstrap_config["n_resamples"]),
         seed=experiment_seed,
-        method=str(bootstrap_config["method"]),
+        # The adopted protocol names the SciPy percentile rule explicitly as
+        # linear; SciPy's ``percentile`` implementation uses that interpolation.
+        method=str(bootstrap_config["method"]).replace("percentile_linear", "percentile"),
     )
 
     return PrimaryPairedStatistics(

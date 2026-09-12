@@ -15,9 +15,11 @@ PCMCI+ と Ridge を用いて、顔部位間の遅延予測構造を held-out �
 - [研究計画の検討資料](docs/experimental_plan.md)
 - [実装移行の詳細設計](docs/detailed_design.md)
 - [原典レジストリと移行計画](docs/protocol_authority_and_migration.md)
+- [採用済みPrimary仕様](docs/authoritative_primary_experiment_spec_2026-09-12.md)
+- [実行移行状況](docs/migration_status_2026-09-12.md)
 - [要求トレーサビリティ](docs/requirement-matrix.md)
 - [Issue 実装記録](docs/issue-implementation-2026-09-10.md)
 
 上記は検討経緯と実装管理のための資料です。実験仕様の確認には実験設計書を用います。
 
-実行用Scientific Freezeはschema v6です。本実験の開始には、設計値の採用、実データ確認、config/schemaと実行経路の整合、検証と凍結が必要です。設計書の完成やmockの成功は、実データ実験の実施・受容を意味しません。
+採用済みPrimary仕様はprotocol `primary-2026-09-12-adopted` / schema 7です。チェックイン済み設定は`preflight_required`であり、NoXi配布版・実fps・抽出器/model hash・group split・common support等の実物確認とhash付きexecutable freezeが揃うまでreal executionを拒否します。旧Scientific Freeze v6とmockの成功は、新Primaryの実験実施・受容を意味しません。

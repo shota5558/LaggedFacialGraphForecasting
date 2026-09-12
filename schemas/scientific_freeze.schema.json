@@ -1,1 +1,173 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://example.invalid/lagged-facial-graph-forecasting/scientific-freeze.schema.json","title":"PCMCI+ Facial Motion Scientific Freeze","type":"object","additionalProperties":false,"required":["schema_version","primary","discovery_representation","evaluation","selection_scope","sensitivity","artifacts"],"properties":{"schema_version":{"const":6},"primary":{"type":"object","additionalProperties":false,"required":["discovery","ci_test","forecaster","horizon","tau_max","pc_alpha","conditions","lag_response","matched_sparsity","statistics"],"properties":{"discovery":{"const":"pcmci_plus"},"ci_test":{"const":"parcorr"},"forecaster":{"const":"ridge"},"horizon":{"const":1},"tau_max":{"const":10},"pc_alpha":{"const":0.01},"conditions":{"type":"array","uniqueItems":true,"items":{"enum":["persistence","self","full","pcmci","lag_shift","random_region","matched_sparsity","time_shuffle"]},"allOf":[{"contains":{"const":"persistence"}},{"contains":{"const":"self"}},{"contains":{"const":"full"}},{"contains":{"const":"pcmci"}},{"contains":{"const":"lag_shift"}},{"contains":{"const":"random_region"}},{"contains":{"const":"matched_sparsity"}},{"contains":{"const":"time_shuffle"}}]},"lag_response":{"type":"object","additionalProperties":false,"required":["delta_frames","reference_delta","shift_mode","valid_lag_min","valid_lag_max","boundary_policy","clipping","wrapping","feature_dropping","one_sided_grid","evaluability","aggregation"],"properties":{"delta_frames":{"const":[-2,-1,0,1,2]},"reference_delta":{"const":0},"shift_mode":{"const":"common_shift_all_selected_parents"},"valid_lag_min":{"const":1},"valid_lag_max":{"const":10},"boundary_policy":{"const":"mark_target_fold_unevaluable"},"clipping":{"const":"forbidden"},"wrapping":{"const":"forbidden"},"feature_dropping":{"const":"forbidden"},"one_sided_grid":{"const":"forbidden"},"evaluability":{"type":"object","additionalProperties":false,"required":["require_complete_symmetric_grid","empty_parent_set"],"properties":{"require_complete_symmetric_grid":{"const":true},"empty_parent_set":{"const":"unevaluable_no_parents"}}},"aggregation":{"type":"object","additionalProperties":false,"required":["support","same_units_across_all_deltas","report_unevaluable_counts"],"properties":{"support":{"const":"complete_grid_target_folds_only"},"same_units_across_all_deltas":{"const":true},"report_unevaluable_counts":{"const":true}}}}},"matched_sparsity":{"type":"object","additionalProperties":false,"required":["repeat_count","seed_source","repeat_aggregation"],"properties":{"repeat_count":{"const":100},"seed_source":{"const":"split_manifest_seed"},"repeat_aggregation":{"const":"median_error_across_repeats_per_subject_region"}}},"statistics":{"type":"object","additionalProperties":false,"required":["paired_unit","point_aggregation","bootstrap"],"properties":{"paired_unit":{"const":"subject"},"point_aggregation":{"const":"median"},"bootstrap":{"type":"object","additionalProperties":false,"required":["confidence_level","n_resamples","method","seed_source"],"properties":{"confidence_level":{"const":0.95},"n_resamples":{"const":10000},"method":{"const":"percentile"},"seed_source":{"const":"experiment_seed"}}}}}}},"discovery_representation":{"type":"object","additionalProperties":false,"required":["node_unit","component_mapping","forecasting_feature_rule","reporting_projection"],"properties":{"node_unit":{"const":"region_dimension"},"component_mapping":{"const":"identity"},"forecasting_feature_rule":{"const":"exact_selected_component"},"reporting_projection":{"const":"region_lag"}}},"evaluation":{"type":"object","additionalProperties":false,"required":["split_unit","outer_test_usage"],"properties":{"split_unit":{"const":"subject"},"outer_test_usage":{"const":"frozen_final_evaluation_only"}}},"selection_scope":{"type":"object","additionalProperties":false,"required":["preprocessing_fit","discovery","ridge_tuning","null_mapping","feature_selection","lag_selection"],"properties":{"preprocessing_fit":{"const":"outer_train_only"},"discovery":{"const":"outer_train_only"},"ridge_tuning":{"const":"outer_train_only"},"null_mapping":{"const":"outer_train_only"},"feature_selection":{"const":"outer_train_only"},"lag_selection":{"const":"outer_train_only"}}},"sensitivity":{"type":"object","additionalProperties":false,"required":["execute_after_primary_freeze","methods"],"properties":{"execute_after_primary_freeze":{"const":true},"methods":{"type":"array","uniqueItems":true,"items":{"enum":["gpdc","lpcmci","phase_shuffled_surrogate","circular_shift_surrogate","horizon_gt_1","gru"]}}}},"artifacts":{"type":"object","additionalProperties":false,"required":["primary_root","sensitivity_root"],"properties":{"primary_root":{"const":"artifacts/primary"},"sensitivity_root":{"const":"artifacts/sensitivity"}}}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/lagged-facial-graph-forecasting/scientific-freeze.schema.json",
+  "title": "Adopted Primary Facial Motion Protocol",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "protocol_id", "protocol_status", "authority", "compatibility", "primary", "measurement", "data", "split", "preflight", "artifacts"],
+  "properties": {
+    "schema_version": {"const": 7},
+    "protocol_id": {"const": "primary-2026-09-12-adopted"},
+    "protocol_status": {"enum": ["preflight_required", "executable"]},
+    "authority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["specification", "specification_sha256", "adoption_record", "adoption_record_sha256", "recommendation", "recommendation_sha256"],
+      "properties": {
+        "specification": {"const": "docs/authoritative_primary_experiment_spec_2026-09-12.md"},
+        "specification_sha256": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]},
+        "adoption_record": {"const": "docs/adopted_decisions_2026-09-12.md"},
+        "adoption_record_sha256": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]},
+        "recommendation": {"const": "docs/primary_experiment_recommendation_2026-09-11.md"},
+        "recommendation_sha256": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]}
+      }
+    },
+    "compatibility": {
+      "type": "object", "additionalProperties": false,
+      "required": ["supersedes_schema_version", "legacy_artifacts", "explicit_migration_required"],
+      "properties": {
+        "supersedes_schema_version": {"const": 6},
+        "legacy_artifacts": {"const": "reject"},
+        "explicit_migration_required": {"const": true}
+      }
+    },
+    "primary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["horizon", "conditions", "analysis", "representation", "discovery", "lag", "self_history", "forecaster", "matched_sparsity", "lag_response", "statistics", "discovery_stability"],
+      "properties": {
+        "horizon": {"const": 1},
+        "conditions": {"const": ["self_speaking", "self_non_speaking"]},
+        "analysis": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "representation": {
+          "type": "object", "additionalProperties": false,
+          "required": ["input", "node_unit", "forecast_projection", "forecast_feature_rule", "raw_scalar_links_preserved"],
+          "properties": {
+            "input": {"const": "normalized_2d_displacement"},
+            "node_unit": {"const": "landmark_coordinate_scalar"},
+            "forecast_projection": {"const": "region_block_or"},
+            "forecast_feature_rule": {"const": "all_usable_source_scalars"},
+            "raw_scalar_links_preserved": {"const": true}
+          }
+        },
+        "discovery": {
+          "type": "object", "additionalProperties": false,
+          "required": ["method", "ci_test", "pc_alpha", "significance", "mask_type", "recycle_residuals", "tau_min", "tau_max", "tau_max_rule", "contemporaneous_forecast_input", "contemp_collider_rule", "conflict_resolution", "reset_lagged_links", "max_combinations", "max_conds_dim", "max_conds_py", "max_conds_px", "max_conds_px_lagged", "fdr_method"],
+          "properties": {
+            "method": {"const": "pcmci_plus"}, "ci_test": {"const": "parcorr"}, "pc_alpha": {"const": 0.01},
+            "significance": {"const": "analytic"}, "mask_type": {"const": "xyz"}, "recycle_residuals": {"const": false},
+            "tau_min": {"const": 0}, "tau_max": {"anyOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]},
+            "tau_max_rule": {"const": "floor_half_fps"}, "contemporaneous_forecast_input": {"const": "forbidden"},
+            "contemp_collider_rule": {"const": "majority"}, "conflict_resolution": {"const": true},
+            "reset_lagged_links": {"const": false}, "max_combinations": {"const": 1},
+            "max_conds_dim": {"type": "null"}, "max_conds_py": {"type": "null"}, "max_conds_px": {"type": "null"},
+            "max_conds_px_lagged": {"type": "null"}, "fdr_method": {"const": "none"}
+          }
+        },
+        "lag": {
+          "type": "object", "additionalProperties": false, "required": ["candidate_rule", "bands_ms"],
+          "properties": {
+            "candidate_rule": {"const": "integer_frames_1_through_floor_half_fps"},
+            "bands_ms": {
+              "type": "array", "const": [
+                {"label": "B1", "lower_exclusive": 0, "upper_inclusive": 100},
+                {"label": "B2", "lower_exclusive": 100, "upper_inclusive": 250},
+                {"label": "B3", "lower_exclusive": 250, "upper_inclusive": 500}
+              ]
+            }
+          }
+        },
+        "self_history": {
+          "type": "object", "additionalProperties": false,
+          "required": ["selection", "candidate_seconds", "optional_extension_seconds", "history_frames"],
+          "properties": {
+            "selection": {"const": "pilot_60_20_20_shortest_within_1_percent"},
+            "candidate_seconds": {"const": [0.5, 1.0, 2.0]}, "optional_extension_seconds": {"const": 4.0},
+            "history_frames": {"anyOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]}
+          }
+        },
+        "forecaster": {
+          "type": "object", "additionalProperties": false,
+          "required": ["method", "intercept", "target_standardization", "input_standardization", "subject_equal_weight", "alpha_grid", "alpha_selection", "alpha_tie_tolerance", "alpha_tie_break", "outer_test_grid_extension"],
+          "properties": {
+            "method": {"const": "ridge"}, "intercept": {"const": true}, "target_standardization": {"const": false},
+            "input_standardization": {"const": "train_only"}, "subject_equal_weight": {"const": true},
+            "alpha_grid": {"const": [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]},
+            "alpha_selection": {"const": "inner_subject_equal_main_error"}, "alpha_tie_tolerance": {"const": 1e-12},
+            "alpha_tie_break": {"const": "larger"}, "outer_test_grid_extension": {"const": "forbidden"}
+          }
+        },
+        "matched_sparsity": {
+          "type": "object", "additionalProperties": false,
+          "required": ["repeat_count", "sampling_unit", "within_set_replacement", "selected_overlap", "repeat_overlap", "lag_distribution_matching"],
+          "properties": {
+            "repeat_count": {"const": 1000}, "sampling_unit": {"const": "source_region_lag_block_scalar_count_strata"},
+            "within_set_replacement": {"const": "forbidden"}, "selected_overlap": {"const": "allowed"},
+            "repeat_overlap": {"const": "allowed"}, "lag_distribution_matching": {"const": "forbidden"}
+          }
+        },
+        "lag_response": {
+          "type": "object", "additionalProperties": false,
+          "required": ["estimand", "delta_frames", "delta_rule", "reference_delta", "complete_symmetric_grid", "clipping", "wrapping", "one_sided_grid", "boundary_policy"],
+          "properties": {
+            "estimand": {"const": "self_plus_single_selected_source_region_lag_block"},
+            "delta_frames": {"anyOf": [{"type": "null"}, {"type": "array", "items": {"type": "integer"}, "minItems": 1}]},
+            "delta_rule": {"const": "symmetric_floor_tenth_fps"}, "reference_delta": {"const": 0},
+            "complete_symmetric_grid": {"const": true}, "clipping": {"const": "forbidden"},
+            "wrapping": {"const": "forbidden"}, "one_sided_grid": {"const": "forbidden"},
+            "boundary_policy": {"const": "unevaluable_without_common_grid"}
+          }
+        },
+        "statistics": {
+          "type": "object", "additionalProperties": false,
+          "required": ["paired_unit", "point_aggregation", "bootstrap_unit", "bootstrap", "held_out_significance", "fdr", "full_noninferiority_margin"],
+          "properties": {
+            "paired_unit": {"const": "subject"}, "point_aggregation": {"const": "median"}, "bootstrap_unit": {"const": "dependency_group"},
+            "bootstrap": {
+              "type": "object", "additionalProperties": false,
+              "required": ["confidence_level", "n_resamples", "method", "shared_indices_across_outputs", "minimum_evaluable_groups"],
+              "properties": {"confidence_level": {"const": 0.95}, "n_resamples": {"const": 10000}, "method": {"const": "percentile_linear"}, "shared_indices_across_outputs": {"const": true}, "minimum_evaluable_groups": {"const": 10}}
+            },
+            "held_out_significance": {"const": "not_primary"}, "fdr": {"const": "not_primary"}, "full_noninferiority_margin": {"type": "null"}
+          }
+        },
+        "discovery_stability": {
+          "type": "object", "additionalProperties": false,
+          "required": ["resampling_unit", "repeat_count", "time_order", "duplicate_group", "concatenation", "parent_set_redefinition"],
+          "properties": {
+            "resampling_unit": {"const": "dependency_group"}, "repeat_count": {"const": 100}, "time_order": {"const": "preserved"},
+            "duplicate_group": {"const": "independent_series_copy"}, "concatenation": {"const": "forbidden"}, "parent_set_redefinition": {"const": "forbidden"}
+          }
+        }
+      }
+    },
+    "measurement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["regions", "landmark_count", "scalar_component_count", "extractor", "mode", "num_faces", "detection_threshold", "presence_threshold", "blendshapes", "pose_matrix", "point_mapping"],
+      "properties": {
+        "regions": {"const": ["left_brow", "right_brow", "left_eyelid", "right_eyelid", "left_cheek", "right_cheek", "mouth", "jaw"]},
+        "landmark_count": {"const": 29}, "scalar_component_count": {"const": 58}, "extractor": {"const": "mediapipe_face_landmarker"}, "mode": {"const": "IMAGE"}, "num_faces": {"const": 1}, "detection_threshold": {"const": 0.5}, "presence_threshold": {"const": 0.5}, "blendshapes": {"const": false}, "pose_matrix": {"const": true},
+        "point_mapping": {"type": "object", "const": {"left_brow": [336, 296, 300], "right_brow": [107, 66, 70], "left_eyelid": [385, 386, 380, 374], "right_eyelid": [158, 159, 153, 145], "left_cheek": [425, 280], "right_cheek": [205, 50], "mouth": [61, 291, 13, 14, 37, 267, 84, 314], "jaw": [176, 152, 400]}}
+      }
+    },
+    "data": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dataset_family", "distribution_policy", "fallback_to_caviares", "conditions", "condition_boundary_exclusion_ms", "calibration_seconds", "normalization", "normalization_reference_distance_min_px", "pose_abs_yaw_pitch_max_degrees", "missingness", "point_valid_subject_fraction", "point_variance_min"],
+      "properties": {
+        "dataset_family": {"const": "NoXi"}, "distribution_policy": {"const": "single_distribution_only"}, "fallback_to_caviares": {"const": "forbidden"}, "conditions": {"const": ["self_speaking", "self_non_speaking"]}, "condition_boundary_exclusion_ms": {"const": 200}, "calibration_seconds": {"const": 10}, "normalization": {"const": "eye_corner_similarity_transform"}, "normalization_reference_distance_min_px": {"const": 20}, "pose_abs_yaw_pitch_max_degrees": {"const": 20}, "missingness": {"const": "no_interpolation_or_resampling"}, "point_valid_subject_fraction": {"const": 0.8}, "point_variance_min": {"const": 1e-12}
+      }
+    },
+    "split": {
+      "type": "object", "additionalProperties": false,
+      "required": ["seed", "unit", "pilot_min_subjects", "outer_folds", "outer_fallback_folds", "inner_folds", "pilot_excluded_from_formal", "loso_fallback", "frame_split"],
+      "properties": {"seed": {"const": 20260911}, "unit": {"const": "dependency_group"}, "pilot_min_subjects": {"const": 5}, "outer_folds": {"const": 5}, "outer_fallback_folds": {"const": 3}, "inner_folds": {"const": 3}, "pilot_excluded_from_formal": {"const": true}, "loso_fallback": {"const": "forbidden"}, "frame_split": {"const": "forbidden"}}
+    },
+    "preflight": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dataset_manifest_path", "dataset_manifest_sha256", "extractor_package_version", "extractor_package_sha256", "model_asset_sha256", "actual_fps", "actual_cadence", "actual_subject_group_inventory_path", "actual_self_history_frames", "outer_split_manifest_path", "outer_split_manifest_sha256", "common_support_manifest_path", "common_support_manifest_sha256", "executable_freeze_path"],
+      "properties": {
+        "dataset_manifest_path": {"anyOf": [{"type": "null"}, {"type": "string"}]}, "dataset_manifest_sha256": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]}, "extractor_package_version": {"anyOf": [{"type": "null"}, {"type": "string"}]}, "extractor_package_sha256": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]}, "model_asset_sha256": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]}, "actual_fps": {"anyOf": [{"type": "null"}, {"type": "number", "exclusiveMinimum": 0}]}, "actual_cadence": {"anyOf": [{"type": "null"}, {"type": "string"}]}, "actual_subject_group_inventory_path": {"anyOf": [{"type": "null"}, {"type": "string"}]}, "actual_self_history_frames": {"anyOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]}, "outer_split_manifest_path": {"anyOf": [{"type": "null"}, {"type": "string"}]}, "outer_split_manifest_sha256": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]}, "common_support_manifest_path": {"anyOf": [{"type": "null"}, {"type": "string"}]}, "common_support_manifest_sha256": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]}, "executable_freeze_path": {"anyOf": [{"type": "null"}, {"type": "string"}]}
+      }
+    },
+    "artifacts": {"type": "object", "additionalProperties": false, "required": ["primary_root", "sensitivity_root"], "properties": {"primary_root": {"const": "artifacts/primary"}, "sensitivity_root": {"const": "artifacts/sensitivity"}}}
+  },
+  "$defs": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}
