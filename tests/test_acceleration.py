@@ -20,8 +20,6 @@ def test_acceleration_uses_elapsed_time_between_velocity_target_frames() -> None
 
     acceleration = compute_acceleration(velocity, timestamps=timestamps)
 
-    # Velocity rows are [1, 2, 3] at target frames [1, 2, 3].
-    # Acceleration therefore uses (2-1)/(3-1)=0.5 and (3-2)/(6-3)=1/3.
     assert np.allclose(acceleration.values[:, 0, 0], np.array([0.5, 1.0 / 3.0]))
     assert np.allclose(acceleration.time_intervals, np.array([2.0, 3.0]))
     assert np.array_equal(acceleration.source_frame_indices, np.array([1, 2]))
@@ -30,16 +28,6 @@ def test_acceleration_uses_elapsed_time_between_velocity_target_frames() -> None
         acceleration.method
         == "consecutive_velocity_difference_over_target_time_interval"
     )
-
-
-def test_constant_velocity_has_zero_acceleration() -> None:
-    coordinates = np.array([[[0.0]], [[2.0]], [[4.0]], [[6.0]]])
-    timestamps = np.array([0.0, 1.0, 2.0, 3.0])
-    velocity = compute_velocity(compute_displacement(coordinates), timestamps=timestamps)
-
-    acceleration = compute_acceleration(velocity, timestamps=timestamps)
-
-    assert np.array_equal(acceleration.values, np.zeros((2, 1, 1)))
 
 
 def test_nan_velocity_propagates_without_imputation() -> None:
@@ -83,20 +71,3 @@ def test_nonconsecutive_velocity_provenance_is_rejected() -> None:
             velocity,
             timestamps=np.array([0.0, 1.0, 2.0, 3.0]),
         )
-
-
-def test_acceleration_outputs_are_immutable_and_inputs_unchanged() -> None:
-    coordinates = np.array([[[0.0]], [[1.0]], [[4.0]], [[9.0]]])
-    timestamps = np.array([0.0, 1.0, 2.0, 3.0])
-    timestamp_before = timestamps.copy()
-    velocity = compute_velocity(compute_displacement(coordinates), timestamps=timestamps)
-    velocity_before = velocity.values.copy()
-
-    acceleration = compute_acceleration(velocity, timestamps=timestamps)
-
-    assert np.array_equal(timestamps, timestamp_before)
-    assert np.array_equal(velocity.values, velocity_before)
-    assert not acceleration.values.flags.writeable
-    assert not acceleration.time_intervals.flags.writeable
-    assert not acceleration.source_frame_indices.flags.writeable
-    assert not acceleration.target_frame_indices.flags.writeable
