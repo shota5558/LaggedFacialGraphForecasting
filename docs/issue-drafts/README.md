@@ -1,5 +1,7 @@
 # 残存課題 Issue 投稿案
 
+> **HISTORICAL — 投稿時点の原稿**。個別本文・issues.jsonは再投稿や現行実装の仕様に使わない。2026-09-12の採用・統合・追加を反映した一覧は[実装・実行一覧](../implementation_backlog_2026-09-12.md)と[GitHub #24](https://github.com/shota5558/LaggedFacialGraphForecasting/issues/24)。以下の件数・未決状態・依存は投稿当時の記録。
+
 送信先: [shota5558/LaggedFacialGraphForecasting](https://github.com/shota5558/LaggedFacialGraphForecasting/issues)
 
 **状態: ユーザー承認後、GitHubへ投稿済み。新規53件、既存6件更新。[投稿結果とIssueリンク](POSTED.md)を参照。issues.jsonと各本文ファイルは承認時の原稿として保持。**

@@ -8,7 +8,14 @@ This index implements Issue #25 / R-01. The scientific design is adopted; the
 remaining gate is materialization and verification of real-data facts. It does
 not claim a real experiment or a Primary result freeze.
 
-## Authority registry
+| 優先 | 役割 | repository representation |
+|---|---|---|
+| 1 | 正式な Primary specification declaration | `docs/authoritative_primary_experiment_spec_2026-09-12.md` |
+| 2 | 採用対象となった詳細設計本文 | `docs/primary_experiment_recommendation_2026-09-11.md` |
+| 3 | 読みやすい統合実験設計 | `docs/experiment_design.md` |
+| 4 | 採用判断・履歴 | `docs/adopted_decisions_2026-09-10.md` および 2026-09-12 の adoption record |
+| 5 | 移行対象の旧研究計画・詳細設計 | `docs/experimental_plan.md`, `docs/detailed_design.md` |
+| 6 | Legacy executable protocol | `configs/scientific_freeze.yaml`, `schemas/scientific_freeze.schema.json` |
 
 | Priority | Authority | Repository representation |
 |---|---|---|

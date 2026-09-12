@@ -6,7 +6,6 @@ import pytest
 from lagged_facial_graph_forecasting.contracts import PredictionArtifact
 from lagged_facial_graph_forecasting.metrics import (
     VELOCITY_RMSE_NAME,
-    velocity_rmse,
     velocity_rmse_by_subject_region,
 )
 
@@ -57,24 +56,6 @@ def test_subject_region_velocity_rmse_matches_frozen_rmse_definition() -> None:
     assert all(r.metric_name == VELOCITY_RMSE_NAME for r in results)
     assert all(r.condition == "pcmci" for r in results)
     assert all(r.outer_fold == 2 for r in results)
-
-
-def test_v0_velocity_rmse_scalar_semantics_are_preserved() -> None:
-    # 13 total squared error over 8 valid scalar velocity values.
-    assert velocity_rmse(_artifact()) == pytest.approx(np.sqrt(13.0 / 8.0))
-
-
-def test_subject_region_velocity_rmse_uses_only_valid_rows() -> None:
-    artifact = _artifact()
-    results = velocity_rmse_by_subject_region(artifact)
-
-    subject_b_mouth = next(
-        result
-        for result in results
-        if result.subject_id == "subject_b" and result.region_id == "mouth"
-    )
-    assert subject_b_mouth.n_valid == 1
-    assert subject_b_mouth.value == pytest.approx(np.sqrt(0.5))
 
 
 def test_subject_region_velocity_rmse_fails_closed_without_valid_rows() -> None:

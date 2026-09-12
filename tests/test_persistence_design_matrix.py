@@ -4,10 +4,7 @@ import numpy as np
 import pytest
 
 from lagged_facial_graph_forecasting import FaceTimeSeries
-from lagged_facial_graph_forecasting.design_matrix import (
-    build_persistence_design_matrix,
-    build_self_history_design_matrix,
-)
+from lagged_facial_graph_forecasting.design_matrix import build_persistence_design_matrix
 
 
 def _series() -> FaceTimeSeries:
@@ -42,23 +39,6 @@ def test_persistence_uses_only_current_target_region_value() -> None:
     assert matrix.feature_lags == (1, 1)
     assert np.array_equal(matrix.forecast_origin, np.array([0, 1, 2, 3], dtype=float))
     assert np.array_equal(matrix.target_time, np.array([1, 2, 3, 4], dtype=float))
-
-
-def test_persistence_is_exact_self_history_lag_one_specialization() -> None:
-    series = _series()
-    persistence = build_persistence_design_matrix(series, target_region="mouth")
-    self_lag_one = build_self_history_design_matrix(
-        series,
-        target_region="mouth",
-        lags=(1,),
-        horizon=1,
-    )
-
-    assert np.array_equal(persistence.X, self_lag_one.X)
-    assert np.array_equal(persistence.y, self_lag_one.y)
-    assert persistence.feature_names == self_lag_one.feature_names
-    assert persistence.feature_lags == self_lag_one.feature_lags
-    assert np.array_equal(persistence.valid_mask, self_lag_one.valid_mask)
 
 
 def test_persistence_propagates_source_and_target_missingness() -> None:

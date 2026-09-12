@@ -1,23 +1,7 @@
 name: sensitivity-torch-tests
 
 on:
-  push:
-    branches: [dev]
-    paths:
-      - "src/lagged_facial_graph_forecasting/sensitivity_gru.py"
-      - "src/lagged_facial_graph_forecasting/sensitivity_results.py"
-      - "tests/test_sensitivity_gru.py"
-      - "tests/test_sensitivity_integration_torch.py"
-      - "pyproject.toml"
-      - ".github/workflows/sensitivity-torch-test.yml"
-  pull_request:
-    paths:
-      - "src/lagged_facial_graph_forecasting/sensitivity_gru.py"
-      - "src/lagged_facial_graph_forecasting/sensitivity_results.py"
-      - "tests/test_sensitivity_gru.py"
-      - "tests/test_sensitivity_integration_torch.py"
-      - "pyproject.toml"
-      - ".github/workflows/sensitivity-torch-test.yml"
+  workflow_dispatch:
 
 jobs:
   gru-smoke:

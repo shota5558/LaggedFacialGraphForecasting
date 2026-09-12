@@ -33,7 +33,7 @@ def _parents() -> ParentSet:
     )
 
 
-def test_random_region_mapping_is_deterministic_from_frozen_seed_and_candidates() -> None:
+def test_random_region_mapping_preserves_only_the_intended_null_contract() -> None:
     kwargs = dict(
         construction_subject_ids=("train_a", "train_b"),
         candidate_regions=("left_cheek", "right_cheek", "jaw", "left_eye", "mouth"),
@@ -48,6 +48,13 @@ def test_random_region_mapping_is_deterministic_from_frozen_seed_and_candidates(
     assert first.source_parents == _parents().parents
     assert len(first.mapped_parents) == len(first.source_parents)
     assert len(set(first.mapped_parents)) == len(first.mapped_parents)
+
+    for source, mapped in zip(first.source_parents, first.mapped_parents, strict=True):
+        assert mapped.source_region != source.source_region
+        assert mapped.source_region != first.target_region
+        assert mapped.lag == source.lag
+        assert mapped.source_dimension == source.source_dimension
+        assert mapped.target_dimension == source.target_dimension
 
 
 def test_random_region_mapping_rejects_outer_test_construction_scope() -> None:

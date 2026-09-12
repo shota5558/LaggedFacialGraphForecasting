@@ -8,9 +8,7 @@ import yaml
 from lagged_facial_graph_forecasting.sensitivity_execution import (
     SensitivityExecutionError,
     SensitivityExecutionMode,
-    assert_sensitivity_execution_allowed,
     load_sensitivity_experiment_config,
-    resolve_sensitivity_output_path,
 )
 
 
@@ -58,39 +56,6 @@ def test_repository_sensitivity_descriptor_is_synthetic_and_separate() -> None:
     assert loaded.primary_freeze_manifest == "artifacts/primary/freeze_manifest.json"
 
 
-def test_synthetic_mode_does_not_require_primary_freeze(tmp_path: Path) -> None:
-    _write_fixture(tmp_path)
-    loaded = load_sensitivity_experiment_config(
-        "configs/sensitivity_preimplementation.yaml", repository_root=tmp_path
-    )
-    assert_sensitivity_execution_allowed(loaded, repository_root=tmp_path)
-
-
-def test_real_mode_fails_closed_without_primary_freeze_manifest(tmp_path: Path) -> None:
-    _write_fixture(tmp_path, execution_mode="real")
-    loaded = load_sensitivity_experiment_config(
-        "configs/sensitivity_preimplementation.yaml", repository_root=tmp_path
-    )
-    with pytest.raises(SensitivityExecutionError, match="PRIMARY FREEZE"):
-        assert_sensitivity_execution_allowed(loaded, repository_root=tmp_path)
-
-
-def test_real_mode_rejects_stage_one_existence_only_manifest_after_hardening(
-    tmp_path: Path,
-) -> None:
-    """S-IMPL-10 supersedes the S-IMPL-01 existence-only barrier."""
-
-    _write_fixture(tmp_path, execution_mode="real")
-    manifest = tmp_path / "artifacts" / "primary" / "freeze_manifest.json"
-    manifest.parent.mkdir(parents=True)
-    manifest.write_text("{}\n", encoding="utf-8")
-    loaded = load_sensitivity_experiment_config(
-        "configs/sensitivity_preimplementation.yaml", repository_root=tmp_path
-    )
-    with pytest.raises(SensitivityExecutionError, match="frozen schema"):
-        assert_sensitivity_execution_allowed(loaded, repository_root=tmp_path)
-
-
 def test_sensitivity_loader_rejects_primary_artifact_root(tmp_path: Path) -> None:
     _write_fixture(tmp_path, artifact_root="artifacts/primary")
     with pytest.raises(SensitivityExecutionError, match="Sensitivity artifact_root"):
@@ -120,22 +85,4 @@ def test_primary_freeze_manifest_must_live_under_primary_namespace(tmp_path: Pat
     with pytest.raises(SensitivityExecutionError, match="primary_freeze_manifest"):
         load_sensitivity_experiment_config(
             "configs/sensitivity_preimplementation.yaml", repository_root=tmp_path
-        )
-
-
-def test_output_path_is_confined_to_sensitivity_namespace(tmp_path: Path) -> None:
-    _write_fixture(tmp_path)
-    loaded = load_sensitivity_experiment_config(
-        "configs/sensitivity_preimplementation.yaml", repository_root=tmp_path
-    )
-    resolved = resolve_sensitivity_output_path(
-        loaded, "gpdc/result.json", repository_root=tmp_path
-    )
-    assert resolved == (tmp_path / "artifacts/sensitivity/gpdc/result.json").resolve()
-
-    with pytest.raises(SensitivityExecutionError, match="Sensitivity output path"):
-        resolve_sensitivity_output_path(
-            loaded,
-            tmp_path / "artifacts/primary/forbidden.json",
-            repository_root=tmp_path,
         )

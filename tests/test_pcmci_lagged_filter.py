@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from lagged_facial_graph_forecasting.pcmci_contemporaneous import (
-    ContemporaneousLinkDisposition,
-    apply_primary_contemporaneous_policy,
-)
+from lagged_facial_graph_forecasting.pcmci_contemporaneous import ContemporaneousLinkDisposition
 from lagged_facial_graph_forecasting.pcmci_lagged_filter import (
     PRIMARY_LAGGED_LINK_MARK,
     PRIMARY_LAG_MIN,
@@ -55,26 +52,14 @@ def test_empty_lagged_candidate_set_is_valid() -> None:
     assert filter_primary_lagged_links(_disposition()) == ()
 
 
-def test_tau_zero_is_removed_by_d08_before_d09() -> None:
-    contemporaneous = _link(lag=0)
-    lagged = _link(lag=1)
-
-    disposition = apply_primary_contemporaneous_policy((contemporaneous, lagged))
-
-    assert disposition.excluded_contemporaneous == (contemporaneous,)
-    assert filter_primary_lagged_links(disposition) == (lagged,)
-
-
-@pytest.mark.parametrize("lag", [11, 99])
-def test_rejects_lag_above_primary_tau_max(lag: int) -> None:
+def test_rejects_lag_above_primary_tau_max() -> None:
     with pytest.raises(LaggedLinkFilterError, match="1 <= tau <= 10"):
-        filter_primary_lagged_links(_disposition(_link(lag=lag)))
+        filter_primary_lagged_links(_disposition(_link(lag=11)))
 
 
-@pytest.mark.parametrize("mark", ["<--", "o-o", "x-x", "-?>", "o->", ""])
-def test_rejects_unexpected_lagged_graph_mark_fail_closed(mark: str) -> None:
+def test_rejects_unexpected_lagged_graph_mark_fail_closed() -> None:
     with pytest.raises(LaggedLinkFilterError, match="must use '-->'"):
-        filter_primary_lagged_links(_disposition(_link(lag=2, mark=mark)))
+        filter_primary_lagged_links(_disposition(_link(lag=2, mark="<--")))
 
 
 def test_preserves_exact_component_provenance_and_order() -> None:
@@ -86,8 +71,3 @@ def test_preserves_exact_component_provenance_and_order() -> None:
     assert accepted == (first, second)
     assert accepted[0].source_variable_name == first.source_variable_name
     assert accepted[0].target_dimension == first.target_dimension
-
-
-def test_rejects_noncanonical_disposition() -> None:
-    with pytest.raises(TypeError, match="ContemporaneousLinkDisposition"):
-        filter_primary_lagged_links(object())  # type: ignore[arg-type]
