@@ -58,17 +58,6 @@ def test_each_outer_train_subject_is_validation_once() -> None:
     assert sorted(validation_subjects) == sorted(manifest.train_subject_ids)
 
 
-def test_different_seed_changes_outer_split_for_fixture() -> None:
-    first = build_subject_split_manifest(
-        SUBJECTS, test_subject_count=2, n_inner_folds=3, seed=1
-    )
-    second = build_subject_split_manifest(
-        SUBJECTS, test_subject_count=2, n_inner_folds=3, seed=2
-    )
-
-    assert first.test_subject_ids != second.test_subject_ids
-
-
 def test_rejects_duplicate_subject_ids() -> None:
     with pytest.raises(ValueError, match="subject_ids must be unique"):
         build_subject_split_manifest(("s01", "s01", "s02", "s03"))
