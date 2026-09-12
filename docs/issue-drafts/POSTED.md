@@ -1,5 +1,7 @@
 # GitHub投稿結果
 
+> **HISTORICAL — 初回投稿結果**。以下のタイトル・件数は投稿当時のもの。現行Issueは統合・改訂済み。新規#84/#85/#86を含む現在の着手順は[実装・実行一覧](../implementation_backlog_2026-09-12.md)と[管理Issue #24](https://github.com/shota5558/LaggedFacialGraphForecasting/issues/24)を参照する。
+
 [管理Issue #24](https://github.com/shota5558/LaggedFacialGraphForecasting/issues/24)
 
 新規53件（管理1件＋作業52件）、既存 #16〜#21 の6件を追記済み。投稿本文59件を再取得して照合。

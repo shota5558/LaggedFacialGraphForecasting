@@ -253,8 +253,12 @@ OOF結果についてouter-fold内で独立groupを復元抽出し、10000 resam
 
 これらが成立しない場合はouter-testを見る前に改訂理由を登録する。
 
+real-data dry run（#16）はformal集団から永久除外するpreflight/pilot dependency groupで行い、formal outer-test foldを使用しない。mockの成功は#16の実データ受入を代替しない。#38はsoftware統合、#16はreal dry run、#17はformal outcomeを読まない最終監査として順序を分ける。
+
 ## 19. Executable migration
 
 本仕様を `configs/scientific_freeze.yaml`、`configs/primary_run.yaml`、schema、config loader、support/landscape/enrichment/centered-response implementation、testsへ移行する。
 
 旧v6 artifactを新Primaryの完了証拠として受理しない。文書更新だけでmigration completeとしない。
+
+実装担当・残る差分・着手順は[今後の実装・実行一覧](implementation_backlog_2026-09-12.md)と[管理Issue #24](https://github.com/shota5558/LaggedFacialGraphForecasting/issues/24)を参照する。raw前処理は#84、group split/PCMCI/Ridge移行は#85、100 group再探索は#86が担当する。
