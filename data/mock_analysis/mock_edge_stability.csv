@@ -1,20 +1,5 @@
 is_synthetic,synthetic_notice,source_region,source_dimension,target_region,target_dimension,lag,fold_selected_count,fold_opportunities,outer_fold_selection_frequency,bootstrap_selected_count,bootstrap_opportunities,bootstrap_selection_frequency,evaluable
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,left_cheek,vx,mouth,vx,2,4,4,1.0,88,100,0.88,True
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,right_cheek,vx,mouth,vx,3,3,4,0.75,82,100,0.82,True
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,jaw,vy,mouth,vy,1,4,4,1.0,91,100,0.91,True
 True,MOCK DATA / NOT A SCIENTIFIC RESULT,mouth,vx,jaw,vx,2,3,4,0.75,68,100,0.68,True
-=======
-=======
->>>>>>> Stashed changes
-True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,left_cheek,vx,mouth,vx,2,4,4,1.0,84,100,0.84,True
-True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,right_cheek,vx,mouth,vx,3,3,4,0.75,79,100,0.79,True
-True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,jaw,vy,mouth,vy,1,4,4,1.0,90,100,0.9,True
-True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,mouth,vx,jaw,vx,2,3,4,0.75,66,100,0.66,True
-True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,left_cheek,vy,right_cheek,vy,4,2,4,0.5,52,100,0.52,True
-True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,right_cheek,vy,left_cheek,vy,4,2,4,0.5,50,100,0.5,True
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
