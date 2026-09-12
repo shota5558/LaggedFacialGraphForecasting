@@ -1,0 +1,38 @@
+task_id: S-IMPL-06
+task_name: h > 1 DesignMatrix support
+status: PASS
+implemented:
+  - Sensitivity-only multi-horizon DesignMatrix adapters
+  - explicit horizon provenance wrapper without changing canonical DesignMatrix schema
+  - direct-observation availability guard requiring every feature tau >= h
+  - h-step persistence semantics using target-relative tau = h
+  - PCMCI ParentSet fail-closed guard for unavailable tau < h parents
+  - exact h-step forecast-origin provenance while reusing frozen Primary target-relative feature construction
+  - Primary aligned_indices and Primary DesignMatrix builders restored unchanged at h=1
+files_changed:
+  - src/lagged_facial_graph_forecasting/sensitivity_horizon.py
+  - tests/test_sensitivity_horizon.py
+  - src/lagged_facial_graph_forecasting/alignment.py (temporary generalization reverted)
+  - tests/test_alignment.py (temporary generalization reverted)
+tests:
+  initial_workflow_run_id: 34214099214
+  initial_result: FAIL
+  initial_summary: 4 failed, 716 passed, 1 warning
+  fail_type: contract mismatch
+  root_cause: generalizing the Primary alignment primitive violated existing frozen h=1 Primary contracts
+  fix_commit: ce106ef582b3c90422f13c6a2082ff96c81d691f
+  regression_workflow_run_id: 34214397825
+  regression_result: success
+scientific_checks:
+  primary_horizon: 1
+  primary_api_changed: false
+  sensitivity_horizon_gt_1_supported: true
+  tau_gte_h_guard: true
+  core_contract_schema_changed: false
+  real_facial_data_used: false
+provenance:
+  final_implementation_commit: ce106ef582b3c90422f13c6a2082ff96c81d691f
+  branch: dev
+remaining_issue:
+  - none
+next_task: S-IMPL-07

@@ -10,11 +10,16 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 MOCK_DIR = ROOT / "data" / "mock_analysis"
-NOTICE = "FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS"
+NOTICE = "MOCK DATA / NOT A SCIENTIFIC RESULT"
 
 
 def _csv_rows(name: str) -> list[dict[str, str]]:
     with (MOCK_DIR / name).open("r", encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def _csv_rows_from(path: Path) -> list[dict[str, str]]:
+    with path.open("r", encoding="utf-8", newline="") as handle:
         return list(csv.DictReader(handle))
 
 
@@ -64,13 +69,25 @@ def test_mock_manifest_forbids_scientific_use() -> None:
 
 def test_generator_produces_richer_synthetic_fixture_set(tmp_path: Path) -> None:
     subprocess.run([sys.executable, str(ROOT / "scripts" / "generate_mock_analysis_data.py"), "--output-dir", str(tmp_path)], cwd=ROOT, check=True)
-    for filename in ("mock_metrics.csv", "mock_null_metrics.csv", "mock_feature_counts.csv", "mock_lag_response.csv", "mock_edge_stability.csv", "mock_sensitivity.csv", "mock_dataset_summary.csv", "mock_prediction_trajectory.csv", "mock_primary_config.json"):
+    for filename in ("mock_metrics.csv", "mock_null_metrics.csv", "mock_feature_counts.csv", "mock_lag_response.csv", "mock_edge_stability.csv", "mock_sensitivity.csv", "mock_dataset_summary.csv", "mock_prediction_trajectory.csv", "mock_population.csv", "mock_landscape.csv", "mock_candidate_grid.json", "mock_primary_config.json"):
         assert (tmp_path / filename).exists()
     with (tmp_path / "mock_metrics.csv").open("r", encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
     assert rows
     assert all(row["is_synthetic"] == "True" for row in rows)
     assert all(row["synthetic_notice"] == NOTICE for row in rows)
+
+    population_rows = _csv_rows_from(tmp_path / "mock_population.csv")
+    assert population_rows
+    assert {row["metric_name"] for row in population_rows} == {"velocity_rmse"}
+    assert {row["status"] for row in population_rows} == {"evaluable"}
+
+    landscape_rows = _csv_rows_from(tmp_path / "mock_landscape.csv")
+    assert len(landscape_rows) == 8 * 4
+    assert {row["metric_name"] for row in landscape_rows} == {"velocity_rmse"}
+    assert {row["status"] for row in landscape_rows} == {"evaluable"}
+    grid = json.loads((tmp_path / "mock_candidate_grid.json").read_text(encoding="utf-8"))
+    assert len(grid["candidates"]) == 4
 
     with (tmp_path / "mock_edge_stability.csv").open("r", encoding="utf-8", newline="") as handle:
         stability_rows = list(csv.DictReader(handle))

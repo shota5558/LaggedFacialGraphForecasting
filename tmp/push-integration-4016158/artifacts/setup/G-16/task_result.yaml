@@ -1,0 +1,36 @@
+task_id: G-16
+task_name: Edge selection frequency
+status: PASS
+
+implemented:
+  - formally maps the already-implemented D-13 PCMCI+ bootstrap selection-frequency primitive to Issue #15 G-16
+  - reuses src/lagged_facial_graph_forecasting/pcmci_selection_frequency.py without duplicating estimator logic
+  - reports exact source-region/source-component -> target-region/target-component selection frequency for each Primary lag tau=1..10
+  - preserves zero-frequency rows and excludes contemporaneous tau=0 from the direct h=1 frequency contract
+  - keeps selection frequency descriptive only and does not feed it back into the Primary ParentSet
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/pcmci_selection_frequency.py
+  - tests/test_pcmci_selection_frequency.py
+  - artifacts/setup/D-13/task_result.yaml
+
+upstream_evidence:
+  task_id: D-13
+  workflow_run_id: 34162683980
+  job_id: 101867555206
+  head_sha: 9a5c13fbaa07dfb0cee8ce319e404fc0d1680fe7
+  result: 535 passed, 1 warning in 3.67s
+
+scientific_checks:
+  exact_component_lag_frequency: PASS
+  zero_frequency_rows_explicit: PASS
+  tau0_excluded_from_direct_h1_output: PASS
+  unexpected_link_marks_fail_closed: PASS
+  no_threshold_changes_primary_parentset: PASS
+  outer_test_accessed: false
+  sensitivity_contamination: false
+
+remaining_issue: none
+scientific_specification_changed: false
+outer_test_accessed: false
+primary_results_generated: false

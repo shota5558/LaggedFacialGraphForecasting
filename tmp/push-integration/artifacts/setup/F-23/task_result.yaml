@@ -1,0 +1,52 @@
+task_id: F-23
+task_name: Random-region original-region exclusion
+status: PASS
+
+implemented:
+  - reuses the existing F-20 random-region constructor
+  - adds a dedicated regression test that each mapped parent excludes its own original source region
+  - verifies the target region is also excluded from the replacement candidate actually selected
+  - verifies lag and source/target component identity remain unchanged
+
+files_changed:
+  - tests/test_null_random_region_original_region_exclusion.py
+  - artifacts/setup/F-23/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/null_random_region.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+
+implementation_commit:
+  sha: 9b4991ef942a7371d4adf81bf7074f73428e081f
+  message: F-23: verify original-region exclusion
+
+tests:
+  workflow: tests
+  run_id: 34164227630
+  job_id: 101871973450
+  head_sha: 9b4991ef942a7371d4adf81bf7074f73428e081f
+  result: 559 passed, 1 warning in 4.12s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-23
+  targeted_checks:
+    - mapped source_region differs from each source parent original source_region
+    - mapped source_region differs from the target region
+    - lag identity is preserved
+    - source/target component identity is preserved
+    - feature count remains one-to-one
+
+scientific_checks:
+  outer_test_leakage: PASS
+  original_region_exclusion: PASS
+  target_region_self_injection_forbidden: PASS
+  lag_identity_preserved: PASS
+  component_identity_preserved: PASS
+  feature_count_preserved: PASS
+  sensitivity_contamination: PASS
+
+artifacts:
+  - artifacts/setup/F-23/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-30

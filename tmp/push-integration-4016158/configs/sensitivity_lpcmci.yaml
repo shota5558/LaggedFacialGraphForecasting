@@ -1,0 +1,6 @@
+schema_version: 1
+tau_min: 0
+tau_max: 10
+pc_alpha: 0.01
+n_preliminary_iterations: 1
+max_cond_px: 0

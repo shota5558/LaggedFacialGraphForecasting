@@ -1,0 +1,1 @@
+{"contract_type":"NullMapping","payload":{"condition":"lag-shift","mapped_parents":[{"lag":6,"source_dimension":"vx","source_region":"left_cheek","target_dimension":"vy"}],"outer_fold":0,"permutation":[],"seed":20260908,"source_parents":[{"lag":5,"source_dimension":"vx","source_region":"left_cheek","target_dimension":"vy"}],"target_region":"mouth"},"schema_version":3}

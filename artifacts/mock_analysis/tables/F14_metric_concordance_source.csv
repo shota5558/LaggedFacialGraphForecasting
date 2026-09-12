@@ -1,0 +1,5 @@
+is_synthetic,synthetic_notice,metric_name,metric_direction,effect_definition,median_direction_normalized_effect,ci_low,ci_high,n_subjects
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,acceleration_rmse,lower_is_better,positive = PCMCI better,0.132840625,0.130324,0.13675725,8
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,position_rmse,lower_is_better,positive = PCMCI better,0.1329125,0.123214,0.13583575,8
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,temporal_correlation,higher_is_better,positive = PCMCI better,0.0915535,0.08816275,0.1027245,8
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,velocity_rmse,lower_is_better,positive = PCMCI better,0.12897925,0.1258205,0.136925,8

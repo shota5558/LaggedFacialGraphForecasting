@@ -1,0 +1,48 @@
+task_id: A-14
+task_name: Subject sequence assembly
+status: PASS
+
+implemented:
+  - reused the frozen FaceTimeSeries contract as the only assembled subject-sequence representation
+  - canonical implementation is src/lagged_facial_graph_forecasting/sequence_assembly.py
+  - assembly accepts exactly one subject and therefore cannot mix subjects internally
+  - requires explicit subject_id, time_index, region_id, dimension, and sampling_rate provenance
+  - preserves A-13 values and elementwise valid_mask without interpolation, imputation, row deletion, resampling, smoothing, or fitting
+  - rejects non-finite observations marked valid
+  - removed the parallel duplicate subject-sequence implementation before PASS
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/sequence_assembly.py
+  - tests/test_subject_sequence_assembly.py
+  - artifacts/setup/A-14/task_result.yaml
+
+source_commits:
+  canonical_implementation: 81e96ad5bb0e68c96b568a663e3bce1d14700cde
+  tests: 45a5c5d62286a51c4b5bbae732270ac90a04f542
+  duplicate_removal: 6245d58ad218d67edd99afe7847b04a84d1f4251
+
+tests:
+  workflow: tests
+  run_id: 34153654983
+  head_sha: 6245d58ad218d67edd99afe7847b04a84d1f4251
+  result: success
+  cases:
+    - one subject assembles with exact temporal/region/dimension provenance
+    - invalid observations remain in place under valid_mask
+    - subject/time/region/dimension contract violations are rejected
+    - caller time_index mutations cannot alter the assembled series
+
+scientific_checks:
+  - subject isolation is structural: no multi-subject collection is accepted by the assembly API
+  - sampling_rate and time_index are explicit provenance and are not inferred from held-out outcomes
+  - no preprocessing parameter is fitted in A-14
+  - no outer-test-dependent selection or transformation occurs
+  - no interpolation or imputation is introduced after the A-13 no-interpolation freeze
+  - Primary scientific freeze remains PCMCI+ + ParCorr + Ridge, h=1
+  - no Sensitivity execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-14/task_result.yaml
+
+remaining_issue: none
+next_task: A-15

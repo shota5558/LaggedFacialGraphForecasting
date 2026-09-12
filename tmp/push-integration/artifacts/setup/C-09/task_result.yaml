@@ -1,0 +1,48 @@
+task_id: C-09
+task_name: Missing-value alignment
+status: PASS
+
+implemented:
+  - reused the common DesignMatrix valid_mask contract across Persistence, Self, Full, and PCMCI conditions
+  - a row is valid only when every selected lagged feature and every target dimension required for that row are valid
+  - invalid observations remain aligned in X/y provenance while valid_mask prevents them from entering Ridge fitting or valid prediction metrics
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/contracts.py
+  - src/lagged_facial_graph_forecasting/forecaster.py
+  - tests/test_persistence_design_matrix.py
+  - tests/test_self_history_design_matrix.py
+  - tests/test_full_history_design_matrix.py
+  - tests/test_pcmci_parent_design_matrix.py
+  - tests/test_ridge_forecaster_prediction.py
+
+requirements_verified:
+  feature_missingness_propagates: true
+  target_missingness_propagates: true
+  row_alignment_preserved: true
+  invalid_rows_excluded_from_fit: true
+  invalid_predictions_masked: true
+
+tests:
+  workflow: tests
+  run_id: 34148619208
+  job_id: 101825925196
+  head_sha: 953a54b7cd0fb84aee4e0cd991149089d8677d95
+  python: 3.11.16
+  result: 185 passed in 1.56s
+  direct_cases:
+    - Persistence missing source/target propagation
+    - Self-history missing source/target propagation
+    - Full-history all-feature/target missingness propagation
+    - PCMCI parent-feature/target missingness propagation
+    - prediction invalid rows remain NaN and masked
+
+scientific_checks:
+  - missingness handling does not impute or select features using outer-test outcomes
+  - all conditions use the same row-validity semantics
+  - forecast_origin, target_time, subject_id, region_id, feature_names, and feature_lags remain aligned
+  - Primary h=1 semantics remain unchanged
+
+remaining_issue: none
+next_task: C-10

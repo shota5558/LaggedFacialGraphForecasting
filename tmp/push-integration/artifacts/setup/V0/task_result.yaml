@@ -1,0 +1,90 @@
+task_id: V0
+task_name: Gate V0 — Self-only Minimal Vertical Slice
+status: PASS
+audit_type: existing_implementation_revalidation
+
+validated_sequence:
+  - V0-01 synthetic FaceTimeSeries
+  - V0-02 subject split
+  - V0-03 lag/horizon alignment
+  - V0-04 Self-history DesignMatrix
+  - V0-05 scaler + Ridge wrapper
+  - V0-06 prediction
+  - V0-07 Velocity RMSE
+  - V0-08 result serialization
+  - V0-09 minimal FoldRunner
+  - V0-10 end-to-end test
+
+gate_evidence:
+  workflow: v0-vertical-slice-audit
+  run_id: 34159308266
+  job_id: 101857596706
+  head_sha: 653709fd0012ec4ecf964b154a6360dd090640e4
+  python: 3.11.16
+  result: 62 passed in 1.22s
+  targeted_tests:
+    - tests/test_synthetic_face_time_series.py
+    - tests/test_subject_split_builder.py
+    - tests/test_alignment.py
+    - tests/test_self_history_design_matrix.py
+    - tests/test_ridge_forecaster_fit.py
+    - tests/test_ridge_forecaster_prediction.py
+    - tests/test_velocity_rmse.py
+    - tests/test_v0_result_serialization.py
+    - tests/test_minimal_fold_runner.py
+    - tests/test_v0_end_to_end.py
+  note: temporary audit workflow removed after successful targeted execution
+
+failure_history:
+  run_id: 34159270688
+  result: 2 failed, 60 passed
+  fail_type: contract mismatch
+  root_cause: V0 result serializer had migrated to schema_version 2 with target-dimension provenance while two V0 tests still expected schema_version 1
+  minimal_fix: migrate V0 serialization and end-to-end expectations to schema v2 and target_provenance
+  retest: PASS
+
+migration_revalidation:
+  - DesignMatrix and PredictionArtifact target_dimensions are preserved through fit and prediction
+  - FittedRidgeForecaster freezes target_dimensions with feature provenance
+  - V0 result schema_version 2 serializes target_provenance.target_dimensions
+  - stale V0-06/07/08 fixtures were migrated without changing scientific behavior
+
+traceability_verified:
+  - subject_id
+  - outer_fold
+  - region_id
+  - target_dimensions
+  - forecast_origin
+  - target_time
+  - feature_name
+  - lag
+  - valid_mask
+  - prediction
+  - ground_truth
+
+scientific_checks:
+  - complete synthetic input -> subject split -> Self-history -> Ridge -> PredictionArtifact -> Velocity RMSE -> result artifact path executes successfully
+  - SplitManifest is the sole subject-split authority
+  - outer-test is locked during model fitting and unlocked only after explicit fold freeze
+  - training provenance equals outer-train subjects and excludes outer-test subjects
+  - no tuning or fitting occurs during outer-test evaluation
+  - Primary horizon remains h=1
+  - V0 uses synthetic data only and does not introduce real facial data or PCMCI+
+  - no Null or Sensitivity execution is introduced
+  - identical deterministic inputs produce byte-identical final result artifacts and identical predictions/metrics
+
+artifacts:
+  - artifacts/setup/V0/task_result.yaml
+  - artifacts/setup/V0-01/task_result.yaml
+  - artifacts/setup/V0-02/task_result.yaml
+  - artifacts/setup/V0-03/task_result.yaml
+  - artifacts/setup/V0-04/task_result.yaml
+  - artifacts/setup/V0-05/task_result.yaml
+  - artifacts/setup/V0-06/task_result.yaml
+  - artifacts/setup/V0-07/task_result.yaml
+  - artifacts/setup/V0-08/task_result.yaml
+  - artifacts/setup/V0-09/task_result.yaml
+  - artifacts/setup/V0-10/task_result.yaml
+
+remaining_issue: none
+next_task: CF

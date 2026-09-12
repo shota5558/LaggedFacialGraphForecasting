@@ -1,0 +1,8 @@
+is_synthetic,synthetic_notice,null_condition,metric_name,effect_definition,median_null_minus_pcmci,mean_null_minus_pcmci,ci_low,ci_high,confidence_level,n_subjects,evaluable_unit_count,replicate_observations,replicate_count,seed_count,mapping_scope
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_shift_+1,velocity_rmse,Null - PCMCI,0.05952475,0.06043003125,0.058687,0.06205225,0.95,8,32,32,1,1,outer_train_only
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_shift_+2,velocity_rmse,Null - PCMCI,0.107303375,0.10710134375,0.10464075,0.10761075,0.95,8,32,32,1,1,outer_train_only
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_shift_-1,velocity_rmse,Null - PCMCI,0.052973625,0.05275028125,0.050009,0.05478825,0.95,8,32,32,1,1,outer_train_only
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,lag_shift_-2,velocity_rmse,Null - PCMCI,0.098927,0.099459625,0.0969355,0.101852,0.95,8,32,32,1,1,outer_train_only
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,matched_sparsity,velocity_rmse,Null - PCMCI,0.089559875,0.089424375,0.08673825,0.09199625,0.95,8,32,32,1,1,outer_train_only
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,random_region,velocity_rmse,Null - PCMCI,0.120124875,0.1206671875,0.119018875,0.1233765,0.95,8,32,32,1,1,outer_train_only
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,time_shuffle,velocity_rmse,Null - PCMCI,0.1786145,0.17890075,0.17693075,0.1814755,0.95,8,32,32,1,1,outer_train_only

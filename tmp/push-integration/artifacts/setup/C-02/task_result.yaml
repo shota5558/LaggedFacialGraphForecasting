@@ -1,0 +1,34 @@
+task_id: C-02
+task_name: Horizon alignment
+status: PASS
+
+implemented:
+  - reused aligned_indices horizon contract
+  - forecast origin is target index minus horizon
+  - Primary horizon is hard-frozen to h=1
+  - non-Primary h>1 requests are rejected and remain reserved for post-Primary Sensitivity
+
+files_changed:
+  - artifacts/setup/C-02/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/alignment.py
+  - tests/test_alignment.py
+
+tests:
+  workflow: tests
+  run_id: 34147524791
+  head_sha: d1dfa4e76dfc76136e049fae752b69f5899d6596
+  result: success
+  direct_tests:
+    - test_lag_one_horizon_one_alignment
+    - test_source_never_occurs_after_forecast_origin
+    - test_rejects_non_primary_horizon
+
+scientific_checks:
+  - Primary design-matrix construction cannot silently switch to h>1
+  - h>1 remains a Sensitivity-only dimension after Primary freeze
+  - horizon alignment is independent of outcome-driven model selection
+
+remaining_issue: none
+next_task: C-03

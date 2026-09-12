@@ -1,0 +1,7 @@
+is_synthetic,synthetic_notice,source_region,target_region,fold_selection_frequency,bootstrap_selection_frequency,observed
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,jaw,mouth,1,0.9,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,left_cheek,mouth,1,0.84,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,left_cheek,right_cheek,0.5,0.52,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,mouth,jaw,0.75,0.66,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,right_cheek,left_cheek,0.5,0.5,True
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,right_cheek,mouth,0.75,0.79,True

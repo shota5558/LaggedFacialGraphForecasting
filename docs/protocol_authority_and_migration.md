@@ -1,6 +1,7 @@
 # Protocol authority registry and migration plan
 
-更新日: 2026-09-10  
+更新日: 2026-09-11
+
 対象: `shota5558/LaggedFacialGraphForecasting`  
 基準実装: `dev@9bbc3d946c0a64935b8786d9413abe53e6cefe29`
 
@@ -10,8 +11,8 @@
 
 | 優先 | 役割 | 版 / SHA-256 | repository representation |
 |---|---|---|---|
-| 1 | 科学上の正本 | `PCMCI_facial_motion_research_plan_generalized_predictive_structure_2026-09-09.docx` / `7d77f30febaf4856131f2bb9930a2da93ec8252b60e5137e46c96f58550bc249` | `docs/experimental_plan.md` |
-| 2 | 承認済み決定記録 | 2026-09-10 | `docs/adopted_decisions_2026-09-10.md` |
+| 1 | 後続のユーザー判断（矛盾する旧記述より優先） | 2026-09-10、2026-09-11追記 | `docs/adopted_decisions_2026-09-10.md` |
+| 2 | 科学上の正本・後続判断の反映元 | `PCMCI_facial_motion_research_plan_generalized_predictive_structure_2026-09-09.docx` / `7d77f30febaf4856131f2bb9930a2da93ec8252b60e5137e46c96f58550bc249` | `docs/experimental_plan.md` |
 | 3 | 実装契約 | 2026-09-09 Markdown design | `docs/detailed_design.md` |
 | 4 | 継承資料 | `PCMCI_facial_motion_implementation_plan_2026-09-08.docx` / `9ba024806749268f5a456267a616149f507f366a9dc3d31ff683205220697ab3` | 矛盾しない実装原則だけを継承 |
 | 5 | 移行元 | Scientific Freeze schema v6 | `configs/scientific_freeze.yaml`, `schemas/scientific_freeze.schema.json` |
@@ -19,6 +20,8 @@
 原 DOCX の記録上の所在は `C:/Users/yukit/OneDrive/デスクトップ/研究/`。別 repository の合成 DDL 回収研究、旧 DOCX の package 名 `facial_pcmci`、mock 出力は本研究の科学仕様・実成果へ混入しない。
 
 ## Approved dispositions
+
+2026-09-11の[本実験に必要な定義の最終推薦案](primary_experiment_recommendation_2026-09-11.md)は、今回の必須範囲に限定したR-02/R-03の判断材料である。具体値の推薦と実データでの確認を分け、必要な実物確認を同書第14節へ集約する。推薦文書の作成だけでは実行用freezeを変更しない。旧計画・Issue本文の速度主指標や任意解析の必須化を、最新ユーザー判断に優先させない。
 
 | 差分 | disposition | migration owner |
 |---|---|---|

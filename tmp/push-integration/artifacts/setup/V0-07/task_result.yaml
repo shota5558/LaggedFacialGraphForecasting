@@ -1,0 +1,44 @@
+task_id: V0-07
+task_name: Velocity RMSE
+status: PASS
+audit_type: existing_implementation_contract_migration_revalidation
+
+implemented:
+  - existing Velocity RMSE implementation reused without duplication
+  - RMSE computed over all valid velocity rows and output dimensions
+  - invalid prediction rows excluded through PredictionArtifact.valid_mask
+  - no-valid-row input rejected explicitly
+  - current PredictionArtifact target_dimensions contract represented in the metric fixture
+
+files_changed:
+  - artifacts/setup/V0-07/task_result.yaml
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/metrics.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_velocity_rmse.py
+
+revalidation:
+  workflow: v0-vertical-slice-audit
+  run_id: 34159270688
+  job_id: 101857492278
+  head_sha: 2e31e60d66b545eda71cabe94612225f20921c3b
+  python: 3.11.16
+  relevant_result: tests/test_velocity_rmse.py PASS
+  gate_snapshot: 60 passed, 2 failed
+  note: remaining failures are V0-08/V0-10 schema-version expectations only
+
+scientific_checks:
+  - metric consumes PredictionArtifact only and performs no model fitting or selection
+  - valid_mask is honored, so invalid/missing rows cannot influence the metric
+  - output-dimension provenance is explicit in the input artifact
+  - metric introduces no outer-test-dependent tuning or configuration change
+  - no discovery, Null, real-data preprocessing, or Sensitivity path was introduced
+  - Primary metric remains Velocity RMSE as required by the V0 vertical slice
+  - Primary scientific freeze remains unchanged
+
+artifacts:
+  - artifacts/setup/V0-07/task_result.yaml
+
+remaining_issue: none
+next_task: V0-08

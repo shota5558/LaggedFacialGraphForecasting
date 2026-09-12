@@ -1,0 +1,32 @@
+task_id: S-IMPL-05
+task_name: Circular-shift surrogate
+status: PASS
+implemented:
+  - sufficiently-large circular-shift policy interface
+  - explicit positive numpy.roll wrapping semantics within each subject/component sequence
+  - independent component shifts without subject concatenation
+  - subject-order-invariant deterministic seed derivation
+  - sequence length, time index, region/dimension metadata, valid mask, and sampling rate preservation
+  - component circular-autocorrelation preservation
+  - synthetic cross-series alignment destruction validation
+  - fail-closed handling for missing/invalid samples before an explicit missing-data policy exists
+files_changed:
+  - src/lagged_facial_graph_forecasting/sensitivity_circular_shift.py
+  - tests/test_sensitivity_circular_shift.py
+tests:
+  workflow: tests
+  workflow_run_id: 34213693021
+  conclusion: success
+scientific_checks:
+  real_facial_data_used: false
+  subject_boundaries_preserved: true
+  circular_autocorrelation_preserved: true
+  cross_series_alignment_destroyed_on_synthetic_fixture: true
+  deterministic_seed_preserved: true
+  primary_semantics_changed: false
+provenance:
+  implementation_commit: 03638feeb81633d17f4ffee37108f423825314b4
+  branch: dev
+remaining_issue:
+  - none
+next_task: S-IMPL-06

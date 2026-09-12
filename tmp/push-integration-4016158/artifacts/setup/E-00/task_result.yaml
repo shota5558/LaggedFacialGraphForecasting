@@ -1,0 +1,43 @@
+task_id: E-00
+task_name: Estimator wrapper
+status: PASS
+
+implemented:
+  - reused the existing fit_ridge_forecaster wrapper from the V0 vertical slice
+  - reused scikit-learn StandardScaler and Ridge via a Pipeline; no optimizer reimplementation
+  - fit uses only DesignMatrix rows marked valid
+  - fitted artifact freezes feature_names, feature_lags, alpha, and training row count
+  - invalid alpha and empty valid-training input are rejected
+
+files_changed:
+  - artifacts/setup/E-00/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/forecaster.py
+  - tests/test_ridge_forecaster_fit.py
+
+tests:
+  workflow: tests
+  run_id: 34148712365
+  job_id: 101826210417
+  head_sha: 78bade3f4274b732931323ca8221bf5282fc91af
+  result: 185 passed in 1.16s
+  direct_cases:
+    - scikit-learn StandardScaler and Ridge are used
+    - scaler/Ridge fit only valid training rows
+    - same matrix and alpha are deterministic
+    - non-positive/non-finite alpha is rejected
+    - no-valid-row training is rejected
+
+scientific_checks:
+  - Primary forecaster remains Ridge
+  - generic Ridge optimization is delegated to scikit-learn
+  - no outer-test-specific fitting or tuning behavior is introduced
+  - feature/lag provenance is frozen in the fitted wrapper
+  - no Sensitivity forecaster is introduced
+
+artifacts:
+  - artifacts/setup/E-00/task_result.yaml
+
+remaining_issue: none
+next_task: E-01

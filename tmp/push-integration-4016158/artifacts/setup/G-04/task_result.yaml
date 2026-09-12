@@ -1,0 +1,76 @@
+task_id: G-04
+task_name: Bootstrap 95% CI
+status: PASS
+
+implemented:
+  - delegates generic bootstrap resampling to scipy.stats.bootstrap instead of reimplementing bootstrap machinery
+  - computes two-sided 95% confidence intervals for the unweighted median of G-02 subject-level paired differences
+  - preserves region, metric, comparison conditions, subject_ids, outer_folds, median, seed, method, and n_resamples in BootstrapMedianCI
+  - requires at least two held-out subjects per aggregation group
+  - makes n_resamples, seed, and bootstrap method explicit required arguments; no unfrozen analysis setting is silently defaulted
+  - uses the scipy.stats.bootstrap random_state API so the implementation remains compatible below SciPy 1.15
+  - sets scipy>=1.13,<2 because SciPy 1.13 is the first supported line compatible with the project's numpy>=2.0 floor
+  - fails closed on unsupported method, invalid seed/resample count, and non-finite intervals
+
+files_changed:
+  - pyproject.toml
+  - src/lagged_facial_graph_forecasting/bootstrap_statistics.py
+  - tests/test_bootstrap_median_ci.py
+  - artifacts/setup/G-04/task_result.yaml
+
+implementation_commits:
+  - sha: 598f3de7dceefd5d6a5b21118355535e8648207f
+    message: G-04: declare SciPy bootstrap dependency
+  - sha: 4a0706c02ac118d948d46825453771e9c3532b90
+    message: G-04: add SciPy median bootstrap CI
+  - sha: 15089611fb4e98c291d6f5b86a84d495b2139092
+    message: G-04: test SciPy median bootstrap CI
+  - sha: 797ea0b0792d91dd68a6ac1b70764d347b7ee1ea
+    message: G-04: align SciPy minimum with rng API
+    disposition: superseded by compatibility audit
+  - sha: 0e48f8d9d43ce9110fa66954aee130897536b941
+    message: G-04: support declared SciPy version range
+  - sha: 687290f230a0b6899dbb7b3270a06ebdd8ea6dec
+    message: G-04: test SciPy 1.10-compatible bootstrap API
+  - sha: cb70a8d51e842f29e510ed8ab6c24a3c1c75d97c
+    message: G-04: align SciPy floor with NumPy 2 support
+
+tests:
+  workflow: tests
+  original_g04_run_id: 34166557560
+  original_g04_head_sha: 797ea0b0792d91dd68a6ac1b70764d347b7ee1ea
+  original_g04_result: 659 passed, 1 warning in 3.98s
+  final_compatibility_run_id: 34166602330
+  final_compatibility_job_id: 101878751862
+  final_compatibility_head_sha: cb70a8d51e842f29e510ed8ab6c24a3c1c75d97c
+  final_compatibility_result: success
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to G-04
+  targeted_checks:
+    - CI output matches scipy.stats.bootstrap for the same subject-level sample, seed, method, and resample count
+    - same explicit seed produces identical BootstrapMedianCI output
+    - region groups remain separate
+    - median point estimate and subject/fold provenance are preserved
+    - fewer than two subjects fails closed
+    - n_resamples, seed, and method have no implicit defaults
+    - bootstrap call uses the SciPy API available throughout the declared supported range
+    - SciPy dependency floor is compatible with numpy>=2.0
+
+scientific_checks:
+  confidence_level_95_percent: PASS
+  subject_is_resampling_unit: PASS
+  generic_bootstrap_oss_reused: PASS
+  deterministic_seed_recorded: PASS
+  region_decomposition_preserved: PASS
+  fold_subject_provenance_preserved: PASS
+  no_outer_test_selection_or_tuning: PASS
+  primary_sensitivity_separation: PASS
+  unfrozen_bootstrap_method_not_silently_selected: PASS
+  declared_dependency_compatibility: PASS
+
+artifacts:
+  - artifacts/setup/G-04/task_result.yaml
+
+remaining_issue:
+  - Scientific Freeze fixes the 95% confidence level but does not yet select the Primary n_resamples or interval method. G-04 intentionally requires both explicitly; they must be scientifically frozen before Primary statistical execution.
+
+next_task: DRY

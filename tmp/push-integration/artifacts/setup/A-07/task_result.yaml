@@ -1,0 +1,49 @@
+task_id: A-07
+task_name: Rotation normalization
+status: PASS
+
+implemented:
+  - extended the canonical spatial_normalization.py module with deterministic frame-wise planar rotation normalization
+  - aligns an explicitly declared reference pair with the positive first axis of an explicitly declared coordinate plane
+  - requires both reference_pair and coordinate_axes explicitly so anatomical/scientific anchors and the rotation plane cannot be hidden in API defaults
+  - preserves coordinates outside the declared rotation plane unchanged
+  - records immutable normalized coordinates, per-frame rotation angles, reference-pair provenance, coordinate-axis provenance, and method provenance
+  - rejects finite zero projected reference-pair distance because in-plane orientation would be undefined
+  - intentionally propagates NaN in rotation references instead of imputing missing values before A-12/A-13
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/spatial_normalization.py
+  - tests/test_rotation_normalization.py
+  - artifacts/setup/A-07/task_result.yaml
+
+tests:
+  workflow: tests
+  implementation_commit: 411ef51ee6f270dd259900c1c0ea672318677145
+  test_commit: 929adeb2a2b1939c355d1d5d42f1e6fe46af18dd
+  test_run_id: 34152420342
+  test_job_id: 101837263569
+  result: success
+  suite_result: 330 passed in 2.06s
+  cases:
+    - reference pair is aligned with the positive first coordinate axis
+    - global planar rotation leaves normalized coordinates invariant
+    - coordinates outside the declared rotation plane are preserved
+    - reference_pair and coordinate_axes are mandatory to avoid hidden scientific defaults
+    - finite zero projected reference-pair distance is rejected
+    - NaN in a reference propagates rather than being imputed
+    - NaN outside the reference does not alter the rotation angle
+    - invalid reference pairs and coordinate axes are rejected
+    - input arrays are not modified
+
+scientific_checks:
+  - no population-level preprocessing statistic is fitted; the transform is deterministic within each frame
+  - anatomical rotation anchors and coordinate plane are explicit provenance and cannot be selected from outer-test predictive outcomes by the normalization API
+  - missing values are not repaired before A-12/A-13
+  - displacement, velocity, acceleration, quality, missingness, interpolation, assembly, and serialization are not introduced early
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-07/task_result.yaml
+
+remaining_issue: none
+next_task: A-08

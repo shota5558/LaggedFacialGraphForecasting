@@ -1,0 +1,58 @@
+task_id: D-07
+task_name: PCMCI+ significant-link extraction
+status: PASS
+
+implemented:
+  - added SignificantPCMCIPlusLink as an immutable raw retained-link record
+  - extracts only non-empty Tigramite PCMCI+ graph entries
+  - treats graph as authoritative and does not independently re-threshold p_matrix
+  - preserves source/target node indices, exact region-dimension provenance, lag, link mark, p-value, and test statistic
+  - validates Primary result matrix shapes against tau_max = 10
+  - preserves contemporaneous tau = 0 entries unchanged for D-08
+  - provides deterministic target/lag/source ordering
+  - does not perform lagged-only filtering or ParentSet conversion early
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/pcmci_link_extraction.py
+  - tests/test_pcmci_link_extraction.py
+  - artifacts/setup/D-07/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/pcmci_runner.py
+  - src/lagged_facial_graph_forecasting/tigramite_adapter.py
+  - src/lagged_facial_graph_forecasting/pcmci_tau_max.py
+
+tests:
+  workflow: tests
+  run_id: 34161556624
+  job_id: 101864267404
+  head_sha: b21652954e5d77dfd0637bb9b81327756c6ff6b2
+  python: 3.11.16
+  tigramite: 5.2.10.1
+  result: 469 passed, 1 warning in 2.22s
+  targeted_checks:
+    - exact component provenance on retained lagged link
+    - graph-authoritative retention without p-value re-thresholding
+    - contemporaneous entries preserved for D-08
+    - deterministic extraction ordering
+    - missing matrix rejection
+    - tau_max result shape drift rejection
+    - non-finite retained-link diagnostics rejection
+    - noncanonical input rejection
+  warning: Tigramite analysis_mode multiple with a one-dataset converter fixture; known and unrelated to D-07
+
+scientific_checks:
+  - retained-link existence is taken from Tigramite PCMCI+ graph output rather than reimplementing significance logic
+  - pc_alpha remains the frozen 0.01 used by D-06; D-07 does not tune or reinterpret it
+  - tau_max remains frozen at 10
+  - exact region-dimension identity mapping is preserved
+  - contemporaneous forecastability is not decided before D-08
+  - ParentSet semantics are not introduced before D-10
+
+artifacts:
+  - artifacts/setup/D-07/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: D-08

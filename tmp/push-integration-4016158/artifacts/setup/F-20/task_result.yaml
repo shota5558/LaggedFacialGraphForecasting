@@ -1,0 +1,49 @@
+task_id: F-20
+task_name: Random-region mapping
+status: PASS
+
+implemented:
+  - added a deterministic outer-train-only random-region NullMapping constructor
+  - candidate region universe is supplied explicitly from frozen experiment metadata rather than inferred from outer-test outcomes
+  - uses SplitManifest seed for deterministic sampling
+  - keeps the target-region Self block outside the random-region candidate space
+  - avoids mapped ParentLink collisions instead of silently deduplicating
+  - fails closed when no eligible replacement exists
+  - fixed a targeted-test fixture that incorrectly still contained an eligible replacement region, then reran the full workflow
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/null_random_region.py
+  - tests/test_null_random_region.py
+  - artifacts/setup/F-20/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+  - src/lagged_facial_graph_forecasting/leakage_guard.py
+
+tests:
+  workflow: tests
+  run_id: 34163163282
+  job_id: 101868935513
+  head_sha: 770794bc373c8f12531ba94ca9bac818c4912619
+  conclusion: success
+  targeted_checks:
+    - identical frozen seed/candidate universe gives identical mapping
+    - mapping remains one-to-one at the component-aware ParentLink level
+    - outer-test construction scope fails closed
+    - candidate universe must be nonempty and unique
+    - no-eligible-replacement case fails closed
+
+scientific_checks:
+  - candidate selection cannot observe outer-test values, predictions, or metrics
+  - target-region self history cannot be injected as a replacement for an inter-regional selected parent
+  - no silent deduplication changes sparsity
+  - no Sensitivity method is introduced
+  - Primary PCMCI+ + ParCorr + Ridge, h=1 remains unchanged
+
+artifacts:
+  - artifacts/setup/F-20/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-21

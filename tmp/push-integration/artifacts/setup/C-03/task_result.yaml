@@ -1,0 +1,31 @@
+task_id: C-03
+task_name: Persistence matrix
+status: PASS
+
+implemented:
+  - added build_persistence_design_matrix as the explicit Persistence condition
+  - Persistence uses only the target region's current value available at forecast origin
+  - under Primary h=1 this is exactly target-relative lag 1
+  - reused the common self-history DesignMatrix path so estimator semantics remain shared
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_persistence_design_matrix.py
+  - artifacts/setup/C-03/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34147857476
+  head_sha: 638d4f517f22a0073089828778b3289870455f11
+  result: success
+
+scientific_checks:
+  - Persistence contains target-region lag-1 features only
+  - no other facial region or earlier history is included
+  - Primary h=1 is enforced through the shared alignment contract
+  - missing source or target values invalidate the corresponding row
+  - condition differs from Self/Full/PCMCI by information set rather than estimator implementation
+
+remaining_issue: none
+next_task: C-04

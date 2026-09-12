@@ -1,0 +1,50 @@
+task_id: A-11
+task_name: Quality flag
+status: PASS
+
+implemented:
+  - canonical quality-flag construction is src/lagged_facial_graph_forecasting/quality.py
+  - non-finite elements are flagged invalid without repair or sample dropping
+  - optional external frame-quality scores require an explicit fixed threshold; this module never estimates a threshold from data or predictive outcomes
+  - immutable finite-mask, frame pass flag, final valid_mask, threshold, and method provenance are retained
+  - removed the duplicate quality_flags.py implementation
+  - retained exactly one canonical regression test file after parallel cleanup
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/quality.py
+  - tests/test_quality_flags.py
+  - artifacts/setup/A-11/task_result.yaml
+
+source_commits:
+  quality_flag_implementation: 20ca318393e2c7ad106e1809c56381c71adad78f
+  duplicate_source_removal: b8d238f88dcadf887d6e8471a5a630dfadd4cbdf
+  canonical_test_restoration: e52f071033046b6cc10765cd8babdabd4d3ccf81
+
+tests:
+  workflow: tests
+  run_id: 34153218059
+  head_sha: e52f071033046b6cc10765cd8babdabd4d3ccf81
+  result: success
+  cases:
+    - finite values produce elementwise validity flags
+    - explicit frame-quality threshold invalidates the whole low-quality frame
+    - non-finite external quality fails without imputation
+    - frame quality never repairs non-finite elements
+    - score and threshold must be supplied together
+    - malformed/non-numeric inputs are rejected
+    - outputs are immutable and inputs unchanged
+
+scientific_checks:
+  - A-11 only flags observations; A-12/A-13 retain ownership of missing-frame handling and interpolation
+  - no extractor-specific quality metric or threshold is invented by the repository
+  - any threshold must be externally frozen/outer-train-safe; no threshold fitting occurs in this API
+  - no population-level preprocessing statistic is fitted
+  - valid_mask semantics match the frozen FaceTimeSeries elementwise mask contract
+  - duplicate implementation and duplicate test variants are removed; one canonical test remains
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-11/task_result.yaml
+
+remaining_issue: none
+next_task: A-12

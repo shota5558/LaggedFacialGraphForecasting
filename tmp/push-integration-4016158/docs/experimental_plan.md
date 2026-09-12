@@ -1,0 +1,361 @@
+# 顔部位間遅延依存の一般化可能な予測構造：実験計画
+
+版：2026-09-10 / 正本整備版3（独立サブシステムを不採用、検証を既存工程へ統合）
+
+本書は、新研究計画書を基に再構成した科学上の正本である。[詳細設計](detailed_design.md)は本書に従う。文書化済みであることと、実験設定のfreeze・実装完了・科学的受容は区別する。第12節の未決事項を解消するまで、本実験を開始しない。
+
+## 1. 文書の位置づけと適用範囲
+
+対象研究は、PCMCI+で選択された顔部位間遅延依存について、独立被験者上で追加予測情報の分布・選択集合への濃縮・時間構造を検証する研究である。対象実装は `shota5558/LaggedFacialGraphForecasting`。このファイルの保存先である `faicial_coordination_graph` の合成DDL回収ベンチマークとは別の研究計画であり、その科学仕様を混在させない。
+
+根拠と優先順位は以下とする。
+
+1. ユーザー指定により、2026-09-09版の新研究計画書を科学上の正本とする。
+2. 本書はその研究目的・数式・実験方針をMarkdownへ再構成する。原資料が定めていない値や推論規則は未決事項として残す。
+3. 詳細設計は本書の実行契約を定める。2026-09-08版の旧実装計画は、矛盾しない設計原則・工程・検証方法の継承元とする。
+4. 既存コード・旧freeze・過去のIssueは移行元であり、新計画を逆に書き換える根拠にはしない。実行用設定の移行は別途、変更履歴付きで行う。
+5. 合成検証の範囲と独立サブシステムの不採用判断は第15節を正本とする。同節は原DOCXからの転記ではなく、導入価値の再評価に基づく追補である。過去の導入仕様・監査文書は検討履歴とし、現行要件を追加しない。原DOCXそのものは変更していない。
+
+### 1.1 原資料
+
+|役割|ファイル|SHA-256|
+|---|---|---|
+|科学上の正本|`PCMCI_facial_motion_research_plan_generalized_predictive_structure_2026-09-09.docx`|`7d77f30febaf4856131f2bb9930a2da93ec8252b60e5137e46c96f58550bc249`|
+|旧詳細設計・継承資料|`PCMCI_facial_motion_implementation_plan_2026-09-08.docx`|`9ba024806749268f5a456267a616149f507f366a9dc3d31ff683205220697ab3`|
+
+両資料の所在は `C:/Users/yukit/OneDrive/デスクトップ/研究/`。本再構成では本文と表を参照した。関連研究の再検索・書誌情報の独立検証は行っていない。
+
+## 2. 研究目的と主張の範囲
+
+対象部位のSelf-historyを超えて、他部位の過去が持つ追加予測情報を、source region × target region × lag の空間として定量化する。さらに、outer-trainのみからPCMCI+が選択した集合が、held-out被験者でも予測価値の高い部分集合を濃縮しているかを検証する。
+
+主対象は次の3つである。
+
+- **Predictive information landscape**：事前固定した候補全体における追加予測利得の分布。
+- **Selection enrichment**：PCMCI-selected集合と同じ疎性のランダム集合の比較。
+- **Population-centered lag response**：選択lagを基準に整列した、edgeを超える時間構造。
+
+source→target関係・lag帯域の再現性と、lag・region・sparsity・時間対応を操作する反証実験を組み合わせる。個別cellの最大値や単一lagの勝敗を主結論にしない。
+
+本研究が評価するのは予測的妥当性であり、生理学的な筋肉間の直接因果を証明するものではない。情動、発話、頭部運動、課題、個人差などの未観測共通要因が残り得る。Gの大きさとPCMCI+の条件付きリンク強度を同一視しない。
+
+解析の正しさは既存の単体・統合検証と実データdry runで確認する。第15節に従い独立した3D合成サブシステムは導入せず、必要な既知例を各解析機能の検証へ組み込む。
+
+## 3. 研究質問と仮説
+
+|ID|問い|対応する評価|
+|---|---|---|
+|RQ1|Self-historyを超える情報がどの部位対・lag帯域に分布するか|固定候補gridのG、部位対・帯域集約|
+|RQ2|PCMCI+はランダムな同疎性集合より高予測価値の集合を選択するか|Selection enrichment、1,000反復Null分布|
+|RQ3|選択lag近傍に集団レベルの時間特異性または有効帯域があるか|相対lag Δに対するR_popと95% CI|
+|RQ4|符号・大きさ・選択頻度は被験者、fold、bootstrapに対して安定か|被験者別効果、fold頻度、train内発見安定性|
+|RQ5|自己相関をより保持するsurrogateで濃縮・時間構造が失われるか|Primary結果freeze後のSensitivity|
+
+原資料の仮説は以下を保持する。
+
+- H1：held-out被験者で `E_PCMCI < E_Self`。
+- H2：PCMCI-selected集合の予測利得が、1,000回のmatched-sparsity random集合より大きい。
+- H3：R_pop(Δ)がΔ=0近傍で最小、または再現可能な低誤差帯域を形成する。
+- H4：`E_PCMCI ≤ E_Full` かつPCMCIの入力数が十分少ない。
+
+Primaryの主推論はenrichmentとpopulation lag structureに置く。H1〜H4の検定順序、多重比較、H4の同程度・十分少ないの許容幅、帯域の判定規則は未確定である（D08）。数値的にわずかに良いだけで仮説支持としない。
+
+## 4. データと顔運動表現
+
+入力は被験者ごとの顔ランドマーク時系列とする。既存抽出器または保存済みランドマークを利用し、独自検出器は開発しない。subject、session/sequence、frame index、timestamp、sampling rate、品質情報、データ版を保持する。
+
+候補領域は左眉・右眉・左眼・右眼・左頬・右頬・口・顎である。**8領域は候補であり、最終Kやランドマーク対応表の確定値ではない。** 領域定義と使用成分を、本実験から分離した予備解析で固定する。
+
+各領域の状態をX_t^i、領域数をKとする。
+
+```math
+X_t = [X_t^1,\ldots,X_t^K],\qquad
+X_t^i=[\Delta x_t^i,\Delta y_t^i]\ \text{or}\ [v_{x,t}^i,v_{y,t}^i]
+```
+
+頭部の平行移動・スケール・回転を正規化し、変位または速度を中心に扱う。加速度の入力追加は任意であり、自動的にPrimaryへ加えない。品質閾値、除外・重み付け、欠損処理、正規化の参照点、単位、差分方式はD02で確定する。
+
+データから推定する前処理パラメータは学習partition内だけでfitする。固定されたframe-local変換でも未来フレームを参照しない。差分・平滑化・補間による未来参照、被験者やsequence境界をまたぐ履歴生成を禁止する。
+
+## 5. 時間定義と比較条件
+
+### 5.1 予測時点とlag
+
+予測起点をt、予測対象時点をt+hとする。lag τは**予測対象時点から遡った距離**であり、入力時点はt+h−τである。
+
+```math
+\widehat Y_{t+h}^j=f(\{X^i_{t+h-\tau}\}),\qquad
+t+h-\tau\le t\iff\tau\ge h
+```
+
+Primaryは **h=1**。直接観測parentを使うh>1はSensitivityであり、τ≥hを満たすparentのみを使う。未来parentの再帰生成は別estimandであり、本Primaryには含めない。最大lag L、Selfの履歴範囲、sampling rateとの対応はD03で固定する。
+
+### 5.2 Discoveryと固定予測器
+
+Primary discoveryは **Tigramite PCMCI+ + ParCorr**、学習する予測器は **scikit-learn Ridge** とする。領域jの親集合はouter-trainのみで推定する。
+
+```math
+\widehat P_j=\{(i,\tau):X^i_{u-\tau}\to X_u^j\text{ がPCMCI+により選択される}\}
+```
+
+PCMCI+のscalar nodeとregion-level報告の対応は明示的な写像で管理する。複数成分を持つ領域について、単一region–lag featureがscalarかvector blockかはD04で決定する。
+
+Ridgeの前処理方式、alpha候補、inner validation、選択スコア、tie-breakを共通規則にする。共通規則は必ずしも全条件で同一alphaを強制する意味ではない。条件ごと・cellごとのalpha選択と再利用の単位をD05で固定する。
+
+### 5.3 4つの基準条件
+
+|条件|入力・予測|役割|
+|---|---|---|
+|Persistence|起点時点の対象状態を用いる固定予測|単純な持続予測の基準|
+|Self|対象領域自身の固定履歴|自己相関を統制する基準|
+|Full|Selfと全有効inter-regional候補|全入力の基準|
+|PCMCI|同一Selfと選択済みinter-regional特徴|選択された追加情報の評価|
+
+`Self ⊆ PCMCI ⊆ Full` を保持する。PCMCIの自己リンク選択によってSelf baselineを削らない。選択parentが空の場合の4条件予測はSelfへ縮退させる設計とし、空集合のenrichmentやpopulation曲線の統計的扱いは別にD06/D07で定める。
+
+Persistenceは予測対象に依存する。位置のcopy-last、速度の持続、速度ゼロによる静止は異なるため、対象と予測式をD02で確定し、呼称だけで決めない。
+
+## 6. 一般化可能な予測構造の解析
+
+### 6.1 固定候補空間とlandscape
+
+```math
+\Omega=\{(i,j,\tau):i\ne j,\ 1\le\tau\le L,\ \tau\ge h\}
+```
+
+候補領域・成分・lagの構成規則と除外条件は本実験前に固定する。全候補をheld-outで評価し、良かったcellだけを残さない。
+
+```math
+G(i\to j,\tau;s,h)
+=E_{\mathrm{Self}}(j,s;h)-E_{\mathrm{Self}+(i,\tau)}(j,s;h)
+```
+
+各cellではSelfに単一inter-regional featureを追加し、同一subject・target・評価時点集合で誤差差を取る。G>0は、この予測器・評価指標・Self条件の下での追加予測価値を表す。互いに相関したcellのGを、独立効果や加算可能な因果効果とは扱わない。
+
+個別cell値、source→target集約、lag帯域集約、被験者間の符号一貫性を保存する。帯域境界と集約重みはD08で固定し、testで観測されたpeakからPrimary帯域を定めない。
+
+### 6.2 Selection enrichment
+
+```math
+\mathrm{Enrichment}
+=\mathrm{Aggregate}(G_{\mathrm{selected}})
+-\mathrm{Aggregate}(G_{\mathrm{matched\text{-}sparsity}})
+```
+
+各outer foldで選択集合と同数の特徴を持つrandom集合を、事前固定した候補空間から **1,000回**生成する。mappingはouter-train段階で確定し、repeat IDとseedを保存する。反復数をtest結果や計算負荷に合わせて減らさない。
+
+本式を実行可能にするため、Aggregateの演算、集約順序、成分対応、target間の重み、空集合、random候補の重複・選択集合との重なりをD06で確定する。
+
+**単一cellのGを集合内集約する解析と、集合全体を同時入力したRidgeの予測利得は異なるestimandである。** 後者は4条件・Nullモデル比較として併記できるが、前者の代用としない。1,000回を単一中央値に圧縮する前に反復別分布を保存する。
+
+### 6.3 Population-centered lag response
+
+選択edge e=(i,j,τ*_e)について、Δ=τ−τ*_eを用いる。
+
+```math
+R_{\mathrm{pop}}(\Delta)
+=\operatorname{median}_{e,s}
+\left[E(e,\tau_e^*+\Delta;s)-E(e,\tau_e^*;s)\right]
+```
+
+Δ=0を含む複数の正負shiftを事前固定し、source・target・入力数を保つ。frameとmsを併記する。Δ=0では同じ評価単位の差が0になることを確認する。
+
+E(e,τ)のモデル文脈が「Self+当該edge」か「他のselected edgeを保った1 edge置換」か、複数foldのedge識別、境界lag、重複特徴、共通評価集合、CIをD07で固定する。全selected parentを同時にずらす旧common-shift曲線は補助解析として区別し、上式へ読み替えない。
+
+Δによって評価edge・被験者が変わると曲線形状へ構成差が混入する。比較可能な共通集合と対象外理由を保存し、範囲外lagを暗黙にclip・wrap・dropしない。0近傍が平坦ならexact frameの特異性ではなく帯域として解釈する。
+
+## 7. データ分離と実験手順
+
+以下は実データPrimaryの手順である。Primary outer-test評価前に、詳細設計の必要な単体・統合検証、独立した実データdry run、科学監査を完了する。独立の合成benchmark freezeや3Dサブシステム受容は要求しない。dry runの使用被験者とその後の扱いはD01で固定する。
+
+1. **予備解析**：データ品質、領域・特徴、lag候補、計算実現性を確認する。本実験testと分離し、使用被験者と用途を記録する。
+2. **Protocol freeze**：D01〜D10を解消し、データ版、split、候補grid、指標、選択・Null・集約・失敗処理規則を固定する。
+3. **Outer split**：subject単位のtrain/testを固定する。同一人物の全sequenceは同じpartitionに置く。LOSOまたはgrouped nested CVの具体方式はD01で定める。
+4. **Outer-train処理**：前処理fit、PCMCI+ discovery、inner subject validation、Ridge tuning、Null mapping、発見安定性評価を行う。
+5. **Fold lock**：親集合、予測器、前処理状態、全cell/Nullの設定をhash付きで固定する。
+6. **Outer-test評価**：4条件、全候補landscape、Null、enrichment、edge-centered lag responseを凍結済み規則で評価する。ここでは選択・再tuningをしない。
+7. **統計・報告**：被験者単位のpaired効果、CI、fold/発見安定性を集約する。欠損・失敗・評価不能も記録する。
+8. **Primary result freeze**：設定から解析結果までの実在artifactとhashを封印する。
+9. **Sensitivity**：Primary結果を変更せず、同じ分離原則の下で頑健性を検証する。
+
+Inner validationで性能に基づく選択を行う場合、学習される前処理はinner-trainでfitする。選択pipeline全体を比較するinner評価ではdiscoveryもinner-trainに限定する。outer-train全体で選択した固定親集合に対してalphaだけを選ぶ運用を採用する場合は、その範囲を明示し、innerスコアを独立した一般化性能として報告しない（D05）。
+
+Outer CVでは被験者が別foldのtrainへ入るが、各被験者の評価値は当該被験者を除外して学習したfoldからのみ得る。反復CVを使う場合は同一被験者の複数評価を独立標本としない。
+
+## 8. NullとSensitivity
+
+|操作|保持するもの|操作するもの|区分|
+|---|---|---|---|
+|Lag-shift|source/target、特徴数、比較support|選択lagの時間位置|Primary|
+|Matched sparsity|Self、選択集合と同じ特徴数|inter-regional候補集合、1,000反復|Primary|
+|Random-region|lag構成・特徴数|source region|Primary|
+|Time-shuffle|事前定義した値集合など|時系列順序・時間対応、自己相関も破壊|Primaryのcoarse Null|
+|Phase/circular surrogate|自己相関・スペクトルを可能な限り保持|系列間の時間整列|Sensitivity|
+|PCMCI+ + GPDC|評価分離・比較枠組み|CI test|Sensitivity|
+|LPCMCI|評価分離・比較枠組み|潜在交絡への扱い|Sensitivity|
+|h>1|同じ基本研究質問|予測距離、利用可能lag|Sensitivity|
+
+Time-shuffleだけで時間構造の特異性を確定しない。surrogateをどのpartitionに適用し、discovery/refitを再実行するか、shift幅・位相処理単位・反復数・境界処理はD09で決める。破壊操作の結果を通常のオンライン予測と混同しない。
+
+GRUは必要時のモデル依存性確認に限定し、Primary完了の必須条件にしない。GNN/Temporal GNNは主研究成立後の別拡張とする。独自CI検定、独自Ridge、独自optimizer、GPU・分散基盤の導入を主研究の前提にしない。
+
+## 9. 指標と統計
+
+### 9.1 指標
+
+|指標|目的|確定に必要な仕様|
+|---|---|---|
+|Velocity RMSE|運動の大きさ・方向|速度単位、成分集約、評価mask|
+|Position RMSE|位置再現|位置targetまたは速度からの復元方法・初期条件|
+|Acceleration RMSE|運動変化|差分・時間間隔、端点mask|
+|Temporal correlation|時系列形状|成分集約、定数系列、欠損|
+|Peak timing error|peak時刻|検出閾値、対応付け、未検出処理|
+|Onset timing error|開始時刻|開始定義、閾値、未検出処理|
+|Lag preservation|部位間時間構造の保持|観測・予測系列の比較方法、集約|
+
+旧設計の主指標はVelocity RMSEである。新実験のGに使うE、主指標・副指標の区分、上表の計算仕様はD08で明文化してfreezeする。誤差の減少と相関の増加を同じ符号規則へ無条件に流さない。
+
+### 9.2 推論単位
+
+基本単位はouter-test **被験者**。条件差はsubject・region・horizon・評価時点を対応づけて計算する。平均、中央値、95% bootstrap CI、n_subjects、評価不能数を報告する。frame、edge、Nullの1,000反復を独立被験者として数えない。
+
+Population曲線の点推定は原資料のmedian_(e,s)を保持する。CIでは被験者に属するedge/regionをまとめて扱う再標本化を設計し、点推定のedge重みと被験者重みを区別する。fold間で学習データが重なるため、被験者bootstrap CIが表す不確実性の範囲を明記する。
+
+Outer-trainのdiscovery bootstrapと、outer-test効果のCI bootstrapは別処理である。前者は時系列構造を保持する再標本化規則、後者は被験者再標本化規則を持つ。反復数・seed・block長・分母を混同しない。全bootstrap仕様はD08で確定する。
+
+## 10. 結果と解釈
+
+|観測された結果|許される解釈|
+|---|---|
+|複数の部位対・帯域でGが再現|Selfを超える予測情報が構造として存在することを支持|
+|Selected集合のenrichmentが再現|同疎性random集合に対する選択価値を支持|
+|R_popが0近傍で低い|選択lag近傍の時間構造を支持|
+|R_popが広く平坦|exact lagよりlag帯域として解釈|
+|PCMCIがFullと同程度で疎|少数特徴による予測情報の保持を支持。ただし同程度の判定規則が必要|
+|Surrogateで効果減弱|系列間時間対応への依存を支持。操作が保持した特性も併記|
+|Landscape/enrichmentが再現しない|当該データ・表現・予測器で構造が弱い、または検出困難という否定的知見|
+
+SOTA達成や有意な正結果を研究完了の条件にしない。一方、ソフトウェアの正常終了だけで仮説支持とはしない。想定外の探索的解析はPrimaryと別に表示し、候補gridや閾値の事後変更を正本へ遡及しない。
+
+## 11. 必須成果物と完了条件
+
+必須成果物は、入力データ識別子・品質、split、解決済みconfig、依存環境、git SHA、seed registry、前処理状態、PCMCI raw出力と親集合、全条件prediction、評価support、subject metric、Null mappingと反復別結果、全candidateのG、enrichment、edge-centered応答とpopulation集約、安定性、統計、図表、failure ledger、freeze manifestである。
+
+Primary完了には、全foldの必要セルが成功または事前規則による評価不能として説明され、結果が元artifactから再生成できることを要する。途中失敗を消去したrun、後付けの選択規則を含むrunは完了として扱わない。仮説の支持・不支持と、実験品質の受容は別欄で記録する。
+
+既存工程の検証結果、未解決事項、実データdry runと科学監査の記録を保存する。独立サブシステムの専用reportは要求しない。合成例の結果を実データ被験者の効果量・CIへ混入させない。
+
+## 12. 本実験前の科学的決定事項
+
+以下は原資料で実行可能な形まで確定していない事項である。担当者が選択理由・利用した予備データ・決定日を記録し、本書と詳細設計・configを同時に更新する。コードの既定値で埋めない。
+
+|ID|確定する内容|停止する工程|
+|---|---|---|
+|D01|データセット・被験者/sequence、採否、予備解析との分離、outer/inner方式、seed|データfreeze・本実験split|
+|D02|領域とlandmark mapping、K、成分、正規化、品質/欠損、単位、target、Persistence式|特徴・target確定|
+|D03|L、Self lag、sampling rate、PCMCI閾値・多重検定・contemporaneous採否|discovery/candidate freeze|
+|D04|scalar nodeとregion–lag featureの対応、vector block採否、選択成分の投影、特徴数単位|landscape・matched数の定義|
+|D05|Ridge grid、inner fit範囲、alpha選択/再利用単位、スコア・tie-break|モデル選択freeze|
+|D06|Enrichment Aggregate・順序・重み、random抽出規則、空集合、Null分布との比較法|enrichment本計算|
+|D07|E(e)の文脈、Δ grid、境界・重複・共通edge/support、fold対応、population CI|population解析|
+|D08|主副指標、帯域、集約・bootstrap・安定性、多重比較、仮説支持基準|統計freeze|
+|D09|Null/surrogate適用範囲、再学習、seed、破壊・保持の検証、Sensitivityパラメータ|該当Null/Sensitivity|
+|D10|最小有効データ、失敗/空集合/欠測、除外・再実行・resume規則、実行完全性基準|本実験run受容|
+
+新計画が明示した `matched_sparsity.repeat_count=1000`、Primary h=1、PCMCI+・ParCorr・Ridge、test隔離、3つの構造解析は未決事項ではない。旧設定の100回を選択肢として残さない。
+
+## 13. 旧計画からの変更
+
+|項目|新計画での扱い|
+|---|---|
+|4条件比較|維持するが、研究完了の十分条件ではない|
+|個別lagの優劣|局所的・探索的証拠へ位置づける|
+|候補grid|全候補のheld-out Gを必須化|
+|Matched sparsity|1,000反復、enrichment分布を必須化|
+|Lag-response|edgeごとに選択lag中心へ整列しpopulation解析を必須化|
+|Freeze|実験前protocol、foldごとの学習結果、Primary結果を区別|
+|旧実装の固定値|互換性を確認し移行。新科学仕様を旧実装へ合わせない|
+|GRU/GNN|任意の確認・拡張。Primaryの前提にしない|
+
+## 14. 関連研究の扱い
+
+原資料の位置づけを継承する。顔部位間のSelf-historyを超える予測、PCMCIによる特徴選択とforecasting、顔時系列のlag/Granger解析そのものを新規性としない。研究上の差分は、発見とheld-out評価の分離の下で、landscape・enrichment・population lag structure・systematic falsificationを組み合わせる点に置く。
+
+原資料にある「確認した主要文献では直接確認できなかった」という範囲を超える優先性主張はしない。主要関連研究の書誌一覧は本書末尾の付録に原資料から転記する。掲載前には別途確認する。
+
+## 15. 合成検証の最小範囲と独立サブシステムの不採用
+
+### 15.1 判断
+
+2026-09-10の価値再評価により、独立したmethodological validation subsystemの導入を取り消す。3D顔生成・専用benchmark・Stage 1 gateをPrimaryの必須工程としない。[価値評価と判断根拠](methodological_validation_value_decision.md)を参照する。
+
+本研究の主目的は実データのlandscape、selection enrichment、population lag構造である。独立3Dサブシステムは既存検証と重複し、観測変換の設計・維持負担に対する追加証拠が限定的と判断した。必要な検証は以下の範囲で既存工程に統合する。
+
+### 15.2 残す検証
+
+|対象|確認内容|接続先|
+|---|---|---|
+|入力・前処理・探索|方向、lag、単位、時刻、mask、sequence境界、情報隔離。変更した変換には最小の既知座標例|詳細設計T01〜T07、P2〜P3|
+|Landscape|選択空でも全候補Ωを保持し、同一supportでGを再計算可能|T08、P4|
+|Enrichment|1,000反復の完全性、特徴数、cell集約とjoint-modelの区別|T09、P5|
+|Population|edge中心、Δ=0、境界、共通support、集約単位|T10〜T11、P6〜P7|
+|共通解析経路|新解析・Null・保存・再生成の接続、実データdry runと科学監査|T12〜T15、P8〜P9|
+
+既存の合成fixture・既知lag・前処理・fold lockテストを再利用する。旧仕様のテストが存在するだけで新研究を検証済みとはしない。1,000反復や新3解析は元の研究要件であり、サブシステム削除に伴って縮小しない。
+
+### 15.3 削除する要求
+
+468点asset・semantic basisの新規整備、汎用3D合成生成器、全観測grid、専用graph回収benchmark、Stage 1 freeze、MV-D1〜4、MV-G0〜6、専用受容reportを要求しない。これらの未実装はPrimary開始の妨げとしない。
+
+D01〜D10、実データの品質・時刻・単位・適用範囲、漏洩防止、共通support、計算の正しさ、dry run、科学監査は維持する。既存検証で未解決の誤りを発見した場合は、影響した工程を修正・再検証してから進む。
+
+### 15.4 主張と再検討
+
+小さな既知例は実装の検証として報告し、実際の顔の因果構造や広いgeometry/noise条件での頑健性の証明にしない。独立した3D性能曲線がないことに対応して、その範囲の頑健性を主張しない。
+
+予備データで具体的な観測変換の破綻が判明し、最小の回帰例では原因を分離できない場合、またはgeometry・検出器の頑健性が新たな研究目的となる場合にのみ、対象を絞って再検討する。
+
+### 15.5 変更履歴と文書の優先順位
+
+正本整備版2の必須サブシステム導入を本版で撤回した。旧導入仕様・第1次監査・第2次検討は検討履歴であり、その命令形やgateを現行要件として適用しない。本節と詳細設計の現行版を参照する。
+
+今回の変更は文書上の要求削除であり、既存コード・有効なテスト・実行用freezeは変更していない。実装や検証の完了を意味しない。
+
+## 付録A. 原資料の主要関連研究
+
+以下は原資料の書誌情報の転記であり、本再構成での独立検証済み文献リストではない。
+
+[1] Tong, Y., Liao, W., & Ji, Q. (2007). Facial Action Unit Recognition by Exploiting Their Dynamic and Semantic Relationships. IEEE Transactions on Pattern Analysis and Machine Intelligence, 29(10), 1683–1699. DOI: 10.1109/TPAMI.2007.1094.
+
+[2] Rahman, A. K. M. M., Tanveer, M. I., & Yeasin, M. (2011). A Spatio-Temporal Probabilistic Framework for Dividing and Predicting Facial Action Units. Affective Computing and Intelligent Interaction (ACII 2011), Lecture Notes in Computer Science, 598–607. DOI: 10.1007/978-3-642-24571-8_74.
+
+[3] Runge, J., Nowack, P., Kretschmer, M., Flaxman, S., & Sejdinovic, D. (2019). Detecting and quantifying causal associations in large nonlinear time series datasets. Science Advances, 5(11), eaau4996. DOI: 10.1126/sciadv.aau4996.
+
+[4] Runge, J. (2020). Discovering contemporaneous and lagged causal relations in autocorrelated nonlinear time series datasets. Proceedings of UAI 2020, PMLR 124, 1388–1397.
+
+[5] Hu, Y. et al. (2024). Human-robot facial coexpression. Science Robotics, 9(88), eadi4724. DOI: 10.1126/scirobotics.adi4724.
+
+[6] Yan, M., Yuan, Y., Liu, J., & Yang, F. (2026). PAGF: Short-Horizon Forecasting of 3D Facial Landmarks. Mathematics, 14(7), 1222. DOI: 10.3390/math14071222.
+
+[7] Tan, P.-S. et al. (2026). Causal-Ex: Causal graph-based micro and macro expression spotting. Pattern Recognition Letters, 200, 52–59. DOI: 10.1016/j.patrec.2025.12.002.
+
+[8] Jin, R. et al. (2026). A graph-based Seq2Seq framework for causal discovery and out-of-distribution forecasting in building energy systems. Applied Energy, 417, 127998. DOI: 10.1016/j.apenergy.2026.127998.
+
+[9] Li, Y., Mavadati, S. M., Mahoor, M. H., Zhao, Y., & Ji, Q. (2015). Measuring the intensity of spontaneous facial action units with dynamic Bayesian network. Pattern Recognition, 48(11), 3417–3427. DOI: 10.1016/j.patcog.2015.04.022.
+
+[10] Chu, W.-S., De la Torre, F., & Cohn, J. F. (2019). Learning Facial Action Units with Spatiotemporal Cues and Multi-label Sampling. Image and Vision Computing, 81, 1–14. DOI: 10.1016/j.imavis.2018.10.002.
+
+[11] Wang, C., & Wang, Z. (2022). Unsupervised Facial Action Representation Learning by Temporal Prediction. Frontiers in Neurorobotics, 16, 851847. DOI: 10.3389/fnbot.2022.851847.
+
+[12] Hsu, C.-T., Kelbakh, A., Yang, D., Minato, T., & Sato, W. (2026). Multivariate Timing and Granger Causality Analysis of Spontaneous Facial Mimicry in Response to Android Dynamic Facial Expressions. Sensors, 26(6), 1881. DOI: 10.3390/s26061881.
+
+[13] Guha, T., Yang, Z., Grossman, R. B., & Narayanan, S. S. (2018). A Computational Study of Expressive Facial Dynamics in Children with Autism. IEEE Transactions on Affective Computing, 9(1), 14–20. DOI: 10.1109/TAFFC.2016.2578316.
+
+[14] Müller, L., Shadaydeh, M., Thümmel, M., Kessler, T., Schneider, D., & Denzler, J. (2019). Causal Inference in Nonverbal Dyadic Communication with Relevant Interval Selection and Granger Causality. Proceedings of VISAPP 2019, 490–497. DOI: 10.5220/0007399304900497.
+
+[15] Zapata Gonzalez, D., Meyer, M., Zalipski, K., & Müller, O. (2026). Temporal causal feature selection for robust machine learning modelling of data center operations. Applied Energy, 417, 127984. DOI: 10.1016/j.apenergy.2026.127984.
+
+[16] Kuchibhotla, A. K., Kolassa, J. E., & Kuffner, T. A. (2022). Post-Selection Inference. Annual Review of Statistics and Its Application, 9, 505–527. DOI: 10.1146/annurev-statistics-100421-044639.
+
+[17] Heyse, J., Sheybani, L., Vulliémoz, S., & van Mierlo, P. (2021). Evaluation of Directed Causality Measures and Lag Estimations in Multivariate Time-Series. Frontiers in Systems Neuroscience, 15, 620338. DOI: 10.3389/fnsys.2021.620338.
+

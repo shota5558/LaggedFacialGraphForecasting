@@ -1,0 +1,36 @@
+task_id: V0-01
+task_name: Synthetic FaceTimeSeries
+status: PASS
+
+implemented:
+  - deterministic synthetic FaceTimeSeries generator reused without duplication
+  - stable AR(1) self-history process
+  - configurable subject, sequence length, regions, dimensions, sampling rate, and seed
+  - all-valid boolean mask for V0 synthetic data
+  - explicit validation of sequence length, seed, AR stability, and innovation scale
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/synthetic.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_synthetic_face_time_series.py
+
+tests:
+  workflow: tests
+  run_id: 34144591208
+  job_id: 101813742370
+  head_sha: 08360cdb2598ae7ba262371d02f9845aa73f118a
+  python: 3.11.16
+  result: 59 passed in 0.27s
+
+scientific_checks:
+  - synthetic data only; no real facial data introduced
+  - no PCMCI+, ParCorr, discovery, Null, or Sensitivity code introduced
+  - process contains self-history only and no cross-region causal structure
+  - deterministic seed is explicit
+  - output uses the canonical FaceTimeSeries contract
+
+artifacts:
+  - artifacts/setup/V0-01/task_result.yaml
+
+remaining_issue: none
+next_task: V0-02

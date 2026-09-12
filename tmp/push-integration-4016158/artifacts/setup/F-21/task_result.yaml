@@ -1,0 +1,57 @@
+task_id: F-21
+task_name: Random-region lag preservation
+status: PASS
+
+implemented:
+  - reuses the F-20 random-region constructor without changing mapping semantics
+  - verifies every mapped ParentLink preserves the source lag exactly
+  - verifies source_dimension and target_dimension remain unchanged while source_region is the only intended identity change
+  - covers Primary lag-domain boundary values 1 and 10 as well as an interior lag
+
+files_changed:
+  - tests/test_null_random_region_lag_preservation.py
+  - artifacts/setup/F-21/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/null_random_region.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+
+implementation_commit:
+  sha: 7d4ffa674c296ec44474db3924ead8f21b25d0ef
+  message: F-21: verify random-region lag preservation
+
+revalidation:
+  head_sha: 928c4ace6c269deac8bfeb1242ef205f71f4481f
+  workflow: tests
+  run_id: 34163939788
+  job_id: 101871156087
+  result: 555 passed, 1 warning in 5.39s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-21
+
+tests:
+  targeted_checks:
+    - mapped lag tuple remains exactly (1, 5, 10)
+    - each mapped lag equals its source lag
+    - source component identity is preserved
+    - target component identity is preserved
+  full_regression:
+    result: 555 passed, 1 warning in 5.39s
+    workflow_run_id: 34163939788
+    job_id: 101871156087
+
+scientific_checks:
+  outer_test_leakage: PASS
+  lag_identity_preserved: PASS
+  source_component_identity_preserved: PASS
+  target_component_identity_preserved: PASS
+  primary_lag_domain_1_to_10_preserved: PASS
+  primary_horizon_h1_preserved: PASS
+  sensitivity_contamination: PASS
+
+artifacts:
+  - artifacts/setup/F-21/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-22

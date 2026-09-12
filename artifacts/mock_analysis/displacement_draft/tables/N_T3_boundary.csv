@@ -1,0 +1,11 @@
+﻿condition,outer_fold,n_selected,n_interior,n_boundary,boundary_fraction,failed_edge_subjects,n_subjects,is_synthetic,synthetic_notice,protocol_id
+non_speaking,0,24,16,8,0.33333333333333337,0,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+non_speaking,1,21,14,7,0.33333333333333337,0,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+non_speaking,2,24,16,8,0.33333333333333337,0,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+non_speaking,3,24,16,8,0.33333333333333337,0,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+non_speaking,4,18,12,6,0.33333333333333337,0,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,0,24,16,8,0.33333333333333337,0,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,1,24,16,8,0.33333333333333337,0,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,2,24,16,8,0.33333333333333337,0,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,3,24,16,8,0.33333333333333337,0,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,4,18,12,6,0.33333333333333337,0,6,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1

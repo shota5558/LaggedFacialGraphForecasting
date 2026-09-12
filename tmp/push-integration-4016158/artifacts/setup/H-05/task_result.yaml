@@ -1,0 +1,48 @@
+task_id: H-05
+task_name: Resume
+status: PASS
+
+implemented:
+  - added strict resume verification from the existing experiment manifest rather than introducing a second checkpoint format
+  - resume requires the serialized ExperimentConfig to match the current frozen run exactly
+  - every resumed ExperimentArtifact must belong to the same experiment and remain beneath the configured Primary artifact root
+  - every registered artifact must still exist and match its recorded SHA-256 before resume state is accepted
+  - software-version provenance is required and normalized deterministically
+  - changed, missing, foreign, or config-drifted state is rejected rather than silently skipped
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/resume.py
+  - tests/test_resume.py
+  - artifacts/setup/H-05/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/experiment_manifest.py
+  - src/lagged_facial_graph_forecasting/artifact_registry.py
+  - src/lagged_facial_graph_forecasting/core_contract_io.py
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+
+tests:
+  workflow: tests
+  run_id: 34150631722
+  job_id: 101832003576
+  head_sha: 8e51906f61b240a4ef4efdc0ca64bfa83678f2e7
+  python: 3.11.16
+  result: 252 passed in 1.95s
+  cases:
+    - exact frozen config and exact artifact hashes permit resume
+    - config drift is rejected
+    - changed artifact bytes are rejected
+    - missing registered artifacts are rejected
+
+scientific_checks:
+  - resume cannot substitute a different Primary config or seed
+  - resume cannot trust stale or partial artifact bytes as completed work
+  - Primary artifact-root separation remains enforced
+  - resume validation is provenance-only and consumes no outer-test outcomes for selection
+  - no Sensitivity path or scientific-config change is introduced
+
+artifacts:
+  - artifacts/setup/H-05/task_result.yaml
+
+remaining_issue: none
+next_task: H-06

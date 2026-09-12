@@ -1,0 +1,9 @@
+schema_version: 3
+namespace: sensitivity
+execution_mode: synthetic
+experiment_id: sensitivity-preimplementation
+scientific_config_path: configs/scientific_freeze.yaml
+run_config_path: configs/sensitivity_preimplementation.yaml
+artifact_root: artifacts/sensitivity
+seed: 20260908
+primary_freeze_manifest: artifacts/primary/freeze_manifest.json

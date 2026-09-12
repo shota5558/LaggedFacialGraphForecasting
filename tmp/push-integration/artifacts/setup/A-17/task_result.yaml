@@ -1,0 +1,44 @@
+task_id: A-17
+task_name: Synthetic motion validation
+status: PASS
+
+implemented:
+  - added an end-to-end synthetic motion validation across translation, scale, rotation normalization, displacement, and velocity
+  - constructed two frames with different global similarity transforms and one known local region motion
+  - verified normalization removes global translation/scale/rotation while preserving the known local motion
+  - verified recovered displacement and velocity equal analytically expected values
+  - verified source/target frame provenance remains exact with no resampling
+
+files_changed:
+  - tests/test_synthetic_motion_validation.py
+  - artifacts/setup/A-17/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34153930329
+  job_id: 101841697143
+  head_sha: 4b23c5da05276e510e10730a689a02a76707d249
+  python: 3.11.16
+  result: success
+  suite_result: 376 passed in 2.37s
+  cases:
+    - different per-frame global translations are removed by frozen reference-centroid normalization
+    - different per-frame global scales are removed by frozen reference-pair distance normalization
+    - different per-frame planar rotations are removed by frozen reference-pair axis alignment
+    - known local +0.5 canonical x motion remains as +0.25 after reference-distance normalization
+    - with dt=0.5, the recovered normalized velocity is +0.5 in x
+    - frame provenance remains source=0 and target=1
+
+scientific_checks:
+  - validation uses synthetic data only and cannot leak outer-test information
+  - reference indices/pairs and coordinate axes are explicit rather than outcome-selected
+  - no interpolation, imputation, smoothing, resampling, or population-level fitting is introduced
+  - temporal alignment remains observed source->target frame provenance
+  - Primary remains PCMCI+ + ParCorr + Ridge with h=1
+  - no Sensitivity execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-17/task_result.yaml
+
+remaining_issue: none
+next_task: D-00

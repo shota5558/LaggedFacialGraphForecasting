@@ -1,0 +1,56 @@
+task_id: V0-06
+task_name: Prediction
+status: PASS
+audit_type: existing_implementation_contract_migration_revalidation
+
+implemented:
+  - existing Ridge prediction path reused without duplication
+  - PredictionArtifact creation with row and target-dimension provenance
+  - fitted feature-name, lag, and target-dimension provenance checks
+  - invalid rows preserved as masked NaN predictions
+  - single-output sklearn prediction shape normalized to the DesignMatrix target contract
+  - current target_dimensions contract is covered by prediction tests, including mismatch rejection
+
+files_changed:
+  - artifacts/setup/V0-06/task_result.yaml
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/forecaster.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_ridge_forecaster_prediction.py
+
+failure_history:
+  initial_run_id: 34145220394
+  initial_result: 1 failed, 94 passed
+  fail_type: implementation bug
+  root_cause: >-
+    scikit-learn Ridge squeezed a single-output target from shape (N, 1) to
+    prediction shape (N,), violating the exact PredictionArtifact target shape.
+  minimal_fix: >-
+    Restore (N, 1) only when the DesignMatrix target is two-dimensional with
+    exactly one output and sklearn returns a one-dimensional prediction.
+
+revalidation:
+  workflow: v0-vertical-slice-audit
+  run_id: 34159270688
+  job_id: 101857492278
+  head_sha: 2e31e60d66b545eda71cabe94612225f20921c3b
+  python: 3.11.16
+  relevant_result: tests/test_ridge_forecaster_prediction.py PASS
+  gate_snapshot: 60 passed, 2 failed
+  note: remaining failures are V0-08/V0-10 schema-version expectations only
+
+scientific_checks:
+  - prediction does not fit or tune scaler/Ridge parameters
+  - prediction feature names, lags, and target dimensions must match fitted provenance
+  - subject, region, outer_fold, condition, forecast_origin, target_time, and target dimensions are preserved
+  - invalid rows are never submitted to the predictor and remain masked in the artifact
+  - no discovery, Null, real-data preprocessing, or Sensitivity path was introduced
+  - no outer-test result can alter model settings through this prediction function
+  - Primary scientific freeze remains unchanged
+
+artifacts:
+  - artifacts/setup/V0-06/task_result.yaml
+
+remaining_issue: none
+next_task: V0-07

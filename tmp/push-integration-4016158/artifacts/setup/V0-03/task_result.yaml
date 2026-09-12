@@ -1,0 +1,38 @@
+task_id: V0-03
+task_name: Lag / Horizon Alignment
+status: PASS
+
+implemented:
+  - existing target-relative lag alignment utility reused without duplication
+  - explicit source_index / forecast_origin / target_index provenance
+  - frozen Primary horizon h=1 enforced
+  - direct-observation availability guard lag >= horizon enforced
+  - empty-alignment rejection
+
+files_confirmed:
+  - src/lagged_facial_graph_forecasting/alignment.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_alignment.py
+
+tests:
+  workflow: tests
+  run_id: 34144801892
+  job_id: 101814384717
+  head_sha: 32fe1f42a6d45f314f382925be988fdd8ad79e78
+  python: 3.11.16
+  result: 74 passed in 0.26s
+
+scientific_checks:
+  - source index is never later than forecast origin
+  - target index equals forecast origin + 1 for Primary
+  - source index equals target index - lag
+  - lag < horizon is rejected
+  - h > 1 is rejected in V0 Primary path
+  - no future parent observation can enter the design path through alignment
+  - no PCMCI+, Null, or Sensitivity code introduced
+
+artifacts:
+  - artifacts/setup/V0-03/task_result.yaml
+
+remaining_issue: none
+next_task: V0-04

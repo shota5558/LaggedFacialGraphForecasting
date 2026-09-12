@@ -1,0 +1,10 @@
+﻿condition,status,reason,n_records,analysis,is_synthetic,synthetic_notice,protocol_id
+non_speaking,evaluable,,936,model,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+non_speaking,unevaluable,mock_train_region_unavailable,24,model,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,evaluable,,936,model,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,unevaluable,mock_train_region_unavailable,24,model,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+non_speaking,evaluable,,23940,cell,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+non_speaking,unevaluable,mock_train_region_unavailable,1260,cell,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,evaluable,,23939,cell,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,failed,injected_mock_cell_failure,1,cell,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+speaking,unevaluable,mock_train_region_unavailable,1260,cell,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1

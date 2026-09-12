@@ -1,0 +1,89 @@
+task_id: DRY
+task_name: One Outer-Fold Scientific Dry Run
+status: PASS
+
+implemented:
+  - adds ScientificFoldDataLock as a one-way fold-level access gate: outer-train is available during selection, outer-test is inaccessible until fold freeze, and a second outer-test evaluation is rejected
+  - executes one deterministic synthetic outer fold through actual Tigramite PCMCI+ + ParCorr discovery on outer-train only
+  - converts discovery output to canonical ParentSet and preserves the known D=2 component-level lag provenance
+  - constructs the frozen complete lag-response grid [-2, -1, 0, 1, 2] and Primary random-region, matched-sparsity, and time-shuffle mappings before outer-test unlock
+  - tunes and refits the same StandardScaler -> sklearn Ridge pipeline inside outer-train for Persistence, Self, Full, PCMCI, and all evaluable Primary Null conditions
+  - freezes ParentSet, NullMappings, Ridge selections, seed, and fold state before outer-test materialization
+  - evaluates held-out outer-test support only after freeze and computes subject-region Velocity RMSE artifacts
+  - applies time-shuffle strictly within each subject before cross-subject concatenation, preserving subject independence
+  - writes deterministic split, ParentSet, Null, Ridge-selection, prediction, metric, fold-freeze, lag-response, and SHA256 artifact-manifest payloads in the dry-run test
+  - repeats the complete one-fold execution twice and requires byte-identical artifacts, identical ParentSet, identical Ridge selections, identical predictions, and identical metrics
+  - reuses the previously audited atomic artifact failure-handling implementation and its regression tests; no new artifact recovery mechanism is reimplemented
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/scientific_fold_lock.py
+  - tests/test_one_fold_scientific_dry_run.py
+  - artifacts/setup/DRY/task_result.yaml
+
+implementation_commits:
+  - sha: 4229a4d0e1d52379d5b053cfeeaac213c3285ded
+    message: DRY: add one-way scientific fold data lock
+  - sha: 74c638e40dac8a5fdda7a0759fdb5665a659f6ce
+    message: DRY: add one-fold scientific integration test
+    result: initial FAIL
+  - sha: e44f07e7445dc42d627d60abb9f543c852271e9f
+    message: DRY: apply time-shuffle within each subject
+    result: PASS
+
+failure_history:
+  initial_run_id: 34166962010
+  initial_job_id: 101879815268
+  initial_result: 1 failed, 659 passed, 1 warning in 6.76s
+  fail_type: implementation bug
+  root_cause: time-shuffle was applied after concatenating three outer-train subjects even though the frozen F-42 contract requires within-subject permutation
+  minimal_fix: apply the frozen time-shuffle to each subject-specific PCMCI DesignMatrix first, then concatenate the transformed matrices
+  scientific_specification_changed: false
+
+tests:
+  workflow: tests
+  final_run_id: 34167094332
+  final_job_id: 101880186979
+  final_head_sha: e44f07e7445dc42d627d60abb9f543c852271e9f
+  result: 660 passed, 1 warning in 8.62s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to DRY
+  targeted_checks:
+    - outer-test access fails before fold freeze
+    - actual PCMCI+ + ParCorr receives only outer-train subjects
+    - preprocessing, discovery, Ridge tuning, and Null-construction scopes are outer-train only
+    - known cross-region lag is recovered and represented in ParentSet
+    - lag-response grid is the complete frozen symmetric grid with reference delta 0
+    - Null mappings are constructed before outer-test unlock
+    - Ridge inner-CV and frozen refit contain no outer-test subject rows
+    - Persistence/Self/Full/PCMCI/lag-shift/random-region/matched-sparsity/time-shuffle use identical outer-test target support
+    - time-shuffle is applied only within a subject
+    - second outer-test access after evaluation is rejected
+    - repeated complete dry runs produce the same SplitManifest, ParentSet, selected alphas, predictions, metrics, and artifact bytes
+    - H-06 atomic artifact failure recovery regression tests remain PASS
+
+scientific_checks:
+  primary_pcmci_plus_parcorr_ridge_h1: PASS
+  d2_region_representation_preserved: PASS
+  outer_test_preprocessing_fit_leakage: PASS
+  outer_test_discovery_leakage: PASS
+  outer_test_ridge_tuning_leakage: PASS
+  outer_test_null_construction_leakage: PASS
+  parentset_canonical_interface: PASS
+  lag_horizon_semantics: PASS
+  lag_response_complete_symmetric_grid: PASS
+  subject_independence: PASS
+  fold_freeze_before_outer_test: PASS
+  same_support_across_primary_conditions: PASS
+  deterministic_seed: PASS
+  artifact_reproducibility: PASS
+  failure_recovery_regression: PASS
+  sensitivity_contamination: PASS
+
+artifacts:
+  - artifacts/setup/DRY/task_result.yaml
+  - dry-run test generates split_manifest.json, parent_set.json, NullMapping JSONs, ridge_selections.json, lag_response.json, prediction_*.json, metric_*.json, fold_freeze.json, and artifact_manifest.json under pytest temporary roots; these are validation artifacts and are not scientific result artifacts
+
+remaining_issue:
+  - none for DRY
+  - previously identified downstream Primary execution settings remain unresolved: G-04 bootstrap n_resamples/method and I3 matched-sparsity repeat_count must be scientifically frozen before the stages that consume them
+
+next_task: I4

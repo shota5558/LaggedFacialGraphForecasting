@@ -1,0 +1,57 @@
+task_id: F-41
+task_name: Time-shuffle permutation generator
+status: PASS
+
+implemented:
+  - adds a pure permutation generator driven only by frozen NullMapping.seed and explicit row_count
+  - accepts only unrealized condition=time-shuffle mappings with unchanged ParentLink identity
+  - validates row_count >= 2 and fails closed for unevaluable one-row supports
+  - generates each row index exactly once
+  - rejects identity draws and redraws so the coarse Null always destroys temporal correspondence
+  - conditions by rejection on non-identity permutations rather than remapping identity to a special fixed permutation
+  - does not accept predictor values, targets, metrics, or outer-test outcomes
+  - leaves permutation application to F-42
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/null_time_shuffle.py
+  - tests/test_null_time_shuffle_permutation.py
+  - artifacts/setup/F-41/task_result.yaml
+
+implementation_commits:
+  - sha: 7e69b8b72a2caa6116bfaee4d24fdd9e823d117f
+    message: F-41: add time-shuffle permutation generator
+  - sha: 8a967a4c3558ce6264eba675a963b383f65568e5
+    message: F-41: test time-shuffle permutation generator
+
+tests:
+  workflow: tests
+  run_id: 34165067893
+  job_id: 101874388712
+  head_sha: 8a967a4c3558ce6264eba675a963b383f65568e5
+  result: 609 passed, 1 warning in 5.39s
+  warning: known Tigramite single-dataset analysis_mode=multiple warning; unrelated to F-41
+  targeted_checks:
+    - complete row-index permutation
+    - non-identity temporal destruction
+    - deterministic same-seed/same-row-count behavior
+    - two-row support produces the only valid non-identity permutation
+    - invalid or one-row support fails closed
+    - non-time-shuffle mapping fails closed
+    - changed ParentLink identity fails closed
+    - already-realized mapping fails closed
+
+scientific_checks:
+  outer_test_values_not_consumed: PASS
+  permutation_depends_only_on_seed_and_row_count: PASS
+  temporal_correspondence_destroyed: PASS
+  region_lag_component_identity_preserved: PASS
+  permutation_application_not_implemented_early: PASS
+  sensitivity_surrogate_contamination: PASS
+
+artifacts:
+  - artifacts/setup/F-41/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-42

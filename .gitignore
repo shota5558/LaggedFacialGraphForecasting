@@ -1,3 +1,5 @@
-/tmp/test-deps/
+/tmp/*
 __pycache__/
 .pytest_cache/
+.venv-local-ci/
+/artifacts/local-ci/

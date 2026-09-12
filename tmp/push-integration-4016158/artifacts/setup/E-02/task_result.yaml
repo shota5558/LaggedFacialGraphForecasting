@@ -1,0 +1,40 @@
+task_id: E-02
+task_name: Ridge lambda grid
+status: PASS
+
+implemented:
+  - added an explicit deterministic Primary Ridge alpha/lambda candidate grid
+  - fixed candidates to 1e-4 through 1e4 on decade spacing
+  - added grid normalization that requires finite, strictly positive, unique values
+  - normalized caller-provided candidate order deterministically in ascending numeric order
+  - documented that scikit-learn Ridge alpha is the research lambda parameter
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/ridge_tuning.py
+  - tests/test_ridge_alpha_grid.py
+  - artifacts/setup/E-02/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34148931707
+  job_id: 101826855775
+  head_sha: 9dda18e870e31e77b5c1986af524b0f96ab0c57c
+  python: 3.11.16
+  result: 194 passed in 1.59s
+  cases:
+    - default grid is explicit, sorted, positive, and unique
+    - caller order is normalized deterministically
+    - empty, duplicate, non-positive, non-finite, and boolean candidates are rejected
+
+scientific_checks:
+  - the lambda candidate set is fixed independently of outer-test results
+  - no lambda selection is performed in this task
+  - no outer-test data is read or required
+  - Primary forecaster remains scikit-learn Ridge
+  - no Sensitivity path is introduced
+
+artifacts:
+  - artifacts/setup/E-02/task_result.yaml
+
+remaining_issue: none
+next_task: E-03

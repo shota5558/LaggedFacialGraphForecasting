@@ -1,0 +1,53 @@
+task_id: A-08
+task_name: Displacement
+status: PASS
+
+implemented:
+  - canonical displacement implementation is src/lagged_facial_graph_forecasting/motion_features.py
+  - defines displacement row r exactly as coordinates[r + 1] - coordinates[r]
+  - preserves explicit source_frame_indices and target_frame_indices as immutable temporal provenance
+  - performs no interpolation, smoothing, imputation, resampling, timestamp division, or population-level fitting
+  - intentionally propagates NaN from either endpoint so missingness remains an A-12/A-13 responsibility
+  - rejects malformed/non-numeric coordinate sequences and sequences shorter than two frames
+  - removed audit-detected duplicate src/lagged_facial_graph_forecasting/temporal_features.py before final PASS
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/motion_features.py
+  - tests/test_displacement.py
+  - artifacts/setup/A-08/task_result.yaml
+
+tests:
+  workflow: tests
+  implementation_commit: 9d6bc1e79f3e0513df160d411e0777e3c6f3eccb
+  test_commit: 0e278b94543814bc00dea6e5f418850ac4df4c7d
+  test_run_id: 34152583735
+  test_job_id: 101837749646
+  test_suite_result: 336 passed in 2.20s
+  deduplication_commit: a7f772465ce3c0acfe4f412d75fa035904e6bd2b
+  deduplication_run_id: 34152619534
+  deduplication_job_id: 101837854929
+  deduplication_result: success
+  cases:
+    - consecutive-frame displacement values are exact
+    - source/target frame provenance is preserved
+    - constant coordinates produce zero displacement
+    - NaN endpoint propagates rather than being imputed
+    - fewer than two frames are rejected
+    - malformed and non-numeric coordinate sequences are rejected
+    - input arrays are not modified
+    - no duplicate displacement implementation remains
+
+scientific_checks:
+  - temporal semantics are explicit: each displacement represents observed frame r -> r+1
+  - displacement is geometric difference only; A-09 owns elapsed-time division for velocity
+  - no population-level preprocessing statistic is fitted and no outer-test-dependent selection is possible in this API
+  - no missing-frame repair or interpolation is introduced before A-12/A-13
+  - no sampling-rate assumption is hidden in displacement
+  - duplicate implementation detected during audit was removed before PASS
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-08/task_result.yaml
+
+remaining_issue: none
+next_task: A-09

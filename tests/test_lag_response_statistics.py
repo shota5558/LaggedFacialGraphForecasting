@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from lagged_facial_graph_forecasting.core_contracts import MetricsResult, NullMapping
@@ -131,4 +133,35 @@ def test_lag_response_aggregation_rejects_unevaluable_metric_rows() -> None:
                 _grid(fold=0, status=LAG_RESPONSE_EVALUABLE),
                 _grid(fold=1, status=LAG_RESPONSE_UNEVALUABLE_NO_PARENTS),
             ),
+        )
+
+
+@pytest.mark.parametrize("delta", PRIMARY_LAG_RESPONSE_DELTAS)
+def test_lag_response_rejects_valid_row_count_drift(delta: int) -> None:
+    metrics = _metrics()
+    metrics[delta] = (replace(metrics[delta][0], n_valid=1), metrics[delta][1])
+    with pytest.raises(ValueError, match="n_valid differs"):
+        aggregate_lag_response_metrics(
+            metrics,
+            tuple(_grid(fold=fold, status=LAG_RESPONSE_EVALUABLE) for fold in (0, 1)),
+        )
+
+
+def test_lag_response_rejects_evaluable_fold_missing_from_every_delta() -> None:
+    with pytest.raises(ValueError, match="missing metrics for evaluable target folds"):
+        aggregate_lag_response_metrics(
+            _metrics(),
+            tuple(_grid(fold=fold, status=LAG_RESPONSE_EVALUABLE) for fold in (0, 1, 2)),
+        )
+
+
+def test_lag_response_rejects_metric_missing_from_an_evaluable_fold() -> None:
+    metrics = {
+        delta: rows + (replace(rows[0], metric_name="other_metric"),)
+        for delta, rows in _metrics().items()
+    }
+    with pytest.raises(ValueError, match="missing metrics for evaluable target folds"):
+        aggregate_lag_response_metrics(
+            metrics,
+            tuple(_grid(fold=fold, status=LAG_RESPONSE_EVALUABLE) for fold in (0, 1)),
         )

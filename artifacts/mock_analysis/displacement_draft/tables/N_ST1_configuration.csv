@@ -1,0 +1,11 @@
+﻿項目,値,is_synthetic,synthetic_notice,protocol_id
+主指標,displacement_mean_euclidean_error,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+予測,h=1 / 30 fps 模擬設定,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+他部位lag,1–15 frame,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+Self履歴,30 frame,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+中心化幅,±3 frame,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+ランダム集合,"1,000 / 実成分数層化",True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+集団区間,"10,000 / fold内group抽出",True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+選択履歴,100回の模擬記録,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+実学習,未実行,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1
+科学的受容,未実施,True,MOCK DATA / NOT A SCIENTIFIC RESULT,displacement-report-draft-v1

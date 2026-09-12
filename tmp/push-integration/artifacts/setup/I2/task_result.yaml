@@ -1,0 +1,64 @@
+task_id: I2
+task_name: Discovery Integration Gate
+status: PASS
+
+implemented:
+  - integrated outer-train-only Tigramite PCMCI+ + ParCorr discovery into the existing forecasting backbone
+  - converted discovery output through D-07/D-08/D-09 into canonical D-10 ParentSet
+  - serialized and reloaded ParentSet through existing deterministic Core Contract v3 I/O
+  - built PCMCI DesignMatrix from the reloaded ParentSet with exact component/lag provenance
+  - reused the exact Gate-1 Ridge inner-CV, alpha selection, frozen outer-train refit, and prediction pipeline
+  - materialized outer-test DesignMatrix only after discovery, ParentSet reload, tuning, and refit were complete
+  - repeated frozen discovery and required identical ParentSet output
+  - verified a known left_cheek.vx lag-2 parent survives discovery -> ParentSet -> DesignMatrix -> Ridge
+
+files_changed:
+  - tests/test_discovery_integration.py
+  - artifacts/setup/I2/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/tigramite_adapter.py
+  - src/lagged_facial_graph_forecasting/pcmci_runner.py
+  - src/lagged_facial_graph_forecasting/pcmci_link_extraction.py
+  - src/lagged_facial_graph_forecasting/pcmci_contemporaneous.py
+  - src/lagged_facial_graph_forecasting/pcmci_lagged_filter.py
+  - src/lagged_facial_graph_forecasting/pcmci_parent_set.py
+  - src/lagged_facial_graph_forecasting/core_contract_io.py
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/ridge_tuning.py
+  - src/lagged_facial_graph_forecasting/forecaster.py
+
+tests:
+  workflow: tests
+  run_id: 34162470404
+  job_id: 101866924191
+  head_sha: 83f19eca1ce86e3a41e16348c91317236627f0d9
+  conclusion: success
+  targeted_checks:
+    - discovery receives outer-train subjects only
+    - repeated discovery produces the same ParentSet
+    - ParentSet deterministic serialization/reload
+    - source/target component and lag provenance preserved
+    - PCMCI DesignMatrix uses the recovered lag-2 cross-region feature
+    - Ridge uses the existing baseline inner-CV/refit/prediction path
+    - outer-test is materialized only after selection and refit freeze
+    - PredictionArtifact contains outer-test subject only
+
+scientific_checks:
+  - Primary remains PCMCI+ + ParCorr + Ridge with h=1
+  - tau_max=10 and pc_alpha=0.01 remain immutable
+  - PCMCI discovery is outer-train only
+  - Ridge tuning and StandardScaler fitting remain inner-train isolated through the existing E lane
+  - ParentSet is Tigramite-independent and reproducible
+  - exact lag and component provenance is preserved across serialization and DesignMatrix construction
+  - no Sensitivity path is imported or executed
+  - D-12/D-13 remain deferred non-blockers
+
+artifacts:
+  - artifacts/setup/I2/task_result.yaml
+
+remaining_issue:
+  - none for Gate 2
+  - D-12/D-13 remain intentionally deferred until bootstrap policy is scientifically frozen
+
+next_task: F-00

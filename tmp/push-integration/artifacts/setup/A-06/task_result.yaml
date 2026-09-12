@@ -1,0 +1,47 @@
+task_id: A-06
+task_name: Scale normalization
+status: PASS
+
+implemented:
+  - extended the canonical spatial_normalization.py module with deterministic frame-wise scale normalization
+  - uses the Euclidean distance between an explicitly declared reference pair as the per-frame scale
+  - requires the reference pair explicitly so anatomical/scientific scale anchors cannot be hidden in an API default
+  - records immutable normalized coordinates, per-frame scales, reference-pair provenance, and method provenance
+  - rejects finite zero reference-pair distance because normalization would be undefined
+  - intentionally propagates NaN in scale references instead of imputing missing values before A-12/A-13
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/spatial_normalization.py
+  - tests/test_scale_normalization.py
+  - artifacts/setup/A-06/task_result.yaml
+
+tests:
+  workflow: tests
+  implementation_commit: a0b15b31b0b4f101a330b19b823d8b223f9b9266
+  test_commit: 992f82787e24efddd7f021e486637a7f48b0d88a
+  test_run_id: 34152254096
+  test_job_id: 101836771049
+  result: success
+  suite_result: 321 passed in 1.53s
+  cases:
+    - reference-pair distance is normalized to one
+    - global multiplicative scaling leaves normalized coordinates invariant
+    - reference_pair is mandatory to avoid a hidden scientific default
+    - finite zero reference-pair distance is rejected
+    - NaN in a reference propagates rather than being imputed
+    - NaN outside the reference does not alter the scale
+    - invalid, duplicate, negative, and out-of-range reference indices are rejected
+    - input arrays are not modified
+
+scientific_checks:
+  - no population-level preprocessing statistic is fitted; the transform is deterministic within each frame
+  - scale anchors are explicit provenance and cannot be selected from outer-test predictive outcomes by the normalization API
+  - no rotation normalization is introduced before A-07
+  - missing values are not repaired before A-12/A-13
+  - no PCMCI+, Null, Sensitivity, or h>1 execution path is introduced
+
+artifacts:
+  - artifacts/setup/A-06/task_result.yaml
+
+remaining_issue: none
+next_task: A-07

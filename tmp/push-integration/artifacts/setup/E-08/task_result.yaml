@@ -1,0 +1,41 @@
+task_id: E-08
+task_name: Coefficient export
+status: PASS
+
+implemented:
+  - added RidgeCoefficientExport as a non-core read-only export structure
+  - exports the frozen Ridge alpha, feature names, feature lags, coefficients, and intercepts
+  - explicitly labels coefficients as standardized_feature_space because Ridge follows StandardScaler
+  - normalizes coefficient shape to output_dim x feature_count and intercept to output_dim
+  - exported coefficient/intercept arrays are immutable snapshots
+  - no fitting, tuning, prediction, or contract migration occurs during export
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/ridge_coefficients.py
+  - tests/test_ridge_coefficient_export.py
+  - artifacts/setup/E-08/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34149696312
+  job_id: 101829176444
+  head_sha: 1b634ebdedc28133be96088f1f642158c5856a17
+  result: success
+  cases:
+    - alpha and feature/lag provenance are preserved
+    - multi-output coefficient and intercept shapes are preserved
+    - single-output coefficients are normalized to a stable 2D representation
+    - exported arrays are read-only snapshots
+
+scientific_checks:
+  - export is downstream of the frozen fitted model and cannot affect model selection
+  - coefficient scale is explicitly identified to avoid interpreting standardized-space coefficients as raw-input coefficients
+  - no outer-test data is consumed by the export function itself
+  - Primary estimator remains scikit-learn Ridge
+  - no core contract is changed and no Sensitivity path is introduced
+
+artifacts:
+  - artifacts/setup/E-08/task_result.yaml
+
+remaining_issue: none
+next_task: E-09

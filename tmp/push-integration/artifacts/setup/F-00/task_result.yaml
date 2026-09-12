@@ -1,0 +1,52 @@
+task_id: F-00
+task_name: NullMapping schema
+status: PASS
+audit_type: existing_implementation_revalidation
+
+implemented:
+  - reused the frozen Core Contract v3 NullMapping instead of creating a duplicate schema
+  - preserves outer_fold, target_region, condition, deterministic seed, source ParentLinks, mapped ParentLinks, optional row permutation, and schema_version
+  - preserves exact source/target component and lag provenance through ParentLink
+  - enforces equal source/mapped feature counts
+  - rejects duplicate source or mapped ParentLinks
+  - validates deterministic permutation as a complete row-index permutation
+  - existing Core Contract serialization provides versioned deterministic NullMapping wire format
+
+files_changed:
+  - artifacts/setup/F-00/task_result.yaml
+
+files_reused:
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+  - src/lagged_facial_graph_forecasting/core_contract_io.py
+  - schemas/core_contracts_v3.yaml
+  - tests/test_core_contract_freeze.py
+  - tests/test_core_contract_io.py
+
+tests:
+  latest_regression:
+    workflow: tests
+    run_id: 34162470404
+    job_id: 101866924191
+    conclusion: success
+  existing_targeted_checks:
+    - NullMapping is registered as frozen schema v3
+    - component-aware source/mapped ParentLinks are preserved
+    - source/mapped feature counts must match
+    - duplicate mappings are rejected
+    - invalid row permutations are rejected
+    - deterministic Core Contract serialization round-trip is covered
+
+scientific_checks:
+  - F-00 defines only the contract; no Null mapping is selected from outer-test outcomes
+  - actual Null construction remains required to pass the outer-train-only leakage guard in later F tasks
+  - Primary region/lag/component provenance is preserved
+  - no phase shuffle, circular shift, autocorrelation-preserving surrogate, or other Sensitivity Null is introduced
+  - Primary remains PCMCI+ + ParCorr + Ridge with h=1, tau_max=10, pc_alpha=0.01
+
+artifacts:
+  - artifacts/setup/F-00/task_result.yaml
+
+remaining_issue:
+  - none
+
+next_task: F-10

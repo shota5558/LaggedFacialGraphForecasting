@@ -1,0 +1,5 @@
+is_synthetic,synthetic_notice,subject_id,outer_fold,frame_count,valid_frame_count,missing_ratio,sampling_rate_hz,sequence_length,mean_motion_magnitude,active_interval_ratio
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S01,0,3600,3564,0.01,30.0,3600,0.124,0.43
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S02,1,3660,3616,0.012,30.0,3660,0.128,0.44
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S03,2,3720,3668,0.014,30.0,3720,0.132,0.45
+True,FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS,MOCK_S04,3,3780,3719,0.016,30.0,3780,0.136,0.46

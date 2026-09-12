@@ -1,0 +1,38 @@
+task_id: E-09
+task_name: Deterministic test
+status: PASS
+
+implemented:
+  - added an end-to-end deterministic regression test for the Primary Ridge lane
+  - repeats inner CV, score aggregation, alpha selection, frozen outer-train refit, prediction, and coefficient export on identical inputs
+  - requires identical fold scores, aggregates, selected alpha, scaler statistics, predictions, coefficients, and intercepts
+
+files_changed:
+  - tests/test_ridge_determinism.py
+  - artifacts/setup/E-09/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34149776438
+  job_id: 101829421552
+  head_sha: 6882176b7f6f5881d0f89085fd16056e3d0294f5
+  result: success
+  cases:
+    - repeated inner-CV scores are identical
+    - repeated aggregate scores and selected alpha are identical
+    - repeated scaler mean/scale are identical
+    - repeated predictions are identical
+    - repeated coefficient/intercept exports are identical
+
+scientific_checks:
+  - determinism is checked without outer-test feedback
+  - selected alpha is frozen before outer-train refit
+  - feature/lag provenance is unchanged across repeated runs
+  - Primary estimator remains scikit-learn Ridge
+  - no Sensitivity path is introduced
+
+artifacts:
+  - artifacts/setup/E-09/task_result.yaml
+
+remaining_issue: none
+next_task: E-10

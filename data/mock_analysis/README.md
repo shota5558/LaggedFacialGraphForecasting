@@ -13,7 +13,7 @@ Every CSV row contains:
 
 ```text
 is_synthetic=True
-synthetic_notice=FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS
+synthetic_notice=MOCK DATA / NOT A SCIENTIFIC RESULT
 ```
 
 Synthetic subject IDs use the reserved prefix `MOCK_S*`.
@@ -37,6 +37,8 @@ For broader F14 / multi-region checks, regenerate the richer deterministic fixtu
 ```bash
 python scripts/generate_mock_analysis_data.py --output-dir artifacts/mock_analysis/input
 ```
+
+The generator also emits `mock_landscape.csv`, `mock_candidate_grid.json`, `mock_population.csv`, and explicit `landscape`/`population` configurations for extended-output software verification. These fixtures are intentionally generated on demand rather than committed as scientific artifacts.
 
 Generator seed:
 

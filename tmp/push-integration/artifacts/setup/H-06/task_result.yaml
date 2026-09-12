@@ -1,0 +1,49 @@
+task_id: H-06
+task_name: Failure handling
+status: PASS
+
+implemented:
+  - added atomic artifact publication through a same-directory *.partial staging file
+  - final artifact paths become visible only after successful writer completion
+  - failed staged writes are removed and the original exception is re-raised unchanged
+  - existing final artifacts are never overwritten
+  - final paths are restricted to the configured Primary artifact_root
+  - ArtifactRegistry rejects incomplete *.partial staging artifacts
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/failure_handling.py
+  - src/lagged_facial_graph_forecasting/artifact_registry.py
+  - tests/test_failure_handling.py
+  - artifacts/setup/H-06/task_result.yaml
+
+reused_files:
+  - src/lagged_facial_graph_forecasting/core_contracts.py
+  - src/lagged_facial_graph_forecasting/artifact_registry.py
+
+tests:
+  workflow: tests
+  run_id: 34150836080
+  job_id: 101832601019
+  head_sha: 9803a34265a53b34aab718ef357c990479ae8fbf
+  python: 3.11.16
+  result: 257 passed in 2.17s
+  cases:
+    - final artifact is invisible until successful staged write completes
+    - failed write removes staging bytes and preserves the original exception
+    - existing final artifact cannot be overwritten
+    - Sensitivity/out-of-root final path is rejected
+    - missing staging file cannot be promoted
+    - incomplete staging artifact cannot be registered
+
+scientific_checks:
+  - incomplete or failed outputs cannot be mistaken for completed scientific artifacts
+  - Primary artifact-root separation remains enforced
+  - failures do not trigger fallback scientific settings or continue as success
+  - failure handling does not inspect outer-test outcomes and cannot alter model selection
+  - no Sensitivity method or h > 1 path is introduced
+
+artifacts:
+  - artifacts/setup/H-06/task_result.yaml
+
+remaining_issue: none
+next_task: I1

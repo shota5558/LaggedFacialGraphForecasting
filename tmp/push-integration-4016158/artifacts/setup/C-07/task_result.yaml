@@ -1,0 +1,52 @@
+task_id: C-07
+task_name: Feature provenance
+status: PASS
+
+fail_history:
+  initial_status: FAIL
+  fail_type: contract mismatch
+  root_causes:
+    - feature names originally used an unescaped region.dimension delimiter, so valid identifiers containing reserved characters were not losslessly recoverable
+    - the earlier provenance artifact described PCMCI as ParentSet-only, while the corrected incremental forecasting contract is fixed Self-history plus selected inter-regional ParentSet links
+  resolution:
+    - added reversible escaped feature-name encoding
+    - updated PCMCI provenance tests to verify the fixed Self block followed by frozen selected inter-regional parents
+
+implemented:
+  - retained frozen DesignMatrix.feature_names and DesignMatrix.feature_lags fields without schema migration
+  - encode_feature_name/decode_feature_name losslessly preserve source region and dimension, including reserved dots and backslashes
+  - Persistence, Self, Full, and PCMCI builders use the same reversible provenance convention
+  - PCMCI provenance is deterministic: fixed Self-history features first, then selected inter-regional ParentSet links in frozen ParentSet order
+  - target-relative lag remains explicit for every column
+
+files_changed:
+  - src/lagged_facial_graph_forecasting/design_matrix.py
+  - src/lagged_facial_graph_forecasting/__init__.py
+  - tests/test_design_matrix_feature_provenance.py
+  - artifacts/setup/C-07/task_result.yaml
+
+tests:
+  workflow: tests
+  run_id: 34149026741
+  job_id: 101827151606
+  head_sha: c436c5510015c4a6b902e09050ca1ae666db773b
+  python: 3.11.16
+  result: 196 passed in 1.75s
+  cases:
+    - Persistence/Self/Full provenance identifies exact source region, dimension, and lag
+    - PCMCI provenance is fixed Self plus selected inter-regional ParentSet provenance
+    - reserved dot/backslash identifiers round-trip losslessly
+    - no selected self-link is duplicated into the fixed Self block
+
+scientific_checks:
+  - source region, target region, dimension, and target-relative lag are losslessly traceable
+  - PCMCI input provenance is nested over the fixed Self baseline and uses no test-side reselection
+  - selected inter-regional provenance comes only from the frozen ParentSet
+  - Primary h=1 and Primary/Sensitivity separation remain unchanged
+  - no outer-test information is consumed by provenance construction or validation
+
+artifacts:
+  - artifacts/setup/C-07/task_result.yaml
+
+remaining_issue: none
+next_task: C-08

@@ -1,0 +1,27 @@
+task_id: G-12
+task_name: Temporal correlation
+status: BLOCKED
+
+implemented:
+  - no Primary metric implementation added because the correlation estimand is not operationally frozen
+
+scientific_checks:
+  research_plan_metric_semantics_present: PASS
+  exact_operational_definition_frozen: FAIL
+  vector_component_aggregation_rule_frozen: FAIL
+  constant_series_policy_frozen: FAIL
+  outer_test_accessed: false
+
+root_cause:
+  - the research plan states that Temporal correlation measures time-series shape agreement but does not define Pearson-vs-rank correlation, component-wise-vs-magnitude aggregation, weighting, or constant-series handling
+  - choosing any of those after implementation would create an analysis degree of freedom before Primary evaluation
+
+minimal_fix_required_before_retry:
+  - freeze the correlation family
+  - freeze vector-component aggregation and support/missingness handling
+  - freeze the constant-series/degenerate-series policy
+  - add deterministic subject-region tests before enabling G-12
+
+scientific_specification_changed: false
+outer_test_accessed: false
+primary_results_generated: false

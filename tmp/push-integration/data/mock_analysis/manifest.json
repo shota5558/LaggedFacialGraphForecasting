@@ -1,0 +1,20 @@
+{
+  "is_synthetic": true,
+  "synthetic_notice": "FAKE DATA - NOT FOR SCIENTIFIC CONCLUSIONS",
+  "purpose": "software verification only",
+  "seed": 20260908,
+  "generator": "scripts/generate_mock_analysis_data.py",
+  "committed_smoke_fixtures": [
+    "mock_dataset_summary.csv",
+    "mock_primary_config.json",
+    "mock_metrics.csv",
+    "mock_feature_counts.csv",
+    "mock_null_metrics.csv",
+    "mock_lag_response.csv",
+    "mock_edge_stability.csv",
+    "mock_sensitivity.csv",
+    "mock_prediction_trajectory.csv"
+  ],
+  "real_data": false,
+  "scientific_use_allowed": false
+}

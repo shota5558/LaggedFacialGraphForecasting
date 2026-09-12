@@ -1,0 +1,51 @@
+task_id: F-51
+task_name: Primary Null contract tests
+status: PASS
+
+implemented:
+  - adds cross-Null contract tests for lag-shift, random-region, matched-sparsity, and time-shuffle
+  - verifies common outer_fold, target_region, SplitManifest.seed, source ParentSet provenance, and feature-count contracts
+  - verifies lag-shift changes only lag identity
+  - verifies random-region changes only source-region identity while preserving lag/component provenance and excluding original/target regions
+  - verifies matched-sparsity preserves exact per-target-component capacity inside the Primary lag domain and excludes target Self-history
+  - verifies time-shuffle freezes ParentLink identity and defers temporal permutation
+  - verifies every Primary Null construction boundary rejects outer-test subjects
+
+files_changed:
+  - tests/test_null_primary_contracts.py
+  - artifacts/setup/F-51/task_result.yaml
+
+implementation_commits:
+  - sha: dfe16869eeb05d5209b1b79d436d1eb08443694a
+    message: F-51: add Primary Null contract tests
+
+tests:
+  workflow: tests
+  run_id: 34165614470
+  job_id: 101875937379
+  head_sha: dfe16869eeb05d5209b1b79d436d1eb08443694a
+  result: success
+  targeted_checks:
+    - common fold/target/seed/source-parent provenance across all Primary NullMappings
+    - lag-shift mutates lag only
+    - random-region mutates source region only
+    - matched-sparsity preserves per-target component feature count and valid Primary lag domain
+    - time-shuffle preserves ParentLinks and construction-time empty permutation
+    - outer-test construction scope fails closed for every Primary Null entry point
+
+scientific_checks:
+  outer_test_leakage: PASS
+  subject_split_provenance: PASS
+  lag_semantics: PASS
+  component_provenance: PASS
+  matched_capacity: PASS
+  deterministic_seed_provenance: PASS
+  primary_sensitivity_separation: PASS
+
+artifacts:
+  - artifacts/setup/F-51/task_result.yaml
+
+remaining_issue:
+  - matched-sparsity repeat_count remains intentionally unresolved and must be scientifically frozen before actual Primary execution
+
+next_task: I3
