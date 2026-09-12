@@ -483,6 +483,8 @@ OOF の frozen subject results に対し、outer-fold 内で独立 group を復�
 11. dry run / leakage audit / reproduction evidence
 12. hash 付き executable freeze
 
+real-data dry run（#16）はformal Primary集団から永久除外するpreflight/pilot dependency groupで実施する。formal outer-test foldは使用せず、mock成功を実データ受入の代替にしない。#38のsoftware統合、#16のreal dry run、#17の最終監査、#18のformal評価をこの順に行う。詳細な実装依存は[実装・実行一覧](implementation_backlog_2026-09-12.md)と#25のGate定義を参照する。
+
 これらの preflight で本仕様の運用閾値が成立しない場合、**outer-test の結果を見る前に**破綻証拠と改訂理由を記録し、protocol version を上げて再登録する。
 
 ---

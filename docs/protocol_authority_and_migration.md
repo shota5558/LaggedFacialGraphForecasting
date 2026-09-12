@@ -105,20 +105,20 @@
 
 ## 6. Executable migration gates
 
-設計採用は完了したが、実行環境の移行は別に完了させる。
+設計採用は完了したが、実行環境の移行は別に完了させる。[実装・実行一覧](implementation_backlog_2026-09-12.md)と[Issue #25](https://github.com/shota5558/LaggedFacialGraphForecasting/issues/25)のGate/M/P定義を用いる。
 
-1. `configs/scientific_freeze.yaml` を新 protocol version へ移行
-2. `configs/primary_run.yaml` を新 Primary mandatory scope へ移行
-3. `schemas/scientific_freeze.schema.json` を同期
-4. config loader / preflight validator を同期
-5. region block / support / landscape / enrichment / centered-response contracts を同期
-6. old-v6 artifact を新 Primary evidence として拒否する regression test を追加
-7. synthetic integration を通す
-8. one-fold dry run を通す
-9. leakage / reproducibility audit を通す
-10. preflight 実物値と hash を固定
-11. 新 Primary Full Run を開始
-12. PRIMARY FREEZE 後に Sensitivity を許可
+1. Gate A（採用済み仕様）から、#25 M-01のconfig/schema/loader/validator契約を同期する。
+2. #28のdata/support/statistical契約、#84のraw/annotation/QC/q_ref変位、#85のgroup split/OR block/等重みRidgeを移行する。
+3. #33/#34/#35の主解析と#86の100 group再探索を移行する。旧v6 artifactの誤受入を検証する。
+4. #31/#39の境界・freeze実装、#36/#37のexport/runnerを接続し、#38でsynthetic integrationを通す。
+5. 実入力・model/注釈/cadence・pilot除外とpreflight設定が揃ったGate B-preflightから、#16を永久除外preflight groupで実行する。
+6. #16 PASS・実物値・formal split・leakage/reproducibility証拠・hashをGate B-formalへ揃え、#17の最終監査を通す。
+7. #18で初めてformal outer-test outcomeを評価し、#19の統計と#23のPrimary図表を完成させる。
+8. #39を用いて#20 PRIMARY FREEZEを確定し、その後に選択したSensitivityを許可する。
+
+#25全体のcloseをcomponentsの実装開始条件にしない。#38のsoftware受入に#16の完了を要求しない。#39の実装と#23のPrimary出力は#20より前に揃え、Sensitivity部分を待たない。
+
+formal outer-test foldはdry runに使用しない。#16のmock代替は禁止し、preflight結果をPrimaryの集団効果へ加えない。
 
 ## 7. Issue authority
 
@@ -132,6 +132,10 @@
 - #36: raw artifact → analysis export
 - #37: production runner
 - #38: production integration / dry-run audit
+- #39: PRIMARY FREEZE writer / validatorのソフトウェア実装
+- #84: raw NoXi / annotation / QC / q_ref変位 / preprocessing CLI
+- #85: group split / dynamic lag / OR block / weighted Ridge / primary metric
+- #86: 100 outer-train dependency-group再探索のstability producer
 - #16 / #17 / #18 / #19 / #20: formal execution gates
 
 旧 Issue は履歴として残し、上記 authoritative specification と競合する場合は新 work の authority にしない。

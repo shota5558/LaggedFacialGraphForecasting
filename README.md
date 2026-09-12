@@ -34,6 +34,8 @@ Random-region、Time-shuffle、joint-set matched-sparsity再学習、circular/ph
 
 ## 実装・移行管理
 
+- [今後の実装・実行一覧（2026-09-12）](docs/implementation_backlog_2026-09-12.md) — 現状差分、担当Issue、着手順、実データ受入条件
+- [GitHub管理Issue #24](https://github.com/shota5558/LaggedFacialGraphForecasting/issues/24) — 現行active backlog
 - [Protocol authority registry / migration plan](docs/protocol_authority_and_migration.md)
 - [新指標に基づく解析図表の再構成案（2026-09-11）](docs/analysis_tables_figures_redesign_2026-09-11.md)
 - [研究計画の検討資料](docs/experimental_plan.md)
