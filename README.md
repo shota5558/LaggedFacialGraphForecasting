@@ -7,6 +7,7 @@ PCMCI+ と Ridge を用いて、自然な表情・発話中の顔部位間遅延
 2026-09-12 以降、本研究の正式仕様は次です。
 
 - [Authoritative Primary Experiment Specification（2026-09-12）](docs/authoritative_primary_experiment_spec_2026-09-12.md)
+- [Adopted Decisions（2026-09-12）](docs/adopted_decisions_2026-09-12.md)
 - [本実験に必要な定義の最終推薦案（2026-09-11）](docs/primary_experiment_recommendation_2026-09-11.md) — 2026-09-12 に**全面採用済み**
 - [実験設計書：顔部位間の遅延予測構造と被験者間の共通性](docs/experiment_design.md)
 
