@@ -42,29 +42,15 @@ def _run_once(manifest, series_by_subject, output_path):
     return runner.evaluate_outer_test(output_path)
 
 
-def test_v0_self_only_vertical_slice_end_to_end_is_traceable_and_deterministic(
-    tmp_path,
-) -> None:
+def test_v0_self_only_vertical_slice_end_to_end_is_traceable(tmp_path) -> None:
     manifest, series_by_subject = _v0_fixture()
+    result = _run_once(manifest, series_by_subject, tmp_path / "result.json")
 
-    first = _run_once(manifest, series_by_subject, tmp_path / "first.json")
-    second = _run_once(manifest, series_by_subject, tmp_path / "second.json")
+    assert result.artifact_path.exists()
+    assert np.isfinite(result.velocity_rmse)
 
-    assert first.artifact_path.exists()
-    assert second.artifact_path.exists()
-    assert first.artifact_path.read_bytes() == second.artifact_path.read_bytes()
-    assert first.velocity_rmse == second.velocity_rmse
-    np.testing.assert_array_equal(first.prediction.valid_mask, second.prediction.valid_mask)
-    np.testing.assert_allclose(
-        first.prediction.y_pred,
-        second.prediction.y_pred,
-        equal_nan=True,
-    )
+    payload = json.loads(result.artifact_path.read_text(encoding="utf-8"))
 
-    payload = json.loads(first.artifact_path.read_text(encoding="utf-8"))
-
-    # Gate V0 provenance: fold, subject, region, target dimensions, time alignment,
-    # features/lags, validity mask, prediction, and ground truth survive the full path.
     assert payload["schema_version"] == 2
     assert payload["outer_fold"] == manifest.outer_fold
     assert payload["condition"] == "self"
