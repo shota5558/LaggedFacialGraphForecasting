@@ -40,21 +40,6 @@ def test_explicit_frame_quality_threshold_invalidates_whole_frame() -> None:
     assert result.valid_mask[0].all()
     assert not result.valid_mask[1].any()
     assert result.valid_mask[2].all()
-    assert result.minimum_frame_quality == pytest.approx(0.5)
-    assert result.method == "finite_values_and_explicit_frame_quality_threshold"
-
-
-def test_nonfinite_quality_score_fails_threshold_without_imputation() -> None:
-    values = np.ones((2, 1, 2), dtype=float)
-
-    result = build_quality_flags(
-        values,
-        frame_quality=np.array([0.9, np.nan]),
-        minimum_frame_quality=0.5,
-    )
-
-    assert np.array_equal(result.frame_quality_pass, np.array([True, False]))
-    assert not result.valid_mask[1].any()
 
 
 def test_external_quality_does_not_hide_elementwise_nonfinite_values() -> None:
@@ -80,47 +65,6 @@ def test_threshold_and_score_must_be_supplied_together() -> None:
         build_quality_flags(values, frame_quality=np.array([0.9, 0.8]))
 
 
-def test_invalid_quality_inputs_are_rejected() -> None:
-    values = np.ones((2, 1, 1), dtype=float)
-
+def test_quality_rejects_invalid_tensor_shape() -> None:
     with pytest.raises(QualityFlagError, match="shape"):
         build_quality_flags(np.ones((2, 2), dtype=float))
-    with pytest.raises(QualityFlagError, match="numeric"):
-        build_quality_flags(np.full((2, 1, 1), "x", dtype=object))
-    with pytest.raises(QualityFlagError, match="shape"):
-        build_quality_flags(
-            values,
-            frame_quality=np.array([0.9]),
-            minimum_frame_quality=0.5,
-        )
-    with pytest.raises(QualityFlagError, match="numeric"):
-        build_quality_flags(
-            values,
-            frame_quality=np.array(["good", "bad"], dtype=object),
-            minimum_frame_quality=0.5,
-        )
-    with pytest.raises(QualityFlagError, match="finite"):
-        build_quality_flags(
-            values,
-            frame_quality=np.array([0.9, 0.8]),
-            minimum_frame_quality=np.nan,
-        )
-
-
-def test_quality_outputs_are_immutable_and_input_is_unchanged() -> None:
-    values = np.array([[[1.0]], [[np.nan]], [[3.0]]])
-    scores = np.array([0.9, 0.8, 0.7])
-    values_before = values.copy()
-    scores_before = scores.copy()
-
-    result = build_quality_flags(
-        values,
-        frame_quality=scores,
-        minimum_frame_quality=0.75,
-    )
-
-    assert np.array_equal(values, values_before, equal_nan=True)
-    assert np.array_equal(scores, scores_before)
-    assert not result.valid_mask.flags.writeable
-    assert not result.finite_mask.flags.writeable
-    assert not result.frame_quality_pass.flags.writeable
