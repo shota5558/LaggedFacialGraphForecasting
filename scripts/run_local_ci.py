@@ -244,7 +244,7 @@ def main() -> int:
                 summary["overall"] = "FAIL"
                 return rc
 
-        return 0
+        return 0 if summary["overall"] == "PASS" else 1
     except RuntimeError as exc:
         summary["overall"] = "ERROR"
         summary["error"] = str(exc)
