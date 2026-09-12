@@ -98,7 +98,6 @@ def test_rejects_unreviewed_schema_extension(tmp_path: Path) -> None:
 def test_real_materialization_is_not_implied_by_preflight_config(tmp_path: Path) -> None:
     with pytest.raises(ScientificConfigError, match="preflight facts"):
         load_scientific_config(
-            CONFIG_PATH,
+            CONFIG_PATH.resolve(),
             require_materialized=True,
-            repository_root=tmp_path,
         )

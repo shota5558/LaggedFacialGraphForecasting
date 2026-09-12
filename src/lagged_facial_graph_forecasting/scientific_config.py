@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path, PurePosixPath
 import re
 from typing import Any, Mapping
@@ -337,7 +338,12 @@ def _validate_materialization(
         _sha256(preflight[field_name], f"preflight.{field_name}")
 
     fps = preflight["actual_fps"]
-    if not isinstance(fps, (int, float)) or isinstance(fps, bool) or fps <= 0:
+    if (
+        not isinstance(fps, (int, float))
+        or isinstance(fps, bool)
+        or not math.isfinite(fps)
+        or fps <= 0
+    ):
         raise ScientificConfigError("preflight.actual_fps must be a positive number")
     history = preflight["actual_self_history_frames"]
     if not isinstance(history, int) or isinstance(history, bool) or history < 1:
@@ -345,6 +351,9 @@ def _validate_materialization(
     cadence = preflight["actual_cadence"]
     if not isinstance(cadence, str) or not cadence.strip():
         raise ScientificConfigError("preflight.actual_cadence must be a non-empty string")
+    version = preflight["extractor_package_version"]
+    if not isinstance(version, str) or not version.strip():
+        raise ScientificConfigError("preflight.extractor_package_version must be non-empty")
     if config["primary"]["discovery"]["tau_max"] != int(fps * 0.5):
         raise ScientificConfigError("preflight tau_max must equal floor(0.5 * actual_fps)")
     expected_deltas = list(range(-int(fps * 0.1), int(fps * 0.1) + 1))
