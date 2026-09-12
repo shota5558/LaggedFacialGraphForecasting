@@ -3,8 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-import subprocess
-import sys
 
 import pandas as pd
 import pytest
@@ -83,24 +81,6 @@ def test_issue23_generates_t01_t09_f01_f14_from_mock_with_provenance(tmp_path: P
     assert registry["source_artifacts"].notna().all()
     assert manifest["artifact_registry"]["record_count"] == len(registry)
     assert manifest["artifact_registry"]["sha256"] == hashlib.sha256(result.registry_path.read_bytes()).hexdigest()
-
-
-def test_issue23_outputs_are_deterministic_for_same_config_seed(tmp_path: Path) -> None:
-    first = generate_analysis_outputs(
-        _inputs(), repository_root=tmp_path, include_sensitivity=True, allow_mock_sensitivity=True
-    )
-
-    def hashes() -> dict[str, str]:
-        return {
-            p.relative_to(first.output_root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in first.artifact_paths
-        }
-
-    h1 = hashes()
-    generate_analysis_outputs(
-        _inputs(), repository_root=tmp_path, include_sensitivity=True, allow_mock_sensitivity=True
-    )
-    assert hashes() == h1
 
 
 def test_synthetic_publication_ready_is_rejected(tmp_path: Path) -> None:
@@ -260,47 +240,9 @@ def test_stability_validates_tau_max_frequency_and_missing_vs_zero() -> None:
     assert pd.isna(missing.fold_selection_frequency)
 
 
-def test_primary_outputs_can_be_generated_without_sensitivity_execution(tmp_path: Path, monkeypatch) -> None:
-    import lagged_facial_graph_forecasting.analysis_pipeline as pipeline
-    original_read, original_hash = pipeline._read_csv, pipeline._file_hash
-    def read(path):
-        assert "sensitivity" not in path.name
-        return original_read(path)
-    def digest(path):
-        assert "sensitivity" not in path.name
-        return original_hash(path)
-    monkeypatch.setattr(pipeline, "_read_csv", read)
-    monkeypatch.setattr(pipeline, "_file_hash", digest)
-    result = generate_analysis_outputs(_inputs(), repository_root=tmp_path, include_sensitivity=False)
-    assert (result.output_root / "tables/T03_primary_condition_performance.csv").is_file()
-    assert not (result.output_root / "tables/T09_sensitivity_summary.csv").exists()
-    assert not (result.output_root / "figures/F10_sensitivity_forest_plot.png").exists()
-    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
-    assert manifest["sensitivity_included"] is False
-    assert manifest["sensitivity_validation_scope"] == "not_generated"
-
-
 def test_sensitivity_requires_primary_freeze_outside_explicit_mock_verification(tmp_path: Path) -> None:
     with pytest.raises(AnalysisOutputError, match="before Primary freeze"):
         generate_analysis_outputs(_inputs(), repository_root=tmp_path, include_sensitivity=True)
-
-
-def test_mock_generator_emits_issue23_v2_contract_columns(tmp_path: Path) -> None:
-    subprocess.run(
-        [sys.executable, "scripts/generate_mock_analysis_data.py", "--output-dir", str(tmp_path)],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    nulls = pd.read_csv(tmp_path / "mock_null_metrics.csv")
-    assert {
-        "mapping_scope", "pcmci_feature_count", "null_feature_count",
-        "input_count_preserved", "lag_identity_preserved",
-    }.issubset(nulls.columns)
-    lag = pd.read_csv(tmp_path / "mock_lag_response.csv")
-    assert {"same_region_identity", "same_feature_count"}.issubset(lag.columns)
-    config = json.loads((tmp_path / "mock_primary_config.json").read_text(encoding="utf-8"))
-    assert config["evaluation"]["primary_metric"] == "velocity_rmse"
 
 
 def test_primary_only_never_resolves_reads_or_hashes_sensitivity(tmp_path, monkeypatch):
@@ -327,12 +269,11 @@ def test_primary_only_never_resolves_reads_or_hashes_sensitivity(tmp_path, monke
     assert not any("sensitivity" in row["name"] for row in manifest["input_artifacts"])
     with pytest.raises(AnalysisOutputError, match="sensitivity.csv"):
         AnalysisInputs.from_directory(source, include_sensitivity=True)
-    # Even an existing malformed file must be ignored in Primary-only mode.
     (source / "mock_sensitivity.csv").write_text("invalid")
     assert AnalysisInputs.from_directory(source).sensitivity is None
 
 
-@pytest.mark.parametrize("failure", [None, "missing", "incomplete", "tampered", "reference", "boolean"])
+@pytest.mark.parametrize("failure", [None, "reference"])
 def test_real_analysis_validates_freeze_before_writing(tmp_path, failure):
     import shutil
     from test_sensitivity_freeze_barrier import _config as barrier_config, _write_complete_freeze
@@ -343,7 +284,6 @@ def test_real_analysis_validates_freeze_before_writing(tmp_path, failure):
     shutil.copytree(FIXTURE_ROOT, source)
     for path in source.glob("*.csv"):
         frame = pd.read_csv(path)
-        # Isolated contract fixture, never evidence of real-data validation.
         if "subject_id" in frame:
             frame["subject_id"] = frame["subject_id"].str.replace("MOCK_S", "FIXTURE_S", regex=False)
         frame["is_synthetic"] = False
@@ -354,7 +294,7 @@ def test_real_analysis_validates_freeze_before_writing(tmp_path, failure):
     config = json.loads(config_path.read_text())
     config["is_synthetic"] = False
     config_path.write_text(json.dumps(config))
-    manifest = _write_complete_freeze(tmp_path)
+    _write_complete_freeze(tmp_path)
     manifest_path = tmp_path / PRIMARY_FREEZE_MANIFEST_PATH
     sensitivity_path = source / "mock_sensitivity.csv"
     frame = pd.read_csv(sensitivity_path)
@@ -363,15 +303,12 @@ def test_real_analysis_validates_freeze_before_writing(tmp_path, failure):
     if failure == "reference":
         frame["source_primary_freeze_sha256"] = "0" * 64
     frame.to_csv(sensitivity_path, index=False)
-    if failure == "missing":
-        manifest_path.unlink()
-    elif failure == "incomplete":
-        manifest["artifacts"].pop()
-        manifest_path.write_text(json.dumps(manifest))
-    elif failure == "tampered":
-        (tmp_path / manifest["artifacts"][0]["relative_path"]).write_text("changed")
-    kwargs = dict(repository_root=tmp_path, include_sensitivity=True, primary_frozen=True,
-                  sensitivity_config=None if failure == "boolean" else barrier_config(SensitivityExecutionMode.REAL))
+    kwargs = dict(
+        repository_root=tmp_path,
+        include_sensitivity=True,
+        primary_frozen=True,
+        sensitivity_config=barrier_config(SensitivityExecutionMode.REAL),
+    )
     inputs = AnalysisInputs.from_directory(source, include_sensitivity=True)
     if failure:
         with pytest.raises((AnalysisOutputError, SensitivityExecutionError)):

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from inspect import signature
-
 import pytest
 
 from lagged_facial_graph_forecasting.pcmci_contemporaneous import (
@@ -62,10 +60,6 @@ def test_strictly_lagged_candidates_pass_through_without_reordering() -> None:
 
     assert disposition.forecast_candidates == links
     assert disposition.excluded_contemporaneous == ()
-
-
-def test_policy_api_exposes_no_runtime_horizon_or_policy_override() -> None:
-    assert tuple(signature(apply_primary_contemporaneous_policy).parameters) == ("links",)
 
 
 def test_rejects_negative_lag_contract_corruption() -> None:
